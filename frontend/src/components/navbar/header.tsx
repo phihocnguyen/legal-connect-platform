@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Search } from '../Search';
+import { Search } from './search';
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   return (
@@ -8,39 +9,68 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-2xl font-bold text-blue-700">Legal Connect</span>
+            <span className="text-2xl font-bold text-[#004646]">Legal Connect</span>
           </Link>
 
           {/* Search */}
-          <Search />
+          <div className="hidden lg:block flex-1 max-w-lg mx-8">
+            <Search />
+          </div>
 
-          {/* Navigation */}
-          <nav className="flex items-center space-x-8">
+          {/* Main Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              href="/van-ban" 
+              className="text-gray-600 hover:text-[#004646]"
+            >
+              Văn bản pháp luật
+            </Link>
             <Link 
               href="/questions" 
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-[#004646]"
             >
-              Questions
+              Hỏi đáp
             </Link>
             <Link 
-              href="/tags" 
-              className="text-gray-600 hover:text-gray-900"
+              href="/tu-van" 
+              className="text-gray-600 hover:text-[#004646]"
             >
-              Tags
+              Tư vấn
             </Link>
             <Link 
-              href="/users" 
-              className="text-gray-600 hover:text-gray-900"
+              href="/bieu-mau" 
+              className="text-gray-600 hover:text-[#004646]"
             >
-              Users
+              Biểu mẫu
             </Link>
-            <Link
-              href="/questions/ask"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            <Link 
+              href="/luat-su" 
+              className="text-gray-600 hover:text-[#004646]"
             >
-              Ask Question
+              Luật sư
             </Link>
           </nav>
+
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-4 ml-4">
+            <div className="hidden sm:flex items-center space-x-3">
+              <Button variant="default" asChild>
+                <Link href="/login">
+                  Đăng nhập
+                </Link>
+              </Button>
+              <Button variant="secondary" asChild>
+                <Link href="/register">
+                  Đăng ký
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Search */}
+        <div className="lg:hidden -mt-2 pb-2">
+          <Search />
         </div>
       </div>
     </header>

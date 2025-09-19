@@ -31,8 +31,8 @@ export class HttpAuthRepository implements AuthRepository {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await apiClient.get<User>('/auth/me');
-      return response.data;
+      const response = await apiClient.get<{ data: User }>('/auth/me');
+      return response.data.data;
     } catch {
       return null;
     }

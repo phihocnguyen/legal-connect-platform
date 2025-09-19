@@ -34,24 +34,26 @@ public class UserMapper {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
+                .avatar(user.getAvatar())
                 .role(user.getRole())
                 .authProvider(user.getAuthProvider())
                 .build();
     }
 
-    public User createOAuth2User(String email, String name, String providerId) {
+    public User createOAuth2User(String email, String name, String providerId, String picture) {
         return User.builder()
                 .email(email)
                 .fullName(name)
                 .role(User.Role.USER)
                 .authProvider(User.AuthProvider.GOOGLE)
                 .providerId(providerId)
+                .avatar(picture)
                 .isEmailVerified(true)
                 .isEnabled(true)
                 .build();
     }
 
-    public void updateUserFromOAuth2(User existingUser, String name, String providerId) {
+    public void updateUserFromOAuth2(User existingUser, String name, String providerId, String picture) {
         if (existingUser.getAuthProvider() == User.AuthProvider.LOCAL) {
             existingUser.setAuthProvider(User.AuthProvider.GOOGLE);
             existingUser.setProviderId(providerId);
@@ -59,6 +61,9 @@ public class UserMapper {
         }
         if (name != null && !name.isEmpty()) {
             existingUser.setFullName(name);
+        }
+        if (picture != null && !picture.isEmpty()) {
+            existingUser.setAvatar(picture);
         }
     }
 }

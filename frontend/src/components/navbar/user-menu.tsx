@@ -28,7 +28,7 @@ export function UserMenu() {
   const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
+    console.log(user)
   useEffect(() => {
   }, [user, isAuthenticated]);
 
@@ -75,9 +75,9 @@ export function UserMenu() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full cursor-pointer">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+            <AvatarImage src={user.avatar} alt={user.fullName} />
             <AvatarFallback className="bg-[#004646] text-white">
               {getInitials(user.fullName)}
             </AvatarFallback>

@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<void> => {
     await loginUseCase(email, password);
-    // Refresh user data để đảm bảo có thông tin đầy đủ và mới nhất
     await refreshUser();
   };
 

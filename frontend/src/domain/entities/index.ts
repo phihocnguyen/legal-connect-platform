@@ -2,7 +2,7 @@ export interface User {
   id: number;
   email: string;
   fullName: string;
-  avatarUrl?: string;
+  avatar?: string;
   role: UserRole;
   lawyerLicenseNumber?: string;
   lawyerVerified: boolean;

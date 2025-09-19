@@ -3,6 +3,10 @@
 import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+  };
+
   return (
     <div className="space-y-3">
       <div className="relative">
@@ -19,10 +23,8 @@ export function SocialLogin() {
       <div className="grid grid-cols-2 gap-3">
         <Button
           variant="outline"
-          className="w-full"
-          onClick={() => {
-            // TODO: Implement Google login
-          }}
+          className="w-full cursor-pointer"
+          onClick={handleGoogleLogin}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
@@ -47,8 +49,9 @@ export function SocialLogin() {
 
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full cursor-pointer"
           onClick={() => {
+            // TODO: Implement Facebook login
           }}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

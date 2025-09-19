@@ -32,6 +32,9 @@ public class User {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "avatar")
+    private String avatar;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

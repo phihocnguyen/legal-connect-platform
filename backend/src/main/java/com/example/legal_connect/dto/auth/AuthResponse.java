@@ -26,6 +26,9 @@ public class AuthResponse {
     @Schema(description = "User phone number", example = "0123456789")
     private String phoneNumber;
     
+    @Schema(description = "User avatar URL")
+    private String avatar;
+    
     @Schema(description = "User role", example = "USER")
     private User.Role role;
     
@@ -38,6 +41,7 @@ public class AuthResponse {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
+                .avatar(user.getAvatar())
                 .role(user.getRole())
                 .authProvider(user.getAuthProvider())
                 .build();

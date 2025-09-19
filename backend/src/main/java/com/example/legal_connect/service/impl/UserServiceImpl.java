@@ -39,18 +39,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findOrCreateOAuth2User(String email, String name, String providerId) {
+    public User findOrCreateOAuth2User(String email, String name, String providerId, String picture) {
         Optional<User> existingUser = userRepository.findByEmail(email);
         
         if (existingUser.isPresent()) {
             User user = existingUser.get();
             // Update provider info if user exists but was created via local registration
-            userMapper.updateUserFromOAuth2(user, name, providerId);
+            userMapper.updateUserFromOAuth2(user, name, providerId, picture);
             return userRepository.save(user);
         }
 
         // Create new user for OAuth2
-        User newUser = userMapper.createOAuth2User(email, name, providerId);
+        User newUser = userMapper.createOAuth2User(email, name, providerId, picture);
         newUser.setPassword(passwordEncoder.encode("oauth2-user-" + System.currentTimeMillis()));
 
         return userRepository.save(newUser);

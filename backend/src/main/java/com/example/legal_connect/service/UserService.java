@@ -10,8 +10,8 @@ public interface UserService {
     User createUser(RegisterRequest request);
     
     Optional<User> findByEmail(String email);
-    
-    User findOrCreateOAuth2User(String email, String name, String providerId);
-    
+
+    User findOrCreateOAuth2User(String email, String name, String providerId, String picture);
+
     boolean existsByEmail(String email);
 }

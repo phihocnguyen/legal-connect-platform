@@ -1,279 +1,559 @@
+'use client'
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Header } from './components/Header';
-import { MainNavigation } from "@/components/home/main-navigation";
-import { LegalNews } from "@/components/home/legal-news";
-import { RealCases } from "@/components/home/real-cases";
-import Link from 'next/link';
-
-
-
-interface Question {
-  title: string;
-  excerpt: string;
-  tags: string[];
-  stats: {
-    votes: number;
-    answers: number;
-    views: number;
-  };
-  author?: {
-    name: string;
-    avatar: string;
-  };
-  timeAgo?: string;
-}
-
-const FEATURED_QUESTIONS: Question[] = [
+import { useState } from "react";
+import { 
+  ArrowRight, 
+  BookText, 
+  Bot, 
+  ChevronRight, 
+  Clock,
+  Eye,
+  Flame, 
+  MessageCircle, 
+  Scale, 
+  Search,
+  Star,
+  TrendingUp,
+  Users,
+  FileText,
+  Gavel,
+  Building,
+  AlertTriangle,
+  CheckCircle,
+  BarChart3
+} from "lucide-react";
+import Image from "next/image";
+const BREAKING_NEWS = [
   {
-    title: "Quyền lợi người lao động khi đơn phương chấm dứt hợp đồng",
-    excerpt: "Tôi muốn tìm hiểu về các quyền lợi và thủ tục khi người lao động muốn đơn phương chấm dứt hợp đồng lao động trước thời hạn...",
-    tags: ["luật-lao-động", "hợp-đồng", "quyền-lợi"],
-    stats: {
-      votes: 45,
-      answers: 8,
-      views: 1500
-    }
-  },
-  {
-    title: "Thủ tục đăng ký kinh doanh cho công ty khởi nghiệp",
-    excerpt: "Là một startup công nghệ, chúng tôi muốn tìm hiểu về quy trình và yêu cầu pháp lý để đăng ký kinh doanh chính thức...",
-    tags: ["đăng-ký-kinh-doanh", "startup", "thủ-tục-hành-chính"],
-    stats: {
-      votes: 38,
-      answers: 5,
-      views: 1200
-    }
-  },
-  {
-    title: "Quy định về bảo vệ dữ liệu cá nhân trong thương mại điện tử",
-    excerpt: "Công ty chúng tôi đang xây dựng platform TMĐT và cần tư vấn về các quy định pháp lý liên quan đến bảo vệ dữ liệu người dùng...",
-    tags: ["TMĐT", "bảo-vệ-dữ-liệu", "quyền-riêng-tư"],
-    stats: {
-      votes: 52,
-      answers: 7,
-      views: 1800
-    }
-  },
-  {
-    title: "Tính hợp pháp của giao dịch hợp đồng quốc tế",
-    excerpt: "Công ty chúng tôi đang thực hiện giao dịch quốc tế và cần hiểu rõ các yếu tố cần thiết để hợp đồng có hiệu lực pháp lý...",
-    author: {
-      name: "Nguyễn Văn Minh",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=minh"
-    },
-    stats: {
-      votes: 42,
-      answers: 5,
-      views: 1200
-    },
-    tags: ["luật-quốc-tế", "hợp-đồng", "thương-mại"],
-    timeAgo: "2 giờ trước"
-  },
-  {
-    title: "Quyền sở hữu trí tuệ trong phát triển phần mềm",
-    excerpt: "Là một lập trình viên làm việc với dự án mã nguồn mở, tôi cần tư vấn về quyền sở hữu trí tuệ khi đóng góp code...",
-    author: {
-      name: "Trần Văn Hùng",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=hung"
-    },
-    stats: {
-      votes: 38,
-      answers: 3,
-      views: 950
-    },
-    tags: ["sở-hữu-trí-tuệ", "phần-mềm", "mã-nguồn-mở"],
-    timeAgo: "5 giờ trước"
+    id: 1,
+    title: "Bộ Tư pháp ban hành Thông tư 04/2024 về quy định mới trong đăng ký kinh doanh",
+    excerpt: "Thông tư có hiệu lực từ ngày 15/10/2024, đơn giản hóa thủ tục và rút ngắn thời gian xử lý hồ sơ đăng ký kinh doanh xuống còn 3 ngày làm việc...",
+    category: "Doanh nghiệp",
+    publishTime: "2 giờ trước",
+    readTime: "5 phút đọc",
+    views: 2847,
+    isBreaking: true,
+    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&h=300&fit=crop"
   }
 ];
 
-export default function Home() {
+const FEATURED_ARTICLES = [
+  {
+    id: 2,
+    title: "Luật Đất đai 2024: Những thay đổi quan trọng người dân cần biết",
+    excerpt: "Luật Đất đai 2024 chính thức có hiệu lực từ 1/8/2024 với nhiều điểm mới về quyền sử dụng đất, chuyển nhượng và thừa kế...",
+    category: "Đất đai",
+    publishTime: "4 giờ trước",
+    readTime: "8 phút đọc",
+    views: 5432,
+    author: "Luật sư Nguyễn Minh Hạnh",
+    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=300&fit=crop",
+    tags: ["luật-đất-đai", "2024", "quyền-sử-dụng"]
+  },
+  {
+    id: 3,
+    title: "Hướng dẫn thực hiện Nghị định về thuế thu nhập cá nhân từ chuyển nhượng bất động sản",
+    excerpt: "Cục Thuế TP.HCM vừa ban hành văn bản hướng dẫn chi tiết về cách tính và nộp thuế TNCN từ việc chuyển nhượng BĐS theo quy định mới...",
+    category: "Thuế",
+    publishTime: "6 giờ trước",
+    readTime: "6 phút đọc",
+    views: 3241,
+    author: "Luật sư Trần Văn Đức",
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=300&fit=crop",
+    tags: ["thuế", "bất-động-sản", "TNCN"]
+  },
+  {
+    id: 4,
+    title: "Quyền lợi của người lao động khi doanh nghiệp phá sản",
+    excerpt: "Trong bối cảnh nhiều doanh nghiệp gặp khó khăn, người lao động cần hiểu rõ các quyền lợi được pháp luật bảo vệ khi DN phá sản...",
+    category: "Lao động",
+    publishTime: "8 giờ trước",
+    readTime: "7 phút đọc",
+    views: 4156,
+    author: "Luật sư Lê Thị Hương",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=300&fit=crop",
+    tags: ["lao-động", "phá-sản", "quyền-lợi"]
+  }
+];
+
+const LATEST_NEWS = [
+  {
+    id: 5,
+    title: "Tòa án Nhân dân Tối cao ban hành Nghị quyết về xử lý tranh chấp hợp đồng thương mại điện tử",
+    excerpt: "Nghị quyết 02/2024/NQ-HĐTP hướng dẫn các tòa án xử lý tranh chấp phát sinh từ giao dịch TMĐT...",
+    category: "TMĐT",
+    publishTime: "10 giờ trước",
+    readTime: "4 phút đọc",
+    views: 1823,
+    author: "Thẩm phán Nguyễn Văn Tâm"
+  },
+  {
+    id: 6,
+    title: "Quy định mới về bảo vệ dữ liệu cá nhân trong lĩnh vực ngân hàng",
+    excerpt: "Ngân hàng Nhà nước vừa ban hành thông tư quy định chi tiết về việc thu thập, xử lý dữ liệu KH...",
+    category: "Ngân hàng",
+    publishTime: "12 giờ trước",
+    readTime: "5 phút đọc",
+    views: 2156,
+    author: "Luật sư Phạm Thị Lan"
+  },
+  {
+    id: 7,
+    title: "Hướng dẫn thủ tục cấp phép đầu tư cho dự án FDI trong lĩnh vực công nghệ",
+    excerpt: "Bộ Kế hoạch & Đầu tư công bố danh mục ngành nghề ưu tiên đầu tư nước ngoài 2024-2026...",
+    category: "Đầu tư",
+    publishTime: "1 ngày trước",
+    readTime: "6 phút đọc",
+    views: 1745,
+    author: "Luật sư Hoàng Minh Tuấn"
+  },
+  {
+    id: 8,
+    title: "Quy định về trách nhiệm pháp lý của doanh nghiệp trong việc bảo vệ môi trường",
+    excerpt: "Luật Bảo vệ môi trường 2020 quy định rõ các nghĩa vụ và chế tài với DN vi phạm quy định...",
+    category: "Môi trường",
+    publishTime: "1 ngày trước",
+    readTime: "7 phút đọc",
+    views: 2341,
+    author: "Luật sư Bùi Văn Hùng"
+  }
+];
+
+const TRENDING_TOPICS = [
+  { name: "Luật Đất đai 2024", count: 1234, trend: "up" },
+  { name: "Thuế TNCN", count: 987, trend: "up" },
+  { name: "Phá sản doanh nghiệp", count: 654, trend: "up" },
+  { name: "TMĐT", count: 432, trend: "stable" },
+  { name: "Đầu tư nước ngoài", count: 321, trend: "down" }
+];
+
+const EXPERT_OPINIONS = [
+  {
+    id: 1,
+    title: "Phân tích: Tác động của Luật Đất đai 2024 đến thị trường bất động sản",
+    author: "TS. Luật sư Nguyễn Thành Long",
+    role: "Chuyên gia luật Đất đai",
+    publishTime: "1 ngày trước",
+    excerpt: "Luật Đất đai 2024 mang lại nhiều thay đổi tích cực, tạo minh bạch hơn cho thị trường BĐS...",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ThanhLong"
+  },
+  {
+    id: 2,
+    title: "Góc nhìn: Xu hướng tranh chấp lao động trong thời đại số",
+    author: "Luật sư Trần Minh Châu", 
+    role: "Chuyên gia luật Lao động",
+    publishTime: "2 ngày trước",
+    excerpt: "Công nghệ đang thay đổi bản chất của quan hệ lao động, đặt ra những thách thức pháp lý mới...",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=MinhChau"
+  }
+];
+
+const QUICK_STATS = [
+  { label: "Văn bản pháp luật", value: "15,234", icon: FileText, color: "text-blue-600", bg: "bg-blue-100" },
+  { label: "Luật sư tư vấn", value: "2,456", icon: Users, color: "text-green-600", bg: "bg-green-100" },
+  { label: "Câu hỏi đã giải đáp", value: "45,789", icon: MessageCircle, color: "text-purple-600", bg: "bg-purple-100" },
+  { label: "Đánh giá tích cực", value: "98.5%", icon: Star, color: "text-yellow-600", bg: "bg-yellow-100" }
+];
+
+export default function LegalNewsLayout() {
+  const [activeTab, setActiveTab] = useState("all");
+  const primaryColor = "text-teal-600";
+  const primaryBgColor = "bg-teal-600";
+  const primaryHoverBgColor = "hover:bg-teal-700";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      {/* Top Banner */}
-      <div className="bg-[#004646] text-white py-2">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between text-sm">
-            <span>Hotline: 1900 6192</span>
-            <div className="flex items-center space-x-4">
-              <Link href="/login" className="hover:text-emerald-200">Đăng nhập</Link>
-              <Link href="/register" className="hover:text-emerald-200">Đăng ký</Link>
+    <div className="min-h-screen bg-stone-50">
+      {BREAKING_NEWS.map(news => (
+        <div key={news.id} className="bg-red-600 text-white py-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-4">
+              <Badge className="bg-white text-red-600 font-bold px-3 py-1">
+                NÓNG
+              </Badge>
+              <p className="flex-1 text-sm font-medium truncate">
+                {news.title}
+              </p>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" />
             </div>
           </div>
         </div>
-      </div>
+      ))}
 
-      {/* Main Navigation Bar */}
-      <MainNavigation />
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="col-span-3">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Tra cứu nhanh</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Tìm văn bản, tiêu đề..."
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-                <Button className="w-full" variant="default">
-                  Tìm kiếm
-                </Button>
-                <div className="text-sm text-gray-600">
-                  <p>Ví dụ:</p>
-                  <ul className="list-disc pl-4 space-y-1">
-                    <li>Luật Doanh nghiệp 2024</li>
-                    <li>Nghị định về BHXH</li>
-                    <li>Thông tư về thuế TNCN</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Lĩnh vực pháp luật</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>
-                    <Link href="/doanh-nghiep" className="text-gray-700 hover:text-[#004646] flex items-center">
-                      <span className="w-6 text-gray-400">→</span>
-                      Doanh nghiệp
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/lao-dong" className="text-gray-700 hover:text-[#004646] flex items-center">
-                      <span className="w-6 text-gray-400">→</span>
-                      Lao động - Tiền lương
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/thue" className="text-gray-700 hover:text-[#004646] flex items-center">
-                      <span className="w-6 text-gray-400">→</span>
-                      Thuế - Kế toán
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/dat-dai" className="text-gray-700 hover:text-[#004646] flex items-center">
-                      <span className="w-6 text-gray-400">→</span>
-                      Đất đai - Xây dựng
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/hon-nhan" className="text-gray-700 hover:text-[#004646] flex items-center">
-                      <span className="w-6 text-gray-400">→</span>
-                      Hôn nhân & Gia đình
-                    </Link>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <LegalNews />
-          </div>
-
-          {/* Main Content */}
-          <div className="col-span-6">
-            {/* Featured Topics */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Chủ đề được quan tâm</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <h3 className="font-medium mb-2">Quyền lợi người lao động</h3>
-                    <ul className="text-sm space-y-1 text-gray-600">
-                      <li>• Tính BHXH một lần</li>
-                      <li>• Trợ cấp thất nghiệp</li>
-                      <li>• Chế độ thai sản</li>
-                    </ul>
-                  </div>
-                  <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <h3 className="font-medium mb-2">Thành lập doanh nghiệp</h3>
-                    <ul className="text-sm space-y-1 text-gray-600">
-                      <li>• Thủ tục đăng ký</li>
-                      <li>• Giấy phép con</li>
-                      <li>• Thuế ban đầu</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Latest Questions */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Hỏi đáp pháp luật mới</CardTitle>
-                <Button variant="link" className="text-[#004646] hover:text-[#005c5c]">
-                  Xem tất cả →
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {FEATURED_QUESTIONS.map((question, idx) => (
-                    <div key={idx} className="border-b last:border-0 pb-4 last:pb-0">
-                      <Link href={`/questions/${idx + 1}`} className="font-medium hover:text-[#004646] block mb-2">
-                        {question.title}
-                      </Link>
-                      <p className="text-sm text-gray-600 mb-2">{question.excerpt}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
-                          {question.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {question.stats.answers} câu trả lời • {question.stats.views} lượt xem
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
-          <div className="col-span-3">
-            <RealCases />
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Luật sư tiêu biểu</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-200" />
-                    <div>
-                      <p className="font-medium">Ls. Nguyễn Văn A</p>
-                      <p className="text-sm text-gray-600">Công ty Luật ABC</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-200" />
-                    <div>
-                      <p className="font-medium">Ls. Trần Thị B</p>
-                      <p className="text-sm text-gray-600">Văn phòng Luật XYZ</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Stats Bar */}
+      <section className="bg-gradient-to-r from-teal-600 to-teal-700 text-white py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {QUICK_STATS.map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <div className="text-sm opacity-90">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Content */}
+          <div className="lg:col-span-8">
+            {/* Featured Articles */}
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Flame className={primaryColor} />
+                  Tin nổi bật
+                </h2>
+                <div className="flex items-center gap-2">
+                  {["all", "doanh-nghiep", "lao-dong", "dat-dai", "thue"].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === tab 
+                          ? `${primaryBgColor} text-white` 
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {tab === "all" ? "Tất cả" : tab.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                {FEATURED_ARTICLES.slice(0, 2).map(article => (
+                  <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
+                      <Image 
+                        src={article.image} 
+                        alt={article.title}
+                        width={100}
+                        height={100}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 left-4">
+                        <Badge className={`${primaryBgColor} text-white`}>
+                          {article.category}
+                        </Badge>
+                      </div>
+                    </div>
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
+                        {article.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {article.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {article.publishTime}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {article.views.toLocaleString()}
+                          </span>
+                        </div>
+                        <span className="font-medium">{article.readTime}</span>
+                      </div>
+                      {article.author && (
+                        <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">{article.author}</span>
+                          <div className="flex gap-1">
+                            {article.tags?.slice(0, 2).map(tag => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                #{tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+
+            {/* Latest News */}
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Clock className={primaryColor} />
+                Tin mới nhất
+              </h2>
+              <div className="space-y-4">
+                {LATEST_NEWS.map(news => (
+                  <Card key={news.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className={`text-xs ${primaryColor} border-teal-600`}>
+                              {news.category}
+                            </Badge>
+                            <span className="text-xs text-gray-500">{news.publishTime}</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 cursor-pointer transition-colors">
+                            {news.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                            {news.excerpt}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">{news.author}</span>
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {news.views.toLocaleString()}
+                              </span>
+                              <span>{news.readTime}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+
+            {/* Expert Opinions */}
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Users className={primaryColor} />
+                Ý kiến chuyên gia
+              </h2>
+              <div className="grid gap-6">
+                {EXPERT_OPINIONS.map(opinion => (
+                  <Card key={opinion.id} className="hover:shadow-md transition-shadow bg-gradient-to-r from-white to-stone-50">
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        <Image 
+                          src={opinion.avatar} 
+                          alt={opinion.author}
+                          width={100}
+                          height={100}
+                          className="w-16 h-16 rounded-full flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 cursor-pointer transition-colors">
+                            {opinion.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-3">
+                            {opinion.excerpt}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-gray-800">{opinion.author}</span>
+                              <div className="text-xs text-gray-500">{opinion.role}</div>
+                            </div>
+                            <span className="text-xs text-gray-500">{opinion.publishTime}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="space-y-8 sticky top-24">
+              
+              {/* Trending Topics */}
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <TrendingUp className={primaryColor} />
+                    Xu hướng quan tâm
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {TRENDING_TOPICS.map((topic, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-stone-50 cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                          <span className={`text-lg font-bold ${primaryColor}`}>#{i + 1}</span>
+                          <div>
+                            <div className="font-medium text-gray-800 group-hover:text-teal-600 transition-colors">
+                              {topic.name}
+                            </div>
+                            <div className="text-xs text-gray-500">{topic.count} lượt quan tâm</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          {topic.trend === "up" && <TrendingUp className="w-4 h-4 text-green-500" />}
+                          {topic.trend === "down" && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
+                          {topic.trend === "stable" && <div className="w-4 h-4 bg-gray-400 rounded-full" />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <MessageCircle className={primaryColor} />
+                    Tương tác nhanh
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button className={`w-full ${primaryBgColor} ${primaryHoverBgColor} text-white justify-start`}>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Đặt câu hỏi pháp lý
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Bot className="w-4 h-4 mr-2" />
+                    Chat với AI Lawyer
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <BookText className="w-4 h-4 mr-2" />
+                    Tra cứu văn bản
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Gavel className="w-4 h-4 mr-2" />
+                    Tìm luật sư
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Categories */}
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Scale className={primaryColor} />
+                    Lĩnh vực pháp luật
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {[
+                      { name: "Doanh nghiệp", icon: Building, count: 1234 },
+                      { name: "Lao động", icon: Users, count: 987 },
+                      { name: "Đất đai", icon: FileText, count: 654 },
+                      { name: "Thuế", icon: BarChart3, count: 432 },
+                      { name: "Hình sự", icon: AlertTriangle, count: 321 },
+                      { name: "Dân sự", icon: CheckCircle, count: 234 }
+                    ].map((category, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-stone-50 cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                          <category.icon className="w-5 h-5 text-gray-500 group-hover:text-teal-600" />
+                          <span className="font-medium text-gray-700 group-hover:text-teal-600 transition-colors">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">{category.count}</span>
+                          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Newsletter */}
+              <Card className={`border-none shadow-sm bg-gradient-to-br from-teal-50 to-blue-50`}>
+                <CardContent className="p-6 text-center">
+                  <div className={`w-12 h-12 mx-auto mb-4 rounded-full ${primaryBgColor} bg-opacity-10 flex items-center justify-center`}>
+                    <MessageCircle className={`w-6 h-6 ${primaryColor}`} />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    Nhận tin pháp luật
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Đăng ký để nhận những tin tức pháp luật mới nhất qua email
+                  </p>
+                  <div className="space-y-3">
+                    <input 
+                      type="email" 
+                      placeholder="Email của bạn" 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    />
+                    <Button className={`w-full ${primaryBgColor} ${primaryHoverBgColor} text-white text-sm`}>
+                      Đăng ký ngay
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Scale className="w-8 h-8 text-teal-400" />
+                <span className="text-xl font-bold">Legal Connect</span>
+              </div>
+              <p className="text-gray-400 text-sm">
+                Nền tảng tư vấn pháp luật hàng đầu Việt Nam, kết nối bạn với luật sư chuyên nghiệp.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Dịch vụ</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white">Tư vấn pháp luật</a></li>
+                <li><a href="#" className="hover:text-white">Tra cứu văn bản</a></li>
+                <li><a href="#" className="hover:text-white">Hỏi đáp cộng đồng</a></li>
+                <li><a href="#" className="hover:text-white">AI Lawyer</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Lĩnh vực</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white">Luật Doanh nghiệp</a></li>
+                <li><a href="#" className="hover:text-white">Luật Lao động</a></li>
+                <li><a href="#" className="hover:text-white">Luật Đất đai</a></li>
+                <li><a href="#" className="hover:text-white">Luật Thuế</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Liên hệ</h4>
+              <div className="space-y-2 text-sm text-gray-400">
+                <p>📍 123 Đường ABC, Q.1, TP.HCM</p>
+                <p>📞 (028) 3xxx-xxxx</p>
+                <p>✉️ contact@legalconnect.vn</p>
+                <div className="flex gap-4 mt-4">
+                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-teal-700">
+                    <span className="text-xs">f</span>
+                  </div>
+                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-teal-700">
+                    <span className="text-xs">in</span>
+                  </div>
+                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-teal-700">
+                    <span className="text-xs">yt</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-400">
+              © 2024 Legal Connect. Bảo lưu mọi quyền.
+            </p>
+            <div className="flex gap-6 mt-4 md:mt-0">
+              <a href="#" className="text-sm text-gray-400 hover:text-white">Điều khoản sử dụng</a>
+              <a href="#" className="text-sm text-gray-400 hover:text-white">Chính sách bảo mật</a>
+              <a href="#" className="text-sm text-gray-400 hover:text-white">Cookie</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

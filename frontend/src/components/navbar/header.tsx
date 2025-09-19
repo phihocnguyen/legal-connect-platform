@@ -1,10 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { Search } from './search';
-import { Button } from "@/components/ui/button";
+import { UserMenu } from './user-menu';
+import { MobileNav } from './mobile-nav';
 
 export function Header() {
   return (
-    <header className="border-b border-gray-200">
+    <header className="border-b border-gray-200 py-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -20,51 +23,37 @@ export function Header() {
           {/* Main Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
-              href="/van-ban" 
-              className="text-gray-600 hover:text-[#004646]"
+              href="/forum" 
+              className="text-gray-600 hover:text-[#004646] font-medium"
             >
-              Văn bản pháp luật
+              Diễn đàn
             </Link>
             <Link 
-              href="/questions" 
-              className="text-gray-600 hover:text-[#004646]"
+              href="/chat" 
+              className="text-gray-600 hover:text-[#004646] font-medium"
             >
-              Hỏi đáp
+              Trợ lý AI
             </Link>
             <Link 
-              href="/tu-van" 
-              className="text-gray-600 hover:text-[#004646]"
+              href="/pdf-qa" 
+              className="text-gray-600 hover:text-[#004646] font-medium"
             >
-              Tư vấn
+              Hỏi đáp văn bản
             </Link>
             <Link 
-              href="/bieu-mau" 
-              className="text-gray-600 hover:text-[#004646]"
+              href="/tu-van-luat-su" 
+              className="text-gray-600 hover:text-[#004646] font-medium"
             >
-              Biểu mẫu
-            </Link>
-            <Link 
-              href="/luat-su" 
-              className="text-gray-600 hover:text-[#004646]"
-            >
-              Luật sư
+              Tư vấn luật sư
             </Link>
           </nav>
 
-          {/* Auth Buttons */}
+          {/* Auth/User Menu and Mobile Menu */}
           <div className="flex items-center space-x-4 ml-4">
-            <div className="hidden sm:flex items-center space-x-3">
-              <Button variant="default" asChild>
-                <Link href="/login">
-                  Đăng nhập
-                </Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link href="/register">
-                  Đăng ký
-                </Link>
-              </Button>
+            <div className="hidden sm:block">
+              <UserMenu />
             </div>
+            <MobileNav />
           </div>
         </div>
 

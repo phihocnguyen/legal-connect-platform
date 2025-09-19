@@ -9,12 +9,12 @@ export interface ChatRepository {
 }
 
 export interface AuthRepository {
-  login(email: string, password: string): Promise<{ token: string; user: User }>;
+  login(email: string, password: string): Promise<{ user: User }>;
   register(userData: {
     email: string;
     password: string;
     fullName: string;
-  }): Promise<{ token: string; user: User }>;
+  }): Promise<{ user: User }>;
   logout(): Promise<void>;
   getCurrentUser(): Promise<User | null>;
 }

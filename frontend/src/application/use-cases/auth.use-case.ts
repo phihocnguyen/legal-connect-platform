@@ -4,7 +4,7 @@ import { AuthRepository } from '../../domain/interfaces/repositories';
 export class LoginUseCase {
   constructor(private authRepository: AuthRepository) {}
 
-  async execute(email: string, password: string): Promise<{ token: string; user: User }> {
+  async execute(email: string, password: string): Promise<{ user: User }> {
     return this.authRepository.login(email, password);
   }
 }
@@ -16,7 +16,7 @@ export class RegisterUseCase {
     email: string;
     password: string;
     fullName: string;
-  }): Promise<{ token: string; user: User }> {
+  }): Promise<{ user: User }> {
     return this.authRepository.register(data);
   }
 }

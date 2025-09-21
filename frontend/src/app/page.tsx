@@ -13,7 +13,6 @@ import {
   Flame, 
   MessageCircle, 
   Scale, 
-  Search,
   Star,
   TrendingUp,
   Users,
@@ -25,6 +24,7 @@ import {
   BarChart3
 } from "lucide-react";
 import Image from "next/image";
+import LegalDocumentsSection from "@/components/legal-documents-section";
 const BREAKING_NEWS = [
   {
     id: 1,
@@ -200,172 +200,15 @@ export default function LegalNewsLayout() {
           
           {/* Main Content */}
           <div className="lg:col-span-8">
-            {/* Featured Articles */}
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Flame className={primaryColor} />
-                  Tin nổi bật
-                </h2>
-                <div className="flex items-center gap-2">
-                  {["all", "doanh-nghiep", "lao-dong", "dat-dai", "thue"].map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeTab === tab 
-                          ? `${primaryBgColor} text-white` 
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {tab === "all" ? "Tất cả" : tab.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-                {FEATURED_ARTICLES.slice(0, 2).map(article => (
-                  <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
-                    <div className="relative h-48 overflow-hidden">
-                      <Image 
-                        src={article.image} 
-                        alt={article.title}
-                        width={100}
-                        height={100}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <Badge className={`${primaryBgColor} text-white`}>
-                          {article.category}
-                        </Badge>
-                      </div>
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
-                        {article.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                        {article.excerpt}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {article.publishTime}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {article.views.toLocaleString()}
-                          </span>
-                        </div>
-                        <span className="font-medium">{article.readTime}</span>
-                      </div>
-                      {article.author && (
-                        <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">{article.author}</span>
-                          <div className="flex gap-1">
-                            {article.tags?.slice(0, 2).map(tag => (
-                              <Badge key={tag} variant="outline" className="text-xs">
-                                #{tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-
-            {/* Latest News */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Clock className={primaryColor} />
-                Tin mới nhất
-              </h2>
-              <div className="space-y-4">
-                {LATEST_NEWS.map(news => (
-                  <Card key={news.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className={`text-xs ${primaryColor} border-teal-600`}>
-                              {news.category}
-                            </Badge>
-                            <span className="text-xs text-gray-500">{news.publishTime}</span>
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 cursor-pointer transition-colors">
-                            {news.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                            {news.excerpt}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">{news.author}</span>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Eye className="w-3 h-3" />
-                                {news.views.toLocaleString()}
-                              </span>
-                              <span>{news.readTime}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-
-            {/* Expert Opinions */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Users className={primaryColor} />
-                Ý kiến chuyên gia
-              </h2>
-              <div className="grid gap-6">
-                {EXPERT_OPINIONS.map(opinion => (
-                  <Card key={opinion.id} className="hover:shadow-md transition-shadow bg-gradient-to-r from-white to-stone-50">
-                    <CardContent className="p-6">
-                      <div className="flex gap-4">
-                        <Image 
-                          src={opinion.avatar} 
-                          alt={opinion.author}
-                          width={100}
-                          height={100}
-                          className="w-16 h-16 rounded-full flex-shrink-0"
-                        />
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 cursor-pointer transition-colors">
-                            {opinion.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-3">
-                            {opinion.excerpt}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-medium text-gray-800">{opinion.author}</span>
-                              <div className="text-xs text-gray-500">{opinion.role}</div>
-                            </div>
-                            <span className="text-xs text-gray-500">{opinion.publishTime}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
+            
+            {/* Legal Documents & Categories Section - NEW */}
+            <LegalDocumentsSection />
           </div>
 
           {/* Sidebar */}
           <aside className="lg:col-span-4">
             <div className="space-y-8 sticky top-24">
-              
+
               {/* Trending Topics */}
               <Card className="border-none shadow-sm">
                 <CardHeader>

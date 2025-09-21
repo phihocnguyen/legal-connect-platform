@@ -31,6 +31,9 @@ public class Conversation {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

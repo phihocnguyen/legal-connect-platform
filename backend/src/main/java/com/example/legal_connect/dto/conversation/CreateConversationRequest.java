@@ -20,5 +20,7 @@ public class CreateConversationRequest {
     @NotBlank(message = "Title is required")
     private String title;
     
+    private String summary;
+    
     private String initialMessage;
 }

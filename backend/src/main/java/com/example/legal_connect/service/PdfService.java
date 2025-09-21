@@ -8,7 +8,7 @@ public interface PdfService {
     /**
      * Upload PDF file and create a conversation
      */
-    PdfUploadResponse uploadPdfAndCreateConversation(MultipartFile file, String title, Long userId);
+    PdfUploadResponse uploadPdfAndCreateConversation(MultipartFile file, String title, String summary, Long userId);
     
     /**
      * Get PDF document for a conversation

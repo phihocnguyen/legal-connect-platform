@@ -4,8 +4,8 @@ import { PdfRepository } from '../../domain/interfaces/repositories';
 export class UploadPdfUseCase {
   constructor(private pdfRepository: PdfRepository) {}
 
-  async execute(file: File, title: string): Promise<PdfUploadResult> {
-    return this.pdfRepository.uploadPdf(file, title);
+  async execute(file: File, title: string, summary?: string): Promise<PdfUploadResult> {
+    return this.pdfRepository.uploadPdf(file, title, summary);
   }
 }
 

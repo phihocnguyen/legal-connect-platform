@@ -40,7 +40,7 @@ public class PdfServiceImpl implements PdfService {
     private long maxFileSize;
 
     @Override
-    public PdfUploadResponse uploadPdfAndCreateConversation(MultipartFile file, String title, Long userId) {
+    public PdfUploadResponse uploadPdfAndCreateConversation(MultipartFile file, String title, String summary, Long userId) {
         log.info("Uploading PDF file for user: {}, title: {}", userId, title);
         
         try {
@@ -49,11 +49,12 @@ public class PdfServiceImpl implements PdfService {
                 return PdfUploadResponse.error("Invalid PDF file");
             }
 
-            // Create conversation first
+            // Create conversation first with summary
             Conversation conversation = Conversation.builder()
                     .userId(userId)
                     .type(Conversation.ConversationType.PDF_QA)
                     .title(title)
+                    .summary(summary)
                     .build();
             
             conversation = conversationRepository.save(conversation);

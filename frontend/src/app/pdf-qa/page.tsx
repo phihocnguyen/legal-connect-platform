@@ -4,9 +4,11 @@ import { PdfViewer } from '@/components/pdf/pdf-viewer';
 import { NotebookChat } from '@/components/pdf/notebook-chat';
 import { DocumentUpload } from '@/components/pdf/document-upload';
 import { ConversationSidebar } from '@/components/pdf/conversation-sidebar';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 import { useState, useCallback, useEffect } from 'react';
 import { usePdfCases } from '@/hooks/use-pdf-cases';
 import { PdfConversation } from '@/domain/entities';
+import { toast } from 'sonner';
 
 interface PdfFile {
   url: string;
@@ -22,6 +24,10 @@ export default function PdfQAPage() {
   const [activeConversationId, setActiveConversationId] = useState<number>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<number | null>(null);
 
   const {
     uploadPdf,
@@ -44,10 +50,52 @@ export default function PdfQAPage() {
     }
   }, [getConversations]);
 
-  // Load conversations on component mount
+  const handleSelectConversation = useCallback(async (conversationId: number) => {
+    try {
+      const conversation = await getConversationWithDetails(conversationId);
+      setActiveConversationId(conversationId);
+      
+      // Set PDF file from conversation with summary from DB
+      if (conversation.pdfDocument) {
+        setPdfFile({
+          url: getPdfViewUrl(conversationId),
+          name: conversation.pdfDocument.originalFileName,
+          conversationId: conversationId,
+          summary: conversation.summary, // Get summary from DB
+          fileId: undefined // fileId is not stored in DB, only used during upload
+        });
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    }
+  }, [getConversationWithDetails, getPdfViewUrl]);
+
+  // Load conversations on component mount and restore last active conversation
   useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+    const initializePage = async () => {
+      await loadConversations();
+      
+      // Try to restore last active conversation from localStorage
+      const lastActiveConversation = localStorage.getItem('lastActiveConversationId');
+      if (lastActiveConversation) {
+        const conversationId = parseInt(lastActiveConversation, 10);
+        if (!isNaN(conversationId)) {
+          await handleSelectConversation(conversationId);
+        }
+      }
+    };
+    
+    initializePage();
+  }, [loadConversations, handleSelectConversation]);
+
+  // Save active conversation to localStorage
+  useEffect(() => {
+    if (activeConversationId) {
+      localStorage.setItem('lastActiveConversationId', activeConversationId.toString());
+    } else {
+      localStorage.removeItem('lastActiveConversationId');
+    }
+  }, [activeConversationId]);
 
   const handleFileSelect = async (url: string, file: File) => {
     setLoading(true);
@@ -65,9 +113,9 @@ export default function PdfQAPage() {
       const summaryResult = await getPdfSummary(pythonResult.file_id, 200);
       console.log('Summary result:', summaryResult);
       
-      // Step 3: Upload to Spring Boot API and create conversation
-      console.log('Creating conversation in Spring Boot...');
-      const result = await uploadPdf(file, file.name.replace('.pdf', ''));
+      // Step 3: Upload to Spring Boot API and create conversation with summary
+      console.log('Creating conversation in Spring Boot with summary...');
+      const result = await uploadPdf(file, file.name.replace('.pdf', ''), summaryResult.summary);
       
       if (result.success && result.conversation) {
         // Set PDF file with all information
@@ -119,45 +167,41 @@ export default function PdfQAPage() {
     setActiveConversationId(undefined);
   };
 
-  const handleSelectConversation = async (conversationId: number) => {
-    try {
-      const conversation = await getConversationWithDetails(conversationId);
-      setActiveConversationId(conversationId);
-      
-      // Set PDF file from conversation
-      if (conversation.pdfDocument) {
-        setPdfFile({
-          url: getPdfViewUrl(conversationId),
-          name: conversation.pdfDocument.originalFileName,
-          conversationId: conversationId
-        });
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-    }
-  };
-
   const handleNewConversation = useCallback(() => {
     // Reset to upload state
     setPdfFile(null);
     setActiveConversationId(undefined);
   }, []);
 
-  const handleDeleteConversation = useCallback(async (id: number) => {
+  const handleDeleteConversation = useCallback((id: number) => {
+    setConversationToDelete(id);
+    setShowDeleteModal(true);
+  }, []);
+
+  const confirmDeleteConversation = useCallback(async () => {
+    if (!conversationToDelete) return;
+    
     try {
-      await deleteConversation(id);
+      await deleteConversation(conversationToDelete);
+      
+      // Show success toast
+      toast.success('Conversation deleted successfully');
+      
       // Refresh conversations list
       await loadConversations();
       
       // Clear active conversation if it was deleted
-      if (activeConversationId === id) {
+      if (activeConversationId === conversationToDelete) {
         setPdfFile(null);
         setActiveConversationId(undefined);
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
+      toast.error('Failed to delete conversation');
+    } finally {
+      setConversationToDelete(null);
     }
-  }, [activeConversationId, deleteConversation, loadConversations]);
+  }, [conversationToDelete, deleteConversation, loadConversations, activeConversationId]);
 
   // Convert PdfConversation to legacy Conversation interface for sidebar
   const legacyConversations = conversations.map(conv => ({
@@ -252,6 +296,21 @@ export default function PdfQAPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setConversationToDelete(null);
+        }}
+        onConfirm={confirmDeleteConversation}
+        title="Delete Conversation"
+        message="Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently lost."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 }

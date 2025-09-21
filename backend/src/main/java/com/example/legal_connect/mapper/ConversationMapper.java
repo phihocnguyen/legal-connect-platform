@@ -24,6 +24,7 @@ public class ConversationMapper {
                 .userId(conversation.getUserId())
                 .type(conversation.getType())
                 .title(conversation.getTitle())
+                .summary(conversation.getSummary())
                 .createdAt(conversation.getCreatedAt())
                 .updatedAt(conversation.getUpdatedAt())
                 .messageCount(conversation.getMessages() != null ? conversation.getMessages().size() : 0)

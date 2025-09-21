@@ -30,9 +30,11 @@ public class PdfController {
             @RequestParam("file") MultipartFile file,
             @Parameter(description = "Title for the conversation")
             @RequestParam("title") String title,
+            @Parameter(description = "Summary of the PDF content")
+            @RequestParam(value = "summary", required = false) String summary,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, userPrincipal.getId());
+        PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, userPrincipal.getId());
         
         if (response.isSuccess()) {
             return ResponseEntity.ok(response);

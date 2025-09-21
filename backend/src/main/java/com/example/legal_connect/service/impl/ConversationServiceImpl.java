@@ -33,6 +33,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .userId(userId)
                 .type(request.getType())
                 .title(request.getTitle())
+                .summary(request.getSummary())
                 .build();
         
         conversation = conversationRepository.save(conversation);

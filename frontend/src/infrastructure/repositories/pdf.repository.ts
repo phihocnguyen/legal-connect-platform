@@ -75,10 +75,13 @@ export class HttpPdfRepository implements PdfRepository {
   private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
   private pythonApiURL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8000';
 
-  async uploadPdf(file: File, title: string): Promise<PdfUploadResult> {
+  async uploadPdf(file: File, title: string, summary?: string): Promise<PdfUploadResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
+    if (summary) {
+      formData.append('summary', summary);
+    }
 
     const response = await apiClient.post<ApiPdfUploadResult>('/pdf/upload', formData, {
       headers: {

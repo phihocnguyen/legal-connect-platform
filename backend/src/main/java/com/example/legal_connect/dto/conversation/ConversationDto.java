@@ -18,6 +18,7 @@ public class ConversationDto {
     private Long userId;
     private ConversationType type;
     private String title;
+    private String summary;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<MessageDto> messages;

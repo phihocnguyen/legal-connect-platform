@@ -52,7 +52,7 @@ export interface PostRepository {
 }
 
 export interface PdfRepository {
-  uploadPdf(file: File, title: string): Promise<PdfUploadResult>;
+  uploadPdf(file: File, title: string, summary?: string): Promise<PdfUploadResult>;
   getConversations(): Promise<PdfConversation[]>;
   getConversation(id: number): Promise<PdfConversation>;
   getConversationWithDetails(id: number): Promise<PdfConversation>;

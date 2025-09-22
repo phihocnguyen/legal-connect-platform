@@ -197,6 +197,16 @@ export default function SearchPage() {
     return { __html: highlightedText };
   };
 
+  // Check if text contains any search terms (for highlighting validation)
+  const hasHighlight = (text: string, query: string): boolean => {
+    if (!query.trim()) return false;
+    
+    const terms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+    const textLower = text.toLowerCase();
+    
+    return terms.some(term => textLower.includes(term));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -378,62 +388,77 @@ export default function SearchPage() {
                   </CardContent>
                 </Card>
               ) : (
-                currentPageDocuments.map((doc) => (
-                  <Card key={doc._id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            <span dangerouslySetInnerHTML={highlightText(doc.title, query)} />
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                            <div className="flex items-center gap-1">
-                              <FileText className="w-4 h-4" />
-                              <span>{doc.so_hieu}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Building2 className="w-4 h-4" />
-                              <span>{doc.noi_ban_hanh}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>{formatVietnameseDate(doc.ngay_ban_hanh)}</span>
+                currentPageDocuments.map((doc) => {
+                  // Check if document has any visible highlights
+                  const hasAnyHighlight = query.trim() && (
+                    hasHighlight(doc.title, query) ||
+                    hasHighlight(doc.cleaned_content || '', query) ||
+                    hasHighlight(doc.so_hieu, query) ||
+                    hasHighlight(doc.noi_ban_hanh, query)
+                  );
+
+                  // If searching but no highlights, skip this document
+                  if (query.trim() && !hasAnyHighlight) {
+                    return null;
+                  }
+
+                  return (
+                    <Card key={doc._id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              <span dangerouslySetInnerHTML={highlightText(doc.title, query)} />
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                              <div className="flex items-center gap-1">
+                                <FileText className="w-4 h-4" />
+                                <span dangerouslySetInnerHTML={highlightText(doc.so_hieu, query)} />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Building2 className="w-4 h-4" />
+                                <span dangerouslySetInnerHTML={highlightText(doc.noi_ban_hanh, query)} />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{formatVietnameseDate(doc.ngay_ban_hanh)}</span>
+                              </div>
                             </div>
                           </div>
+                          <div className="flex items-center gap-2 ml-4">
+                            <Badge variant="secondary">{doc.loai_van_ban}</Badge>
+                            <Badge variant={doc.tinh_trang === 'Còn hiệu lực' ? 'default' : 'outline'}>
+                              {doc.tinh_trang}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <Badge variant="secondary">{doc.loai_van_ban}</Badge>
-                          <Badge variant={doc.tinh_trang === 'Còn hiệu lực' ? 'default' : 'outline'}>
-                            {doc.tinh_trang}
-                          </Badge>
-                        </div>
-                      </div>
 
-                      {doc.cleaned_content && (
-                        <div className="mb-4">
-                          <p className="text-gray-700 line-clamp-3">
-                            <span dangerouslySetInnerHTML={highlightText(
-                              doc.cleaned_content.substring(0, 200) + (doc.cleaned_content.length > 200 ? '...' : ''),
-                              query
-                            )} />
-                          </p>
-                        </div>
-                      )}
+                        {doc.cleaned_content && (
+                          <div className="mb-4">
+                            <p className="text-gray-700 line-clamp-3">
+                              <span dangerouslySetInnerHTML={highlightText(
+                                doc.cleaned_content.substring(0, 200) + (doc.cleaned_content.length > 200 ? '...' : ''),
+                                query
+                              )} />
+                            </p>
+                          </div>
+                        )}
 
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
-                          Người ký: <span className="font-medium">{doc.nguoi_ky}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-gray-500">
+                            Người ký: <span className="font-medium">{doc.nguoi_ky}</span>
+                          </div>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={doc.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                              <ExternalLink className="w-4 h-4" />
+                              Xem chi tiết
+                            </a>
+                          </Button>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={doc.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-                            <ExternalLink className="w-4 h-4" />
-                            Xem chi tiết
-                          </a>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                }).filter(Boolean)
               )}
               </div>
               

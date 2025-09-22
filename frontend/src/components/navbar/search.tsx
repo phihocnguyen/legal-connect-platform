@@ -1,27 +1,74 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search as SearchIcon } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
 export function Search() {
+  const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const router = useRouter();
+
+  // Debounced search effect
+  useEffect(() => {
+    if (query.trim()) {
+      setIsSearching(true);
+      const searchTimeout = setTimeout(() => {
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        setIsSearching(false);
+      }, 800); // 800ms delay for header search
+
+      return () => {
+        clearTimeout(searchTimeout);
+        setIsSearching(false);
+      };
+    }
+  }, [query, router]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      setIsSearching(true);
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      setTimeout(() => setIsSearching(false), 300);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (query.trim()) {
+        setIsSearching(true);
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        setTimeout(() => setIsSearching(false), 300);
+      }
+    }
+  };
+
   return (
     <div className="flex-1 max-w-2xl mx-8">
-      <div className="relative">
+      <form onSubmit={handleSearch} className="relative">
         <input
           type="text"
-          placeholder="Search legal questions..."
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          placeholder="Tìm kiếm văn bản pháp luật..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg
-            className="h-5 w-5 text-gray-400"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <SearchIcon className="h-5 w-5 text-gray-400" />
         </div>
-      </div>
+        {isSearching && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <LoadingSpinner size="sm" showText={false} />
+          </div>
+        )}
+        <button type="submit" className="sr-only">
+          Tìm kiếm
+        </button>
+      </form>
     </div>
   );
 }

@@ -20,6 +20,8 @@ import {
   CheckCircle
 } from "lucide-react";
 import LegalDocumentsSection from "@/components/legal-documents-section";
+import useSockJsStomp from "@/hooks/use-websocket-cases";
+import { useAuth } from "@/contexts/auth-context";
 const BREAKING_NEWS = [
   {
     id: 1,
@@ -36,7 +38,25 @@ const BREAKING_NEWS = [
 export default function LegalNewsLayout() {
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const {user} = useAuth()
+  const { connected, connect, disconnect, subscribe, send } = useSockJsStomp({
+    url: 'http://localhost:8080/ws',
+    reconnectDelay: 5000,
+  });
+
+  useEffect(() => {
+    async function checkAuth() {
+      if(user && !connected) connect()
+    }
+    checkAuth();
+  }, [user, connect, connected]);
+
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -50,6 +70,7 @@ export default function LegalNewsLayout() {
     };
     loadData();
   }, []);
+
 
   const totalDocuments = documents.length;
   const uniqueAuthorities = new Set(documents.map(doc => doc.noi_ban_hanh)).size;

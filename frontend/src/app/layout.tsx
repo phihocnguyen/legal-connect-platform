@@ -5,6 +5,7 @@ import { Header } from "@/components/navbar/header";
 import { AuthProvider } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Toaster } from "@/components/ui/sonner";
+import WebSocketProvider from "@/components/web-socket-provider";
 
 export const metadata: Metadata = {
   title: "Legal Connect - Nền tảng tư vấn pháp lý",
@@ -21,12 +22,14 @@ export default function RootLayout({
       <body className="font-alex antialiased">
         <AuthProvider>
           <AuthGuard>
-            <div className="flex min-h-screen flex-col">
+            <WebSocketProvider>
+              <div className="flex min-h-screen flex-col">
               <Header />
               <main className="flex-1">
                 {children}
               </main>
             </div>
+            </WebSocketProvider>
           </AuthGuard>
           <Toaster />
         </AuthProvider>

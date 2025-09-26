@@ -7,18 +7,36 @@ import {
   StompHeaders,
   Frame,
 } from '@stomp/stompjs';
+import { apiClient } from '@/lib/axiosInstance';
 
 interface UseSockJsStompOptions {
-  url: string;
+  url?: string;
   onMessage?: (message: IMessage) => void;
   headers?: StompHeaders;
   reconnectDelay?: number;
 }
 
-interface UseSockJsStompResult {
+type User =  {
+  userId: string;
+  userName: string;
+  userType: string;
+  avatar: string;
+  online: boolean;
+  lastSeen: string;
+  sessionId: string
+}
+
+interface OnlineUser {
+  users: User[];
+  lawyers: User[];
+  totalOnline: number
+}
+
+export interface UseSockJsStompResult {
   connected: boolean;
   connect: () => void;
   disconnect: () => void;
+  getOnlineUsers : () => Promise<OnlineUser>;
   subscribe: (
     destination: string,
     callback: (message: IMessage) => void,
@@ -33,7 +51,7 @@ interface UseSockJsStompResult {
 }
 
 export default function useSockJsStomp({
-  url,
+  url = '',
   onMessage,
   headers = {},
   reconnectDelay = 5000,
@@ -99,6 +117,12 @@ export default function useSockJsStomp({
     setConnected(false);
   }, []);
 
+
+  const getOnlineUsers = useCallback(async (): Promise<OnlineUser> => {
+    const response = await apiClient.get('/chat/online-users');
+    return response.data as OnlineUser;
+  }, []);
+
   const subscribe = useCallback(
     (
       destination: string,
@@ -144,6 +168,7 @@ export default function useSockJsStomp({
     connected,
     connect,
     disconnect,
+    getOnlineUsers,
     subscribe,
     send,
     client: clientRef.current,

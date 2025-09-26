@@ -37,7 +37,7 @@ public class WebSocketEventListener {
             String userId = userPrincipal.getId().toString();
             String userName = userPrincipal.getFullName();
             String userType = userPrincipal.getRole().name();
-            String avatar = null;
+            String avatar = userPrincipal.getAvatar();
             
             headerAccessor.getSessionAttributes().put("userId", userId);
             headerAccessor.getSessionAttributes().put("userName", userName);

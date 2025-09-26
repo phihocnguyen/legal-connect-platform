@@ -18,6 +18,7 @@ public class UserPrincipal implements UserDetails {
     private String email;
     private String password;
     private String fullName;
+    private String avatar;
     private User.Role role;
     private Boolean isEnabled;
     private Boolean isEmailVerified;
@@ -28,6 +29,7 @@ public class UserPrincipal implements UserDetails {
                 user.getEmail(),
                 user.getPassword(),
                 user.getFullName(),
+                user.getAvatar(),
                 user.getRole(),
                 user.getIsEnabled(),
                 user.getIsEmailVerified()

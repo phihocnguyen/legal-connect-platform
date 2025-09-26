@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/", "/docs", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/ws/**").authenticated()
+                .requestMatchers("/api/chat/online-users").permitAll()
                 .requestMatchers("/api/chat/**").authenticated()
                 .anyRequest().authenticated()
             )

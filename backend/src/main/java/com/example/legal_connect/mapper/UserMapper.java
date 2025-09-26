@@ -66,4 +66,47 @@ public class UserMapper {
             existingUser.setAvatar(picture);
         }
     }
+
+    /**
+     * Helper method to get display name from User entity
+     */
+    public String getDisplayName(User user) {
+        if (user != null) {
+            if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) {
+                return user.getFullName();
+            }
+            if (user.getEmail() != null) {
+                return user.getEmail().split("@")[0]; // Use part before @ as display name
+            }
+        }
+        return "Unknown User";
+    }
+
+    /**
+     * Helper method to get role string from User entity
+     */
+    public String getRoleString(User user) {
+        if (user != null && user.getRole() != null) {
+            return user.getRole().name().toLowerCase();
+        }
+        return "user";
+    }
+
+    /**
+     * Helper method to get formatted role display name
+     */
+    public String getRoleDisplayName(User user) {
+        if (user != null && user.getRole() != null) {
+            switch (user.getRole()) {
+                case ADMIN:
+                    return "Quản trị viên";
+                case LAWYER:
+                    return "Luật sư";
+                case USER:
+                default:
+                    return "Người dùng";
+            }
+        }
+        return "Người dùng";
+    }
 }

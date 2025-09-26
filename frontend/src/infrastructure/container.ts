@@ -19,6 +19,19 @@ import {
   CreatePostUseCase,
   GetPostsUseCase,
   VotePostUseCase,
+  GetAllCategoriesUseCase,
+  GetCategoryBySlugUseCase,
+  GetAllPostsUseCase,
+  GetPostsByCategoryUseCase,
+  SearchPostsUseCase,
+  SearchPostsByCategoryUseCase,
+  GetPostByIdUseCase,
+  CreatePostNewUseCase,
+  UpdatePostUseCase,
+  DeletePostUseCase,
+  GetRepliesByPostUseCase,
+  AddReplyUseCase,
+  DeleteReplyUseCase,
 } from '../application/use-cases/post.use-case';
 import { 
   UploadPdfUseCase, 
@@ -109,6 +122,60 @@ import {
     this.useCases.set(
       'VotePostUseCase',
       new VotePostUseCase(postRepo)
+    );
+
+    // New Forum use cases
+    this.useCases.set(
+      'GetAllCategoriesUseCase',
+      new GetAllCategoriesUseCase(postRepo)
+    );
+    this.useCases.set(
+      'GetCategoryBySlugUseCase',
+      new GetCategoryBySlugUseCase(postRepo)
+    );
+    this.useCases.set(
+      'GetAllPostsUseCase',
+      new GetAllPostsUseCase(postRepo)
+    );
+    this.useCases.set(
+      'GetPostsByCategoryUseCase',
+      new GetPostsByCategoryUseCase(postRepo)
+    );
+    this.useCases.set(
+      'SearchPostsUseCase',
+      new SearchPostsUseCase(postRepo)
+    );
+    this.useCases.set(
+      'SearchPostsByCategoryUseCase',
+      new SearchPostsByCategoryUseCase(postRepo)
+    );
+    this.useCases.set(
+      'GetPostByIdUseCase',
+      new GetPostByIdUseCase(postRepo)
+    );
+    this.useCases.set(
+      'CreatePostNewUseCase',
+      new CreatePostNewUseCase(postRepo)
+    );
+    this.useCases.set(
+      'UpdatePostUseCase',
+      new UpdatePostUseCase(postRepo)
+    );
+    this.useCases.set(
+      'DeletePostUseCase',
+      new DeletePostUseCase(postRepo)
+    );
+    this.useCases.set(
+      'GetRepliesByPostUseCase',
+      new GetRepliesByPostUseCase(postRepo)
+    );
+    this.useCases.set(
+      'AddReplyUseCase',
+      new AddReplyUseCase(postRepo)
+    );
+    this.useCases.set(
+      'DeleteReplyUseCase',
+      new DeleteReplyUseCase(postRepo)
     );
 
     // PDF use cases

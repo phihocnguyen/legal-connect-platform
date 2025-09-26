@@ -3,6 +3,11 @@ import {
   ChatConversation, 
   Message, 
   Post, 
+  PostDto,
+  PostCreateDto,
+  PostCategoryDto,
+  PostReplyDto,
+  AddReplyDto,
   PdfConversation, 
   PdfMessage, 
   PdfUploadResult,
@@ -30,6 +35,7 @@ export interface AuthRepository {
 }
 
 export interface PostRepository {
+  // Legacy methods for compatibility
   getPosts(params: {
     category?: string;
     page?: number;
@@ -49,6 +55,62 @@ export interface PostRepository {
   updatePost(id: string, data: Partial<Post>): Promise<Post>;
   deletePost(id: string): Promise<void>;
   votePost(id: string, voteType: 1 | -1): Promise<Post>;
+
+  // New Forum API methods matching backend
+  getAllCategories(): Promise<PostCategoryDto[]>;
+  getCategoryBySlug(slug: string): Promise<PostCategoryDto>;
+  
+  getAllPosts(params: { page?: number; size?: number; sort?: string }): Promise<{
+    content: PostDto[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+  }>;
+  
+  getPostsByCategory(
+    categorySlug: string, 
+    params: { page?: number; size?: number; sort?: string }
+  ): Promise<{
+    content: PostDto[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+  }>;
+  
+  searchPosts(
+    keyword: string, 
+    params: { page?: number; size?: number; sort?: string }
+  ): Promise<{
+    content: PostDto[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+  }>;
+  
+  searchPostsByCategory(
+    keyword: string,
+    categorySlug: string, 
+    params: { page?: number; size?: number; sort?: string }
+  ): Promise<{
+    content: PostDto[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+  }>;
+  
+  getPostById(id: number): Promise<PostDto>;
+  createPostNew(data: PostCreateDto): Promise<PostDto>;
+  updatePostNew(id: number, data: PostCreateDto): Promise<PostDto>;
+  deletePostNew(id: number): Promise<void>;
+
+  // Replies
+  getRepliesByPost(postId: number): Promise<PostReplyDto[]>;
+  addReply(postId: number, data: AddReplyDto): Promise<PostReplyDto>;
+  deleteReply(replyId: number): Promise<void>;
 }
 
 export interface PdfRepository {

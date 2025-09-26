@@ -10,6 +10,55 @@ export interface User {
 
 export type UserRole = 'user' | 'lawyer' | 'admin';
 
+// Forum Post interfaces matching backend DTOs
+export interface PostDto {
+  id: number;
+  title: string;
+  content: string;
+  authorId: number;
+  authorName: string;
+  categoryId: number;
+  categoryName: string;
+  categorySlug: string;
+  viewCount: number;
+  replyCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostCreateDto {
+  title: string;
+  content: string;
+  categoryId: number;
+}
+
+export interface PostCategoryDto {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  postCount?: number;
+}
+
+export interface PostReplyDto {
+  id: number;
+  content: string;
+  authorId: number;
+  authorName: string;
+  postId: number;
+  parentId?: number;
+  createdAt: string;
+  updatedAt: string;
+  children?: PostReplyDto[];
+}
+
+export interface AddReplyDto {
+  content: string;
+  parentId?: number;
+}
+
+// Keep legacy interfaces for compatibility
 export interface Post {
   id: number;
   title: string;
@@ -60,6 +109,7 @@ export interface PdfConversation {
   userId: number;
   type: 'PDF_QA' | 'QA';
   title: string;
+  summary?: string;
   createdAt: Date;
   updatedAt: Date;
   messageCount: number;

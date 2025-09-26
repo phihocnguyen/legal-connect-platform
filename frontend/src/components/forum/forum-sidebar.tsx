@@ -78,28 +78,6 @@ export function ForumSidebar() {
         </div>
       </Card>
 
-      {/* Luật sư trực tuyến */}
-      <Card className="p-4">
-        <h3 className="font-semibold mb-3">Luật sư đang trực tuyến</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-[#004646]">LS. Nguyễn Văn A</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-[#004646]">LS. Trần Thị B</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-[#004646]">LS. Phạm Văn C</span>
-          </div>
-        </div>
-        <div className="mt-3 text-xs text-gray-500">
-          3 luật sư đang sẵn sàng tư vấn
-        </div>
-      </Card>
-
       {/* Tags phổ biến */}
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Tags phổ biến</h3>

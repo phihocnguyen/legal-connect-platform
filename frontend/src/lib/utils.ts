@@ -8,7 +8,6 @@ export function cn(...inputs: ClassValue[]) {
 export function parseVietnameseDate(dateString: string): Date | null {
   if (!dateString) return null;
   
-  // Handle format like "14/07/2017"
   const parts = dateString.split('/');
   if (parts.length === 3) {
     const day = parseInt(parts[0], 10);

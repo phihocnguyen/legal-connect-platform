@@ -1,6 +1,13 @@
+'use client'
 import { Card } from "@/components/ui/card";
-
+import { OnlineUserList } from "./online-users";
+import useOnlineUserStore from "@/stores/online-user-store";
+import { useEffect } from "react";
+import { useWebSocketStore } from "@/stores/web-socket-store";
 export function ForumSidebar() {
+  const {fetchOnlineUsers, onlineUsers, loading, error} = useOnlineUserStore()
+  const {connected} = useWebSocketStore()
+  const getOnlineUsers = useWebSocketStore((s) => s.getOnlineUsers);
   const popularTopics = [
     "Thủ tục ly hôn thuận tình",
     "Tranh chấp đất đai",
@@ -8,6 +15,10 @@ export function ForumSidebar() {
     "Bảo vệ quyền lợi người lao động",
     "Thành lập doanh nghiệp"
   ];
+
+  useEffect(() => {
+    if(connected) fetchOnlineUsers(getOnlineUsers);
+  }, [connected, fetchOnlineUsers, getOnlineUsers]);
 
   const activeCategories = [
     { name: "Luật Dân sự", posts: 156 },
@@ -19,7 +30,7 @@ export function ForumSidebar() {
 
   return (
     <div className="space-y-6">
-      {/* Chủ đề phổ biến */}
+      <OnlineUserList userList={onlineUsers}/>
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Chủ đề phổ biến</h3>
         <ul className="space-y-2">

@@ -23,7 +23,6 @@ export default function ForumPage() {
   const { getAllCategories, getAllPosts } = usePostUseCases();
   const { startLoading, stopLoading, isLoading } = useLoadingState();
 
-  // Only stop loading when BOTH categories and posts are loaded
   const isDataLoaded = categoriesLoaded && postsLoaded;
 
   useEffect(() => {
@@ -39,7 +38,6 @@ export default function ForumPage() {
       setCategoriesLoaded(false);
       setPostsLoaded(false);
 
-      // Load categories
       const categoriesPromise = getAllCategories().then(data => {
         setCategories(data);
         setCategoriesLoaded(true);
@@ -124,15 +122,13 @@ export default function ForumPage() {
                 name={category.name}
                 description={category.description || ''}
                 icon={category.icon || '⚖️'}
-                threads={category.postCount || 0}
-                posts={category.postCount || 0}
+                threads={category.threadsCount || 0}
+                posts={category.postsCount || 0}
               />
             ))}
           </div>
           <ForumStats />
         </div>
-
-        {/* Sidebar */}
         <div className="w-80">
           <ForumSidebar />
         </div>

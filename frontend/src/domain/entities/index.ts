@@ -10,20 +10,49 @@ export interface User {
 
 export type UserRole = 'user' | 'lawyer' | 'admin';
 
-// Forum Post interfaces matching backend DTOs
+
 export interface PostDto {
   id: number;
   title: string;
   content: string;
-  authorId: number;
-  authorName: string;
-  categoryId: number;
-  categoryName: string;
-  categorySlug: string;
-  viewCount: number;
+  category: {
+    id: number;
+    slug: string;
+    name: string;
+    description?: string;
+    icon: string;
+    displayOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    threadsCount?: number;
+    postsCount?: number;
+    lastPost: {
+      id: number;
+      title: string;
+      authorName: string;
+      authorRole: UserRole;
+      createdAt: string;
+    }
+  }
+  author: {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+    avatar?: string;
+  }
+  views: number;
   replyCount: number;
+  pinned: boolean;
+  solved: boolean;
+  isHot: boolean;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
+  lastReply?: null 
+  lastReplyAt?: string;
+  replies: PostReplyDto[];
 }
 
 export interface PostCreateDto {
@@ -38,18 +67,31 @@ export interface PostCategoryDto {
   slug: string;
   description?: string;
   icon?: string;
-  postCount?: number;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  threadsCount?: number;
+  postsCount?: number;
 }
 
 export interface PostReplyDto {
   id: number;
   content: string;
-  authorId: number;
-  authorName: string;
   postId: number;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+    avatar: string;
+  }
   parentId?: number;
+  isActive: boolean;
+  isSolution: boolean;
   createdAt: string;
   updatedAt: string;
+  isTopLevel: boolean;
   children?: PostReplyDto[];
 }
 

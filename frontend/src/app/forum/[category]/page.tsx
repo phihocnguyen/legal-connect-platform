@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePostUseCases } from '@/hooks/use-post-cases';
 import { useLoadingState } from '@/hooks/use-loading-state';
 import { PostDto, PostCategoryDto } from '@/domain/entities';
@@ -101,6 +101,7 @@ export default function CategoryPage() {
                 <div key={post.id} className="p-6 hover:bg-gray-50">
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
+                      <AvatarImage src={post.author.avatar} alt={post.author.name} />
                       <AvatarFallback>{post.author?.name?.[0] || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">

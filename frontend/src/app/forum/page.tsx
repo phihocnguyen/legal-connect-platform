@@ -26,8 +26,6 @@ export default function ForumPage() {
       try {
         setLoading(true);
         setError(null);
-        
-        // Load categories and recent posts in parallel
         const [categoriesData, postsData] = await Promise.all([
           getAllCategories(),
           getAllPosts({ page: 0, size: 5, sort: 'createdAt,desc' })
@@ -49,7 +47,6 @@ export default function ForumPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchKeyword.trim()) {
-      // Navigate to search results page
       window.location.href = `/forum/search?q=${encodeURIComponent(searchKeyword)}`;
     }
   };

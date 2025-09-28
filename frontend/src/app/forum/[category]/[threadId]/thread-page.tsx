@@ -1,140 +1,123 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-
-interface Post {
-  id: string;
-  author: {
-    name: string;
-    avatar: string;
-    role: string;
-    joinDate: string;
-    posts: number;
-  };
-  content: string;
-  likes?: number;
-  createdAt: string;
-  votes: {
-    upvotes: number;
-    downvotes: number;
-    userVote?: 'up' | 'down' | null;
-  };
-  isAuthor?: boolean;
-}
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { usePostUseCases } from '@/hooks/use-post-cases';
+import { PostDto, PostReplyDto, UserRole } from '@/domain/entities';
 
 interface ThreadPageProps {
   category: string;
   threadId: string;
 }
 
-const thread = {
-  id: '1',
-  title: 'Hướng dẫn chi tiết về thủ tục ly hôn thuận tình',
-  category: 'Luật Dân sự',
-  tags: ['Ly hôn', 'Thủ tục', 'Hướng dẫn'],
-  views: 1205,
-  createdAt: '2025-09-15',
-};
-
-const posts: Post[] = [
-  {
-    id: '1',
-    author: {
-      name: 'Luật sư Nguyễn Văn A',
-      avatar: '/avatars/lawyer1.jpg',
-      role: 'Luật sư',
-      joinDate: '2024-01-15',
-      posts: 1234,
-    },
-    votes: {
-      upvotes: 45,
-      downvotes: 2,
-      userVote: null
-    },
-    content: `Xin chào mọi người,
-
-Trong bài viết này, tôi sẽ hướng dẫn chi tiết về thủ tục ly hôn thuận tình. Đây là một vấn đề phức tạp và cần được thực hiện đúng quy trình để đảm bảo quyền lợi của các bên.
-
-## 1. Điều kiện ly hôn thuận tình
-
-- Hai bên tự nguyện ly hôn
-- Đã đăng ký kết hôn hợp pháp
-- Có thỏa thuận về việc chia tài sản và nuôi con (nếu có)
-
-## 2. Hồ sơ cần chuẩn bị
-
-1. Đơn xin ly hôn (có chữ ký của cả hai bên)
-2. Giấy chứng nhận kết hôn (bản chính)
-3. Giấy CMND/CCCD của cả hai bên
-4. Văn bản thỏa thuận về tài sản và con cái
-
-## 3. Quy trình thực hiện
-
-1. Nộp hồ sơ tại TAND có thẩm quyền
-2. Tòa thụ lý và hẹn ngày hòa giải
-3. Tham gia phiên hòa giải
-4. Nhận quyết định công nhận thuận tình ly hôn
-
-Mọi người có thắc mắc gì có thể comment bên dưới, tôi sẽ giải đáp chi tiết.`,
-    createdAt: '2025-09-15 09:00:00',
-    likes: 45,
-    isAuthor: true
-  },
-  {
-    id: '2',
-    author: {
-      name: 'Trần Thị B',
-      avatar: '/avatars/user1.jpg',
-      role: 'Thành viên',
-      joinDate: '2025-03-20',
-      posts: 23,
-    },
-    content: 'Cảm ơn luật sư đã chia sẻ thông tin hữu ích. Tôi có một câu hỏi: Trong trường hợp hai bên đã thỏa thuận về tài sản nhưng chưa thống nhất về việc nuôi con thì có được xem là thuận tình không ạ?',
-    createdAt: '2025-09-15 10:30:00',
-    votes: {
-      upvotes: 2,
-      downvotes: 0,
-      userVote: null
-    }
-  },
-];
-
 export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
-  const [replies, setReplies] = useState(posts);
+  const [post, setPost] = useState<PostDto | null>(null);
+  const [replies, setReplies] = useState<PostReplyDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
 
-  const handleVote = (postId: string, voteType: 'up' | 'down') => {
-    setReplies(replies.map(reply => {
-      if (reply.id === postId) {
-        const currentVote = reply.votes.userVote;
-        let newUpvotes = reply.votes.upvotes;
-        let newDownvotes = reply.votes.downvotes;
+  const { getPostById, getRepliesByPost, addReply } = usePostUseCases();
 
-        // Remove previous vote if exists
-        if (currentVote === 'up') newUpvotes--;
-        if (currentVote === 'down') newDownvotes--;
-
-        // Add new vote if different from current
-        if (currentVote !== voteType) {
-          if (voteType === 'up') newUpvotes++;
-          if (voteType === 'down') newDownvotes++;
+  useEffect(() => {
+    const loadPostData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const postId = parseInt(threadId);
+        if (isNaN(postId)) {
+          throw new Error('ID bài viết không hợp lệ');
         }
 
-        return {
-          ...reply,
-          votes: {
-            upvotes: newUpvotes,
-            downvotes: newDownvotes,
-            userVote: currentVote === voteType ? null : voteType
-          }
-        };
+        // Load post và replies song song
+        const [postData, repliesData] = await Promise.all([
+          getPostById(postId),
+          getRepliesByPost(postId)
+        ]);
+
+        setPost(postData);
+        setReplies(repliesData);
+      } catch (err) {
+        console.error('Error loading post data:', err);
+        setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu bài viết');
+      } finally {
+        setLoading(false);
       }
-      return reply;
-    }));
+    };
+
+    loadPostData();
+  }, [threadId, getPostById, getRepliesByPost]);
+
+  const handleSubmitReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!replyContent.trim() || !post) return;
+
+    try {
+      setSubmittingReply(true);
+      const newReply = await addReply(post.id, {
+        content: replyContent.trim()
+      });
+
+      setReplies(prev => [...prev, newReply]);
+      setReplyContent('');
+    } catch (err) {
+      console.error('Error submitting reply:', err);
+      alert('Không thể gửi trả lời. Vui lòng thử lại.');
+    } finally {
+      setSubmittingReply(false);
+    }
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('vi-VN');
+  };
+
+  const getRoleDisplayName = (role: UserRole): string => {
+    switch (role) {
+      case 'lawyer': return 'Luật sư';
+      case 'admin': return 'Quản trị viên';
+      case 'user': return 'Thành viên';
+      default: return 'Thành viên';
+    }
+  };
+
+  const getRoleBadgeStyle = (role: UserRole): string => {
+    switch (role) {
+      case 'lawyer': return 'bg-[#004646] text-white';
+      case 'admin': return 'bg-red-600 text-white';
+      case 'user': return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8 animate-fade-in">
+        <div className="text-center">
+          <LoadingSpinner size="lg" text="Đang tải bài viết..." />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="container mx-auto py-8 animate-fade-in">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Không tìm thấy bài viết'}</p>
+          <Button onClick={() => window.location.reload()}>Thử lại</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 animate-fade-in">
@@ -142,124 +125,142 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/forum">Diễn đàn</Link>
         <span>→</span>
-        <Link href={`/forum/${category}`}>{thread.category}</Link>
+        <Link href={`/forum/${category}`}>{post.category.name}</Link>
         <span>→</span>
-        <span className="truncate">{thread.title}</span>
+        <span className="truncate">{post.title}</span>
       </div>
 
       {/* Thread Header */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-start mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">{thread.title}</h1>
-          <Button>Trả lời</Button>
+          <h1 className="text-2xl font-bold text-gray-900">{post.title}</h1>
+          <Button onClick={() => document.getElementById('reply-form')?.scrollIntoView()}>
+            Trả lời
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-          <span>{thread.views} lượt xem</span>
+          <span>{post.views} lượt xem</span>
           <span>•</span>
-          <span>{thread.createdAt}</span>
-          <div className="flex gap-2">
-            {thread.tags.map(tag => (
-              <Badge key={tag} variant="outline">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+          <span>{formatDate(post.createdAt)}</span>
+          <span>•</span>
+          <span>{post.replyCount} trả lời</span>
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex gap-2">
+              {post.tags.map(tag => (
+                <Badge key={tag} variant="outline">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Posts List */}
-      <div className="space-y-6">
-        {replies.map((post) => (
-          <div 
-            key={post.id} 
-            className={`bg-white rounded-lg shadow ${
-              post.author.role === 'Luật sư' 
-                ? 'ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50' 
-                : ''
-            }`}
-          >
-            <div className="p-6">
-              <div className="flex gap-6">
-                {/* Author Info */}
-                <div className="w-48 flex flex-col items-center text-center">
-                  <Avatar className="w-20 h-20 mb-3" />
-                  <div className="font-semibold text-gray-900">{post.author.name}</div>
-                  <Badge 
-                    variant={post.author.role === 'Luật sư' ? 'default' : 'secondary'}
-                    className={`mt-1 ${post.author.role === 'Luật sư' ? 'bg-[#004646]' : ''}`}
-                  >
-                    {post.author.role}
-                  </Badge>
-                  <div className="mt-3 text-sm text-gray-500">
-                    <div>Tham gia: {post.author.joinDate}</div>
-                    <div>Bài viết: {post.author.posts}</div>
-                  </div>
-                </div>
+      {/* Main Post */}
+      <div className={`bg-white rounded-lg shadow mb-6 ${
+        post.author.role === 'lawyer' 
+          ? 'ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50' 
+          : ''
+      }`}>
+        <div className="p-6">
+          <div className="flex gap-6">
+            {/* Author Info */}
+            <div className="w-48 flex flex-col items-center text-center">
+              <Avatar className="w-20 h-20 mb-3">
+                {post.author.avatar && (
+                  <Image 
+                    src={post.author.avatar} 
+                    alt={post.author.name} 
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover" 
+                  />
+                )}
+              </Avatar>
+              <div className="font-semibold text-gray-900">{post.author.name}</div>
+              <Badge className={`mt-1 ${getRoleBadgeStyle(post.author.role)}`}>
+                {getRoleDisplayName(post.author.role)}
+              </Badge>
+              <div className="mt-3 text-sm text-gray-500">
+                <div>ID: {post.author.id}</div>
+              </div>
+            </div>
 
-                {/* Post Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-sm text-gray-500">{post.createdAt}</span>
-                    <div className="flex items-center gap-2">
-                      {post.isAuthor && (
-                        <Badge variant="outline">Tác giả</Badge>
-                      )}
-                      <Button variant="ghost" size="sm">
-                        Trích dẫn
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="prose max-w-none">
-                    {post.content}
-                  </div>
-                  <div className="mt-6 flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(post.id, 'up')}
-                        className={post.votes.userVote === 'up' ? 'text-[#004646]' : ''}
-                      >
-                        ↑ {post.votes.upvotes}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(post.id, 'down')}
-                        className={post.votes.userVote === 'down' ? 'text-red-500' : ''}
-                      >
-                        ↓ {post.votes.downvotes}
-                      </Button>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      Chia sẻ
-                    </Button>
-                    {post.isAuthor && (
-                      <Button variant="ghost" size="sm">
-                        Chỉnh sửa
-                      </Button>
-                    )}
-                  </div>
+            {/* Post Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-sm text-gray-500">{formatDate(post.createdAt)}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Tác giả bài viết</Badge>
+                </div>
+              </div>
+              <div className="prose max-w-none whitespace-pre-wrap">
+                {post.content}
+              </div>
+              <div className="mt-6 flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-gray-500">
+                    {post.views} lượt xem • {post.replyCount} trả lời
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Reply Box */}
-      <div className="mt-6 bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Trả lời</h3>
-        <textarea
-          className="w-full min-h-[200px] p-4 border rounded-lg resize-y"
-          placeholder="Viết câu trả lời của bạn..."
-        />
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            Hỗ trợ định dạng Markdown
-          </div>
-          <Button>Gửi trả lời</Button>
+      {/* Replies */}
+      {replies.length > 0 && (
+        <div className="space-y-6">
+          {replies.map((reply) => (
+            <div key={reply.id} className="bg-white rounded-lg shadow">
+              <div className="p-6">
+                <div className="flex gap-6">
+                  {/* Reply Author Info */}
+                  <div className="w-48 flex flex-col items-center text-center">
+                    <Avatar className="w-16 h-16 mb-3" />
+                    <div className="font-semibold text-gray-900">{reply.authorName}</div>
+                    <div className="mt-3 text-sm text-gray-500">
+                      <div>ID: {reply.authorId}</div>
+                    </div>
+                  </div>
+
+                  {/* Reply Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-sm text-gray-500">{formatDate(reply.createdAt)}</span>
+                    </div>
+                    <div className="prose max-w-none whitespace-pre-wrap">
+                      {reply.content}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+      )}
+
+      {/* Reply Form */}
+      <div id="reply-form" className="mt-6 bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Trả lời</h3>
+        <form onSubmit={handleSubmitReply}>
+          <textarea
+            className="w-full min-h-[200px] p-4 border rounded-lg resize-y"
+            placeholder="Viết câu trả lời của bạn..."
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            disabled={submittingReply}
+          />
+          <div className="mt-4 flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              Hỗ trợ định dạng văn bản
+            </div>
+            <Button type="submit" disabled={!replyContent.trim() || submittingReply}>
+              {submittingReply ? 'Đang gửi...' : 'Gửi trả lời'}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

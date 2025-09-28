@@ -21,6 +21,7 @@ import {
 import { PostCreateDto, AddReplyDto } from '../domain/entities';
 
 export function usePostUseCases() {
+  // Legacy methods
   const createPost = useCallback(
     (data: {
       title: string;
@@ -78,7 +79,11 @@ export function usePostUseCases() {
     return useCase.execute(keyword, params);
   }, []);
 
-  const searchPostsByCategory = useCallback((keyword: string, categorySlug: string, params: { page?: number; size?: number; sort?: string }) => {
+  const searchPostsByCategory = useCallback((
+    keyword: string,
+    categorySlug: string,
+    params: { page?: number; size?: number; sort?: string }
+  ) => {
     const useCase = container.getUseCase<SearchPostsByCategoryUseCase>('SearchPostsByCategoryUseCase');
     return useCase.execute(keyword, categorySlug, params);
   }, []);

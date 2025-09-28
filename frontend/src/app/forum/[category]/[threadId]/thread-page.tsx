@@ -204,16 +204,23 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
             <div key={reply.id} className="bg-white rounded-lg shadow">
               <div className="p-6">
                 <div className="flex gap-6">
-                  {/* Reply Author Info */}
                   <div className="w-48 flex flex-col items-center text-center">
-                    <Avatar className="w-16 h-16 mb-3" />
-                    <div className="font-semibold text-gray-900">{reply.authorName}</div>
+                    <Avatar className="w-20 h-20 mb-3">
+                      {reply.author.avatar && (
+                        <Image 
+                          src={reply.author.avatar} 
+                          alt={reply.author.name} 
+                          width={80}
+                          height={80}
+                          className="w-full h-full object-cover" 
+                        />
+                      )}
+                    </Avatar>
+                    <div className="font-semibold text-gray-900">{reply.author.name}</div>
                     <div className="mt-3 text-sm text-gray-500">
-                      <div>ID: {reply.authorId}</div>
+                      <div>ID: {reply.author.id}</div>
                     </div>
                   </div>
-
-                  {/* Reply Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-4">
                       <span className="text-sm text-gray-500">{formatDate(reply.createdAt)}</span>

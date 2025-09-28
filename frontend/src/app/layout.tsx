@@ -3,7 +3,9 @@ import "./globals.css";
 import "@fontsource/alexandria"; 
 import { Header } from "@/components/navbar/header";
 import { AuthProvider } from "@/contexts/auth-context";
+import { LoadingProvider } from "@/contexts/loading-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { GlobalLoadingIndicator } from "@/components/ui/global-loading-indicator";
 import { Toaster } from "@/components/ui/sonner";
 import WebSocketProvider from "@/components/web-socket-provider";
 
@@ -20,19 +22,22 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className="font-alex antialiased">
-        <AuthProvider>
-          <AuthGuard>
-            <WebSocketProvider>
-              <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-            </div>
-            </WebSocketProvider>
-          </AuthGuard>
-          <Toaster />
-        </AuthProvider>
+        <LoadingProvider>
+          <AuthProvider>
+            <AuthGuard>
+              <WebSocketProvider>
+                <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">
+                  {children}
+                </main>
+              </div>
+              </WebSocketProvider>
+            </AuthGuard>
+            <GlobalLoadingIndicator />
+            <Toaster />
+          </AuthProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

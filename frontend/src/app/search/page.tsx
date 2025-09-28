@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useLoadingState } from '@/hooks/use-loading-state';
+
 import { LegalDocument, loadLegalDocuments } from '@/lib/csv-parser';
 import { parseVietnameseDate, formatVietnameseDate } from '@/lib/utils';
 
@@ -23,8 +25,8 @@ export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [allDocuments, setAllDocuments] = useState<LegalDocument[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<LegalDocument[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
+  const { startLoading, stopLoading, isLoading } = useLoadingState();
   const [filters, setFilters] = useState<SearchFilters>({
     loai_van_ban: '',
     noi_ban_hanh: '',
@@ -51,6 +53,29 @@ export default function SearchPage() {
     tinh_trang: [] as string[]
   });
 
+  const loadDocuments = useCallback(async () => {
+    startLoading('Đang tải...');
+    try {
+      const documents = await loadLegalDocuments();
+      setAllDocuments(documents);
+      
+      // Extract unique filter options
+      const loaiVanBan = [...new Set(documents.map(doc => doc.loai_van_ban).filter(Boolean))];
+      const noiBanHanh = [...new Set(documents.map(doc => doc.noi_ban_hanh).filter(Boolean))];
+      const tinhTrang = [...new Set(documents.map(doc => doc.tinh_trang).filter(Boolean))];
+      
+      setFilterOptions({
+        loai_van_ban: loaiVanBan,
+        noi_ban_hanh: noiBanHanh,
+        tinh_trang: tinhTrang
+      });
+    } catch (error) {
+      console.error('Error loading documents:', error);
+    } finally {
+      stopLoading();
+    }
+  }, [startLoading, stopLoading]);
+
   useEffect(() => {
     const q = searchParams.get('q') || '';
     setQuery(q);
@@ -58,7 +83,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [loadDocuments]);
 
   const performSearch = useCallback(() => {
     let results = allDocuments;
@@ -120,29 +145,6 @@ export default function SearchPage() {
     }
   }, [query, filters, allDocuments, performSearch]);
 
-  const loadDocuments = async () => {
-    setLoading(true);
-    try {
-      const documents = await loadLegalDocuments();
-      setAllDocuments(documents);
-      
-      // Extract unique filter options
-      const loaiVanBan = [...new Set(documents.map(doc => doc.loai_van_ban).filter(Boolean))];
-      const noiBanHanh = [...new Set(documents.map(doc => doc.noi_ban_hanh).filter(Boolean))];
-      const tinhTrang = [...new Set(documents.map(doc => doc.tinh_trang).filter(Boolean))];
-      
-      setFilterOptions({
-        loai_van_ban: loaiVanBan,
-        noi_ban_hanh: noiBanHanh,
-        tinh_trang: tinhTrang
-      });
-    } catch (error) {
-      console.error('Error loading documents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resetFilters = () => {
     setFilters({
       loai_van_ban: '',
@@ -163,12 +165,11 @@ export default function SearchPage() {
 
   const applyFilters = () => {
     setFilters(tempFilters);
-    setCurrentPage(1); // Reset to first page when applying filters
+    setCurrentPage(1);
   };
 
   const hasFilterChanges = JSON.stringify(filters) !== JSON.stringify(tempFilters);
 
-  // Pagination calculations
   const totalResults = filteredDocuments.length;
   const totalPages = Math.ceil(totalResults / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -207,12 +208,8 @@ export default function SearchPage() {
     return terms.some(term => textLower.includes(term));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Đang tải dữ liệu..." />
-      </div>
-    );
+  if (isLoading) {
+    return null; // Global loading indicator will show
   }
 
   return (
@@ -369,8 +366,8 @@ export default function SearchPage() {
             {/* Results List */}
             <div className="relative">
               {searchLoading && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center">
-                  <LoadingSpinner size="md" text="Đang tìm kiếm..." />
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+                  <LoadingSpinner size="lg" text="Đang tải..." />
                 </div>
               )}
               

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CategoryCard } from '@/components/forum/category-card';
@@ -8,41 +8,61 @@ import { ForumStats } from '@/components/forum/forum-stats';
 import { ForumSidebar } from '@/components/forum/forum-sidebar';
 import { RecentPosts } from '@/components/forum/recent-posts';
 import { usePostUseCases } from '@/hooks/use-post-cases';
+import { useLoadingState } from '@/hooks/use-loading-state';
 import { PostCategoryDto, PostDto } from '@/domain/entities';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Link from 'next/link';
 
 export default function ForumPage() {
   const [categories, setCategories] = useState<PostCategoryDto[]>([]);
   const [recentPosts, setRecentPosts] = useState<PostDto[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [postsLoaded, setPostsLoaded] = useState(false);
 
   const { getAllCategories, getAllPosts } = usePostUseCases();
+  const { startLoading, stopLoading, isLoading } = useLoadingState();
+
+  // Only stop loading when BOTH categories and posts are loaded
+  const isDataLoaded = categoriesLoaded && postsLoaded;
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [categoriesData, postsData] = await Promise.all([
-          getAllCategories(),
-          getAllPosts({ page: 0, size: 5, sort: 'createdAt,desc' })
-        ]);
-        
-        setCategories(categoriesData);
-        setRecentPosts(postsData.content);
-      } catch (err) {
-        console.error('Error loading forum data:', err);
-        setError('Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (isDataLoaded) {
+      stopLoading();
+    }
+  }, [isDataLoaded, stopLoading]);
 
+  const loadData = useCallback(async () => {
+    try {
+      startLoading('Đang tải...');
+      setError(null);
+      setCategoriesLoaded(false);
+      setPostsLoaded(false);
+
+      // Load categories
+      const categoriesPromise = getAllCategories().then(data => {
+        setCategories(data);
+        setCategoriesLoaded(true);
+      });
+
+      // Load recent posts
+      const postsPromise = getAllPosts({ page: 0, size: 5, sort: 'createdAt,desc' }).then(data => {
+        setRecentPosts(data.content);
+        setPostsLoaded(true);
+      });
+
+      await Promise.all([categoriesPromise, postsPromise]);
+
+    } catch (err) {
+      console.error('Error loading forum data:', err);
+      setError('Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.');
+      stopLoading();
+    }
+  }, [getAllCategories, getAllPosts, startLoading, stopLoading]);
+
+  useEffect(() => {
     loadData();
-  }, [getAllCategories, getAllPosts]);
+  }, [loadData]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,25 +71,19 @@ export default function ForumPage() {
     }
   };
 
-  if (loading) {
+  if (error) {
     return (
-      <div className="container mx-auto py-8 animate-fade-in">
+      <div className="container mx-auto py-8">
         <div className="text-center">
-          <LoadingSpinner size="lg" text="Đang tải dữ liệu diễn đàn..." />
+          <div className="text-red-600 mb-4">{error}</div>
+          <Button onClick={loadData}>Thử lại</Button>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8 animate-fade-in">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>Thử lại</Button>
-        </div>
-      </div>
-    );
+  if (isLoading) {
+    return null; // Global loading indicator will show
   }
 
   return (

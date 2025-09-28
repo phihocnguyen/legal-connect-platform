@@ -6,9 +6,9 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { usePostUseCases } from '@/hooks/use-post-cases';
 import { PostDto, PostReplyDto, UserRole } from '@/domain/entities';
+import { useLoadingState } from '@/hooks/use-loading-state';
 
 interface ThreadPageProps {
   category: string;
@@ -18,20 +18,18 @@ interface ThreadPageProps {
 export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
   const [post, setPost] = useState<PostDto | null>(null);
   const [replies, setReplies] = useState<PostReplyDto[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
 
   const { getPostById, getRepliesByPost, addReply } = usePostUseCases();
+  const { startLoading, stopLoading } = useLoadingState();
 
   useEffect(() => {
     const loadPostData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const postId = parseInt(threadId);
+    try {
+      startLoading('Đang tải...');
+      setError(null);        const postId = parseInt(threadId);
         if (isNaN(postId)) {
           throw new Error('ID bài viết không hợp lệ');
         }
@@ -48,12 +46,12 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
         console.error('Error loading post data:', err);
         setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu bài viết');
       } finally {
-        setLoading(false);
+        stopLoading();
       }
     };
 
     loadPostData();
-  }, [threadId, getPostById, getRepliesByPost]);
+  }, [threadId, getPostById, getRepliesByPost, startLoading, stopLoading]);
 
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,16 +95,6 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-8 animate-fade-in">
-        <div className="text-center">
-          <LoadingSpinner size="lg" text="Đang tải bài viết..." />
-        </div>
-      </div>
-    );
-  }
 
   if (error || !post) {
     return (

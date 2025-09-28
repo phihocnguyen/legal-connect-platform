@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,9 +8,11 @@ import { useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SocialLogin } from "@/components/auth/social-login";
 import { useAuth } from "@/contexts/auth-context";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useLoadingState } from '@/hooks/use-loading-state';
+
 import { toast } from "sonner";
 
 interface LoginFormData {
@@ -22,7 +24,7 @@ interface LoginFormData {
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { startLoading, stopLoading, isLoading } = useLoadingState();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setIsLoading(true);
+      startLoading('Đang tải...');
       
       await login(data.email, data.password);
       
@@ -63,15 +65,15 @@ export default function LoginPage() {
         toast.error('Có lỗi xảy ra. Vui lòng thử lại!');
       }
     } finally {
-      setIsLoading(false);
+      stopLoading();
     }
   };
 
   // Show loading spinner while checking auth state
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+        <LoadingSpinner size="lg" text="Đang tải..." />
       </div>
     );
   }

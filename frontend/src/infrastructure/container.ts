@@ -1,8 +1,9 @@
-import { ChatRepository, AuthRepository, PostRepository, PdfRepository } from '../domain/interfaces/repositories';
+import { ChatRepository, AuthRepository, PostRepository, PdfRepository, MessagingRepository } from '../domain/interfaces/repositories';
 import { HttpChatRepository } from './repositories/chat.repository';
 import { HttpAuthRepository } from './repositories/auth.repository';
 import { HttpPostRepository } from './repositories/post.repository';
 import { HttpPdfRepository } from './repositories/pdf.repository';
+import { MessagingRepositoryImpl } from './repositories/messaging.repository';
 
 import {
   SendMessageUseCase,
@@ -43,9 +44,17 @@ import {
   DeleteConversationUseCase,
   UploadPdfToPythonUseCase,
   GetPdfSummaryUseCase,
-} from '../application/use-cases/pdf.use-case';class Container {
+} from '../application/use-cases/pdf.use-case';
+import {
+  GetConversationsUseCase as MessagingGetConversationsUseCase,
+  GetConversationMessagesUseCase,
+  SendMessageUseCase as MessagingSendMessageUseCase,
+  CreateConversationUseCase as MessagingCreateConversationUseCase,
+  GetOrCreateConversationUseCase,
+  MarkMessagesAsReadUseCase,
+} from '../application/use-cases/messaging.use-case';class Container {
   private static instance: Container;
-  private repositories: Map<string, ChatRepository | AuthRepository | PostRepository | PdfRepository> = new Map();
+  private repositories: Map<string, ChatRepository | AuthRepository | PostRepository | PdfRepository | MessagingRepository> = new Map();
   private useCases: Map<string, unknown> = new Map();
 
   private constructor() {
@@ -65,11 +74,13 @@ import {
     const authRepo = new HttpAuthRepository();
     const postRepo = new HttpPostRepository();
     const pdfRepo = new HttpPdfRepository();
+    const messagingRepo = new MessagingRepositoryImpl();
 
     this.repositories.set('ChatRepository', chatRepo);
     this.repositories.set('AuthRepository', authRepo);
     this.repositories.set('PostRepository', postRepo);
     this.repositories.set('PdfRepository', pdfRepo);
+    this.repositories.set('MessagingRepository', messagingRepo);
   }
 
   private registerUseCases() {
@@ -77,6 +88,7 @@ import {
     const authRepo = this.repositories.get('AuthRepository') as AuthRepository;
     const postRepo = this.repositories.get('PostRepository') as PostRepository;
     const pdfRepo = this.repositories.get('PdfRepository') as PdfRepository;
+    const messagingRepo = this.repositories.get('MessagingRepository') as MessagingRepository;
 
     // Chat use cases
     this.useCases.set(
@@ -216,6 +228,32 @@ import {
     this.useCases.set(
       'GetPdfSummaryUseCase',
       new GetPdfSummaryUseCase(pdfRepo)
+    );
+
+    // Messaging use cases
+    this.useCases.set(
+      'MessagingGetConversationsUseCase',
+      new MessagingGetConversationsUseCase(messagingRepo)
+    );
+    this.useCases.set(
+      'GetConversationMessagesUseCase',
+      new GetConversationMessagesUseCase(messagingRepo)
+    );
+    this.useCases.set(
+      'MessagingSendMessageUseCase',
+      new MessagingSendMessageUseCase(messagingRepo)
+    );
+    this.useCases.set(
+      'MessagingCreateConversationUseCase',
+      new MessagingCreateConversationUseCase(messagingRepo)
+    );
+    this.useCases.set(
+      'GetOrCreateConversationUseCase',
+      new GetOrCreateConversationUseCase(messagingRepo)
+    );
+    this.useCases.set(
+      'MarkMessagesAsReadUseCase',
+      new MarkMessagesAsReadUseCase(messagingRepo)
     );
   }
 

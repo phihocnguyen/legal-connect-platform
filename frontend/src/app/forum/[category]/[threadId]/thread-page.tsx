@@ -201,7 +201,11 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
       {replies.length > 0 && (
         <div className="space-y-6">
           {replies.map((reply) => (
-            <div key={reply.id} className="bg-white rounded-lg shadow">
+            <div key={reply.id} className={`bg-white rounded-lg shadow ${
+              reply.author.role === 'lawyer' 
+                ? 'ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50' 
+                : ''
+            }`}>
               <div className="p-6">
                 <div className="flex gap-6">
                   <div className="w-48 flex flex-col items-center text-center">
@@ -217,6 +221,9 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
                       )}
                     </Avatar>
                     <div className="font-semibold text-gray-900">{reply.author.name}</div>
+                    <Badge className={`mt-1 ${getRoleBadgeStyle(reply.author.role)}`}>
+                      {getRoleDisplayName(reply.author.role)}
+                    </Badge>
                     <div className="mt-3 text-sm text-gray-500">
                       <div>ID: {reply.author.id}</div>
                     </div>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PostDto } from '@/domain/entities';
+import Image from 'next/image';
 
 interface RecentPostsProps {
   posts: PostDto[];
@@ -80,8 +81,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             <div key={post.id} className="p-6 hover:bg-gray-50">
               <div className="flex items-start gap-4">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={post.author.avatar || '/default-avatar.png'} alt={post.author.name || 'User Avatar'} />
-                  <AvatarFallback>{post.author.name || 'U'}</AvatarFallback>
+                  <Image width={40} height={40} src={post.author.avatar || '/default-avatar.png'} alt={post.author.name || 'User Avatar'} />
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

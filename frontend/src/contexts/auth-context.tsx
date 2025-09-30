@@ -41,20 +41,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    if (user !== null) {
+      setIsLoading(false);
+      return;
+    }
     const initializeAuth = async () => {
       try {
         const currentUser = await getCurrentUser();
         setUser(currentUser);
       } catch {
-        console.error('Failed to get current user');
         setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
-
     initializeAuth();
-  }, [getCurrentUser]);
+  }, [getCurrentUser, user]);
 
   const value: AuthContextType = {
     user,

@@ -9,6 +9,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { usePostUseCases } from '@/hooks/use-post-cases';
 import { PostDto, PostReplyDto, UserRole } from '@/domain/entities';
 import { useLoadingState } from '@/hooks/use-loading-state';
+import { Editor } from '@tinymce/tinymce-react';
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key';
 
 interface ThreadPageProps {
   category: string;
@@ -33,8 +35,6 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
         if (isNaN(postId)) {
           throw new Error('ID bài viết không hợp lệ');
         }
-
-        // Load post và replies song song
         const [postData, repliesData] = await Promise.all([
           getPostById(postId),
           getRepliesByPost(postId)
@@ -95,7 +95,6 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
-
   if (error || !post) {
     return (
       <div className="container mx-auto py-8 animate-fade-in">
@@ -118,13 +117,9 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
         <span className="truncate">{post.title}</span>
       </div>
 
-      {/* Thread Header */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-2xl font-bold text-gray-900">{post.title}</h1>
-          <Button onClick={() => document.getElementById('reply-form')?.scrollIntoView()}>
-            Trả lời
-          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
           <span>{post.views} lượt xem</span>
@@ -183,7 +178,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
                 </div>
               </div>
               <div className="prose max-w-none whitespace-pre-wrap">
-                {post.content}
+                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
               </div>
               <div className="mt-6 flex items-center gap-4">
                 <div className="flex items-center gap-1">
@@ -233,7 +228,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
                       <span className="text-sm text-gray-500">{formatDate(reply.createdAt)}</span>
                     </div>
                     <div className="prose max-w-none whitespace-pre-wrap">
-                      {reply.content}
+                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: reply.content }} />
                     </div>
                   </div>
                 </div>
@@ -247,11 +242,19 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
       <div id="reply-form" className="mt-6 bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Trả lời</h3>
         <form onSubmit={handleSubmitReply}>
-          <textarea
-            className="w-full min-h-[200px] p-4 border rounded-lg resize-y"
-            placeholder="Viết câu trả lời của bạn..."
+          <Editor
+            apiKey={TINYMCE_API_KEY}
             value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
+            onEditorChange={(content: string) => setReplyContent(content)}
+            init={{
+              menubar: false,
+              plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview', 'anchor',
+                'searchreplace', 'visualblocks', 'code', 'insertdatetime', 'table', 'help', 'wordcount'
+              ],
+              toolbar: 'undo redo | formatselect | bold italic underline | bullist numlist | link | code',
+              placeholder: 'Viết câu trả lời của bạn...'
+            }}
             disabled={submittingReply}
           />
           <div className="mt-4 flex justify-between items-center">

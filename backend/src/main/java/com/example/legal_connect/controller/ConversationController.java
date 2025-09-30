@@ -110,7 +110,6 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
-    // Inner class for update title request
     public static class UpdateTitleRequest {
         private String title;
         

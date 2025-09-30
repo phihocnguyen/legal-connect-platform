@@ -4,7 +4,7 @@ import { UserMessage } from '@/domain/entities';
 
 interface UseMessagingWebSocketProps {
   conversationId?: string;
-  otherUserId?: string; // ID của user khác trong conversation
+  otherUserId?: string;
   onMessageReceived?: (message: UserMessage) => void;
   onUserTyping?: (userId: number, isTyping: boolean) => void;
 }
@@ -41,7 +41,18 @@ export function useMessagingWebSocket({
   }, [connected, otherUserId, send]);
 
   useEffect(() => {
-    if (!connected) return;
+    // Hủy subscription cũ trước khi tạo mới
+    subscriptionsRef.current.forEach(sub => {
+      if (sub?.unsubscribe) {
+        sub.unsubscribe();
+      }
+    });
+    subscriptionsRef.current = [];
+
+    // Chỉ subscribe khi đã connect và có conversationId
+    if (!connected || !conversationId) return;
+
+    // Đăng ký subscription mới
     const privateMessageSubscription = subscribe(
       '/user/queue/private',
       (message) => {
@@ -56,7 +67,6 @@ export function useMessagingWebSocket({
             isRead: false,
             createdAt: messageData.timestamp || new Date().toISOString()
           };
-          
           onMessageReceived?.(userMessage);
         } catch (error) {
           console.error('Error parsing private message:', error);
@@ -81,6 +91,7 @@ export function useMessagingWebSocket({
       typingSubscription,
     ].filter(Boolean);
 
+    // Cleanup subscription khi conversationId hoặc connected thay đổi
     return () => {
       subscriptionsRef.current.forEach(sub => {
         if (sub?.unsubscribe) {

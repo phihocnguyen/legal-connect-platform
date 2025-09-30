@@ -16,8 +16,10 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
-
+import com.example.legal_connect.security.UserPrincipal;
 import jakarta.servlet.http.HttpSession;
+
+import java.security.Principal;
 import java.util.Map;
 
 @Slf4j
@@ -56,19 +58,30 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor, HandshakeIn
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-        
+
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             Object securityContextObj = accessor.getSessionAttributes().get("SPRING_SECURITY_CONTEXT");
-            
+
             if (securityContextObj != null) {
                 try {
                     SecurityContext securityContext = (SecurityContext) securityContextObj;
-
                     Authentication authentication = securityContext.getAuthentication();
-                    
+
                     if (authentication != null && authentication.isAuthenticated()) {
-                        accessor.setUser(authentication);
-                        log.info("WebSocket CONNECT with authenticated user: {}", authentication.getName());
+                        // ⚡ Override Principal getName() = userId
+                        accessor.setUser(new Principal() {
+                            @Override
+                            public String getName() {
+                                Object principalObj = authentication.getPrincipal();
+                                if (principalObj instanceof UserPrincipal) {
+                                    UserPrincipal user = (UserPrincipal) principalObj;
+                                    return user.getEmail(); // ⚡ Trả về email
+                                }
+                                return authentication.getName(); // fallback
+                            }
+                        });
+
+                        log.info("WebSocket CONNECT with authenticated user: {}", accessor.getUser().getName());
                     }
                 } catch (Exception e) {
                     log.error("Error setting WebSocket authentication", e);
@@ -77,7 +90,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor, HandshakeIn
                 log.warn("WebSocket CONNECT without authentication");
             }
         }
-        
+
         return message;
     }
+
 }

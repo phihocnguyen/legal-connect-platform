@@ -11,9 +11,13 @@ import com.example.legal_connect.service.AuthService;
 import com.example.legal_connect.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Authentication", description = "Authentication management APIs")
 public class AuthController {
 
@@ -44,9 +49,14 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "User login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         try {
             User user = authService.login(request, httpRequest);
+            Cookie loginCookie = new Cookie("LOGGED_IN", "true");
+            loginCookie.setPath("/");
+            loginCookie.setHttpOnly(false); // Allow frontend JS to read if needed
+            loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+            httpResponse.addCookie(loginCookie);
             return ResponseEntity.ok(authMapper.toSuccessResponse(user, "Login successful"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -56,7 +66,13 @@ public class AuthController {
 
     @PostMapping("/logout")
     @Operation(summary = "User logout")
-    public ResponseEntity<ApiResponse<String>> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletRequest request, HttpServletResponse httpResponse) {
+        log.info("Logging out user");
+        Cookie loginCookie = new Cookie("LOGGED_IN", "");
+        loginCookie.setPath("/");
+        loginCookie.setHttpOnly(false);
+        loginCookie.setMaxAge(0);
+        httpResponse.addCookie(loginCookie);
         authService.logout(request);
         return ResponseEntity.ok(authMapper.toSuccessMessageResponse("Logout successful"));
     }

@@ -1,4 +1,4 @@
-package com.example.legal_connect.dto;
+package com.example.legal_connect.dto.forum;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

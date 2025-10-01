@@ -1,4 +1,4 @@
-package com.example.legal_connect.dto;
+package com.example.legal_connect.dto.forum;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,35 +7,28 @@ import lombok.Builder;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostDto {
+public class PostReplyDto {
     
     private Long id;
     
-    private String title;
-    
     private String content;
     
-    private PostCategoryDto category;
+    private Long postId;
     
     private UserSummaryDto author;
     
-    private Integer views;
+    private Long parentId;
     
-    private Integer replyCount;
+    private List<PostReplyDto> children;
     
-    private Boolean pinned;
+    private Boolean isActive;
     
-    private Boolean solved;
-    
-    private Boolean isHot;
-    
-    private Set<String> tags;
+    private Boolean isSolution;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
@@ -43,14 +36,10 @@ public class PostDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime lastReplyAt;
+    // Helper fields
+    private Boolean isTopLevel;
     
-    // Last reply information
-    private LastReplyDto lastReply;
-    
-    // Include replies for detailed view
-    private List<PostReplyDto> replies;
+    private Integer childrenCount;
     
     @Data
     @NoArgsConstructor
@@ -62,16 +51,5 @@ public class PostDto {
         private String email;
         private String role;
         private String avatar;
-    }
-    
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class LastReplyDto {
-        private String authorName;
-        private String authorRole;
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        private LocalDateTime date;
     }
 }

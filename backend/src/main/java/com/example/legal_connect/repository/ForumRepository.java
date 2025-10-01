@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PostRepository extends JpaRepository<Post, Long> {
+public interface ForumRepository extends JpaRepository<Post, Long> {
     
     /**
      * Find all active posts with pagination, ordered by creation time
@@ -132,4 +132,45 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      */
     @Query("SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.id = :id AND p.isActive = true")
     Optional<Post> findByIdWithCategoryAndAuthor(@Param("id") Long id);
+    
+    // === STATISTICS QUERIES ===
+    
+    /**
+     * Count total active posts
+     */
+    long countByIsActiveTrue();
+    
+    /**
+     * Count posts created since a specific time
+     */
+    long countByIsActiveTrueAndCreatedAtAfter(LocalDateTime since);
+    
+    /**
+     * Get popular topics (by views and replies)
+     */
+    @Query("SELECT p FROM Post p JOIN FETCH p.category WHERE p.isActive = true ORDER BY (p.views + p.replyCount * 2) DESC")
+    List<Post> findPopularTopics(Pageable pageable);
+    
+    /**
+     * Get all distinct tags from active posts
+     */
+    @Query(value = "SELECT tag_value as tag, COUNT(*) as count " +
+           "FROM posts p " +
+           "CROSS JOIN LATERAL unnest(string_to_array(LOWER(p.tags), ',')) AS tag_value " +
+           "WHERE p.is_active = true AND p.tags IS NOT NULL AND p.tags != '' " +
+           "GROUP BY tag_value " +
+           "ORDER BY count DESC " +
+           "LIMIT :limit",
+           nativeQuery = true)
+    List<Object[]> findPopularTags(@Param("limit") int limit);
+    
+    /**
+     * Count posts by category ID
+     */
+    long countByCategoryIdAndIsActiveTrue(Long categoryId);
+    
+    /**
+     * Count posts by category ID created since a specific time
+     */
+    long countByCategoryIdAndIsActiveTrueAndCreatedAtAfter(Long categoryId, LocalDateTime since);
 }

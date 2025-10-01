@@ -3,6 +3,7 @@ package com.example.legal_connect.security;
 import com.example.legal_connect.entity.User;
 import com.example.legal_connect.service.UserService;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -45,6 +46,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, 
                            SecurityContextHolder.getContext());
+
+        Cookie loginCookie = new Cookie("LOGGED_IN", "true");
+        loginCookie.setPath("/");
+        loginCookie.setHttpOnly(false);
+        loginCookie.setMaxAge(7 * 24 * 60 * 60);
+        response.addCookie(loginCookie);
 
         String targetUrl = "http://localhost:3000/";
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

@@ -1,6 +1,6 @@
 package com.example.legal_connect.mapper;
 
-import com.example.legal_connect.dto.PostReplyDto;
+import com.example.legal_connect.dto.forum.PostReplyDto;
 import com.example.legal_connect.entity.PostReply;
 import com.example.legal_connect.entity.User;
 import lombok.RequiredArgsConstructor;

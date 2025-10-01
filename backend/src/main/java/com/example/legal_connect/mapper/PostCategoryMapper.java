@@ -1,7 +1,7 @@
 package com.example.legal_connect.mapper;
 
-import com.example.legal_connect.dto.PostCategoryDto;
 import com.example.legal_connect.entity.PostCategory;
+import com.example.legal_connect.dto.forum.PostCategoryDto;
 import com.example.legal_connect.entity.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

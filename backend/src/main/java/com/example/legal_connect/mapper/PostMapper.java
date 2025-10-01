@@ -1,7 +1,7 @@
 package com.example.legal_connect.mapper;
 
-import com.example.legal_connect.dto.PostDto;
-import com.example.legal_connect.dto.PostCreateDto;
+import com.example.legal_connect.dto.forum.PostCreateDto;
+import com.example.legal_connect.dto.forum.PostDto;
 import com.example.legal_connect.entity.Post;
 import com.example.legal_connect.entity.PostCategory;
 import com.example.legal_connect.entity.User;
@@ -25,10 +25,6 @@ public class PostMapper {
     
     @Autowired
     private UserMapper userMapper;
-
-    /**
-     * Convert Post entity to PostDto
-     */
     public PostDto toDto(Post post) {
         if (post == null) {
             return null;
@@ -47,18 +43,12 @@ public class PostMapper {
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .lastReplyAt(post.getLastReplyAt());
-
-        // Map category if available
         if (post.getCategory() != null) {
             builder.category(categoryMapper.toDto(post.getCategory()));
         }
-
-        // Map author if available
         if (post.getAuthor() != null) {
             builder.author(toUserSummaryDto(post.getAuthor()));
         }
-
-        // Map last reply information if available
         if (post.getReplies() != null && !post.getReplies().isEmpty()) {
             PostReply latestReply = post.getReplies().stream()
                 .filter(PostReply::getIsActive)
@@ -77,7 +67,7 @@ public class PostMapper {
 
         // Map replies if needed (usually for detailed view)
         if (post.getReplies() != null) {
-            List<com.example.legal_connect.dto.PostReplyDto> replyDtos = post.getReplies().stream()
+            List<com.example.legal_connect.dto.forum.PostReplyDto> replyDtos = post.getReplies().stream()
                 .filter(PostReply::getIsActive)
                 .filter(reply -> reply.getParent() == null) // Only top-level replies
                 .map(replyMapper::toDto)

@@ -1,7 +1,14 @@
 package com.example.legal_connect.controller;
-
-import com.example.legal_connect.dto.*;
-import com.example.legal_connect.service.PostService;
+import com.example.legal_connect.dto.forum.AddReplyDto;
+import com.example.legal_connect.dto.forum.CategoryStatsDto;
+import com.example.legal_connect.dto.forum.ForumStatsDto;
+import com.example.legal_connect.dto.forum.PopularTagDto;
+import com.example.legal_connect.dto.forum.PopularTopicDto;
+import com.example.legal_connect.dto.forum.PostCategoryDto;
+import com.example.legal_connect.dto.forum.PostCreateDto;
+import com.example.legal_connect.dto.forum.PostDto;
+import com.example.legal_connect.dto.forum.PostReplyDto;
+import com.example.legal_connect.service.ForumService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,9 +27,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 @CrossOrigin(origins = {"http://localhost:3000"})
-public class PostController {
+public class ForumController {
 
-    private final PostService postService;
+    private final ForumService postService;
     @GetMapping("/categories")
     public ResponseEntity<List<PostCategoryDto>> getAllCategories() {
         List<PostCategoryDto> categories = postService.getAllCategories();
@@ -168,12 +175,50 @@ public class PostController {
      * Extract user ID from authentication
      */
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        // This method should be implemented based on your authentication setup
-        // For now, returning a placeholder
-        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
-            // Implement based on your UserDetails implementation
-            return 1L; // Placeholder
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            
+            if (principal instanceof com.example.legal_connect.security.UserPrincipal) {
+                com.example.legal_connect.security.UserPrincipal userPrincipal = 
+                    (com.example.legal_connect.security.UserPrincipal) principal;
+                return userPrincipal.getId();
+            }
         }
         throw new RuntimeException("User not authenticated");
+    }
+    
+    @GetMapping("/stats")
+    public ResponseEntity<ForumStatsDto> getForumStats() {
+        ForumStatsDto stats = postService.getForumStats();
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Get popular topics
+     */
+    @GetMapping("/popular-topics")
+    public ResponseEntity<List<PopularTopicDto>> getPopularTopics(
+            @RequestParam(defaultValue = "5") int limit) {
+        List<PopularTopicDto> topics = postService.getPopularTopics(limit);
+        return ResponseEntity.ok(topics);
+    }
+    
+    /**
+     * Get category statistics
+     */
+    @GetMapping("/category-stats")
+    public ResponseEntity<List<CategoryStatsDto>> getCategoryStats() {
+        List<CategoryStatsDto> stats = postService.getCategoryStats();
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Get popular tags
+     */
+    @GetMapping("/popular-tags")
+    public ResponseEntity<List<PopularTagDto>> getPopularTags(
+            @RequestParam(defaultValue = "10") int limit) {
+        List<PopularTagDto> tags = postService.getPopularTags(limit);
+        return ResponseEntity.ok(tags);
     }
 }

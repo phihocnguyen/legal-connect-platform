@@ -1,14 +1,18 @@
 package com.example.legal_connect.service;
+import com.example.legal_connect.dto.forum.CategoryStatsDto;
+import com.example.legal_connect.dto.forum.ForumStatsDto;
+import com.example.legal_connect.dto.forum.PopularTagDto;
+import com.example.legal_connect.dto.forum.PopularTopicDto;
+import com.example.legal_connect.dto.forum.PostCategoryDto;
+import com.example.legal_connect.dto.forum.PostCreateDto;
+import com.example.legal_connect.dto.forum.PostDto;
+import com.example.legal_connect.dto.forum.PostReplyDto;
 
-import com.example.legal_connect.dto.PostCategoryDto;
-import com.example.legal_connect.dto.PostCreateDto;
-import com.example.legal_connect.dto.PostDto;
-import com.example.legal_connect.dto.PostReplyDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 
-public interface PostService {
+public interface ForumService {
     // Category
     List<PostCategoryDto> getAllCategories();
     PostCategoryDto getCategoryBySlug(String slug);
@@ -27,4 +31,10 @@ public interface PostService {
     List<PostReplyDto> getRepliesByPost(Long postId);
     PostReplyDto addReply(Long postId, String content, Long authorId, Long parentId);
     void deleteReply(Long replyId, Long authorId);
+    
+    // Statistics
+    ForumStatsDto getForumStats();
+    List<PopularTopicDto> getPopularTopics(int limit);
+    List<CategoryStatsDto> getCategoryStats();
+    List<PopularTagDto> getPopularTags(int limit);
 }

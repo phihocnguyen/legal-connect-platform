@@ -1,44 +1,70 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { ChatMessage, LoadingMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeScreen } from "@/components/chat/welcome-screen";
 import { cn } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
-
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: Message[];
-}
+import { useChatUseCases, useChatQAUseCases } from "@/hooks";
+import { Message, ChatConversation } from "@/domain/entities";
 
 export default function ChatPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('chat-conversations');
-      if (saved) {
-        return JSON.parse(saved, (key, value) => {
-          if (key === 'timestamp') return new Date(value);
-          return value;
-        });
-      }
-    }
-    return [];
-  });
-
+  const router = useRouter();
+  const { createConversation, getConversations, sendMessage, getConversationHistory } = useChatUseCases();
+  const { askQuestion } = useChatQAUseCases();
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const loadConversations = async () => {
+      try {
+        const convs = await getConversations();
+        const qaConversations = convs.filter(c => c.type === 'QA');
+        setConversations(qaConversations);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      }
+    };
+    
+    loadConversations();
+  }, [getConversations]);
+
+  // Load messages when activeConversationId changes
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!activeConversationId) return;
+      
+      try {
+        setIsLoadingMessages(true);
+        const messages = await getConversationHistory(activeConversationId);
+        
+        // Update the conversation with loaded messages
+        setConversations(prev => {
+          const conversationIndex = prev.findIndex(c => c.id === activeConversationId);
+          if (conversationIndex === -1) return prev;
+          
+          const updatedConversations = [...prev];
+          updatedConversations[conversationIndex] = {
+            ...updatedConversations[conversationIndex],
+            messages: messages || []
+          };
+          
+          return updatedConversations;
+        });
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+    
+    loadMessages();
+  }, [activeConversationId, getConversationHistory]);
 
   const currentMessages = useMemo(() => 
     activeConversationId 
@@ -46,33 +72,28 @@ export default function ChatPage() {
       : []
   , [activeConversationId, conversations]);
 
-
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem('chat-conversations', JSON.stringify(conversations));
-    }
-  }, [conversations]);
-
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentMessages, isProcessing]);
 
-  const handleNewChat = () => {
-    const newId = Date.now().toString();
-    const newConversation: Conversation = {
-      id: newId,
-      title: "Cuộc trò chuyện mới",
-      lastMessage: "",
-      timestamp: new Date(),
-      messages: []
-    };
-    setConversations(prev => [newConversation, ...prev]);
-    setActiveConversationId(newId);
+  const handleNewChat = async () => {
+    try {
+      const conversation = await createConversation("New Conversation");
+      // Initialize messages array if not present
+      if (!conversation.messages) {
+        conversation.messages = [];
+      }
+      setConversations(prev => [conversation, ...prev]);
+      setActiveConversationId(conversation.id);
+      // Push conversation ID to URL
+      router.push(`/chat?id=${conversation.id}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+    }
   };
 
   const handleDeleteChat = (id: string) => {
-    if (confirm('Bạn có chắc muốn xóa cuộc trò chuyện này?')) {
+    if (confirm('Are you sure you want to delete this conversation?')) {
       setConversations(prev => prev.filter(c => c.id !== id));
       if (activeConversationId === id) {
         setActiveConversationId(undefined);
@@ -80,70 +101,113 @@ export default function ChatPage() {
     }
   };
 
-  const updateConversation = (id: string, message: Message, isFirstMessage = false) => {
-    setConversations(prev => {
-      const conversationIndex = prev.findIndex(c => c.id === id);
-      if (conversationIndex === -1) return prev;
-
-      const updatedConversations = [...prev];
-      const conversation = { ...updatedConversations[conversationIndex] };
-
-
-      conversation.messages = [...conversation.messages, message];
-      conversation.lastMessage = message.content.slice(0, 100) + (message.content.length > 100 ? "..." : "");
-      conversation.timestamp = new Date();
-
-
-      if (isFirstMessage && message.role === 'user') {
-        conversation.title = conversation.lastMessage;
-      }
-
-      updatedConversations[conversationIndex] = conversation;
-      return updatedConversations;
-    });
-  };
   const handleSendMessage = async (content: string) => {
-    let currentId = activeConversationId;
-    if (!currentId) {
-      currentId = Date.now().toString();
-      const newConversation: Conversation = {
-        id: currentId,
-        title: content.slice(0, 100) + (content.length > 100 ? "..." : ""),
-        lastMessage: content,
-        timestamp: new Date(),
-        messages: []
-      };
-      setConversations(prev => [newConversation, ...prev]);
-      setActiveConversationId(currentId);
+    let currentConvId = activeConversationId;
+    
+    // Create new conversation if none exists
+    if (!currentConvId) {
+      try {
+        const conversation = await createConversation("New Conversation");
+        // Initialize messages array if not present
+        if (!conversation.messages) {
+          conversation.messages = [];
+        }
+        setConversations(prev => [conversation, ...prev]);
+        setActiveConversationId(conversation.id);
+        currentConvId = conversation.id;
+        // Push conversation ID to URL
+        router.push(`/chat?id=${conversation.id}`);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        return;
+      }
     }
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-    };
-    updateConversation(currentId, userMessage, true);
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      const aiContent = `Đây là phản hồi cho câu hỏi của bạn: "${content}".\n\nDưới đây là một ví dụ về code block trong Markdown:\n\n\`\`\`javascript\nconsole.log("Hello, Gemini!");\n\`\`\`\n\n* Đây là một mục danh sách.\n* Và đây là mục thứ hai.`;
+    
+    if (currentConvId) {
+      setIsProcessing(true);
       
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: aiContent,
+      // Add user message to UI immediately
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content,
+        role: 'USER',
+        createdAt: new Date(),
       };
-      updateConversation(currentId, aiMessage);
+      
+      setConversations(prev => {
+        const conversationIndex = prev.findIndex(c => c.id === currentConvId);
+        if (conversationIndex === -1) return prev;
 
-    } catch (error) {
-      console.error('Lỗi khi gọi API:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.",
-      };
-      updateConversation(currentId, errorMessage);
-    } finally {
-      setIsProcessing(false);
+        const updatedConversations = [...prev];
+        const conversation = { ...updatedConversations[conversationIndex] };
+        // Ensure messages array exists
+        conversation.messages = conversation.messages || [];
+        conversation.messages = [...conversation.messages, userMessage];
+        conversation.lastMessage = content;
+        conversation.updatedAt = new Date();
+
+        updatedConversations[conversationIndex] = conversation;
+        return updatedConversations;
+      });
+
+      try {
+        await sendMessage(currentConvId, content, 'USER');
+
+        const response = await askQuestion(content, 3);
+
+        const formattedAnswer = `${response.answer}\n\n---\n*Model: ${response.model_used}*\n*Processing time: ${response.processing_time.toFixed(2)}s*\n*Time: ${new Date(response.timestamp).toLocaleString()}*`;
+        
+        await sendMessage(currentConvId, formattedAnswer, 'ASSISTANT');
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: formattedAnswer,
+          role: 'ASSISTANT',
+          createdAt: new Date(),
+        };
+        
+        setConversations(prev => {
+          const conversationIndex = prev.findIndex(c => c.id === currentConvId);
+          if (conversationIndex === -1) return prev;
+
+          const updatedConversations = [...prev];
+          const conversation = { ...updatedConversations[conversationIndex] };
+          // Ensure messages array exists
+          conversation.messages = conversation.messages || [];
+          conversation.messages = [...conversation.messages, assistantMessage];
+          conversation.lastMessage = response.answer.substring(0, 50) + '...';
+          conversation.updatedAt = new Date();
+
+          updatedConversations[conversationIndex] = conversation;
+          return updatedConversations;
+        });
+      } catch (error) {
+        console.error('Error asking question:', error);
+        
+        // Add error message to UI
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: 'Xin lỗi, đã có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại.',
+          role: 'ASSISTANT',
+          createdAt: new Date(),
+        };
+        
+        setConversations(prev => {
+          const conversationIndex = prev.findIndex(c => c.id === currentConvId);
+          if (conversationIndex === -1) return prev;
+
+          const updatedConversations = [...prev];
+          const conversation = { ...updatedConversations[conversationIndex] };
+          // Ensure messages array exists
+          conversation.messages = conversation.messages || [];
+          conversation.messages = [...conversation.messages, errorMessage];
+          
+          updatedConversations[conversationIndex] = conversation;
+          return updatedConversations;
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -167,7 +231,10 @@ export default function ChatPage() {
                 "p-4 cursor-pointer hover:bg-stone-50 transition-colors",
                 activeConversationId === conv.id && "bg-stone-100"
               )}
-              onClick={() => setActiveConversationId(conv.id)}
+              onClick={() => {
+                setActiveConversationId(conv.id);
+                router.push(`/chat?id=${conv.id}`);
+              }}
             >
               <div className="flex justify-between items-start group">
                 <div className="flex-1 min-w-0">
@@ -193,12 +260,14 @@ export default function ChatPage() {
         </div>
       </aside>
 
-      {/* Main Chat Area */}
       <main className="flex-1 flex flex-col bg-stone-50 min-w-0">
-        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto">
           <div className="w-full mx-auto p-4">
-            {!activeConversationId || currentMessages.length === 0 ? (
+            {isLoadingMessages ? (
+              <div className="flex justify-center items-center h-[75vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+              </div>
+            ) : !activeConversationId || currentMessages.length === 0 ? (
               <WelcomeScreen onPromptClick={handleSendMessage} />
             ) : (
               <>
@@ -217,7 +286,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Input Area */}
         <div className="flex-shrink-0 border-t bg-white p-4">
           <div className="max-w-3xl mx-auto">
             <ChatInput 

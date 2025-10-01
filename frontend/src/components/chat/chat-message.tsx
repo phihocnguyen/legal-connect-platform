@@ -3,15 +3,17 @@ import { Avatar } from "../ui/avatar";
 import { Card } from "../ui/card";
 import { Bot, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/contexts/auth-context";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface ChatMessageProps {
-  role: "user" | "assistant";
+  role: "USER" | "ASSISTANT";
   content: string;
 }
 
 export function ChatMessage({ role, content }: ChatMessageProps) {
-  const isUser = role === "user";
-
+  const isUser = role === "USER";
+  const {user} = useAuth();
   return (
     <div className={cn(
       "flex items-start gap-4 py-6",
@@ -21,9 +23,9 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
         "h-8 w-8",
         isUser ? "bg-teal-600" : "bg-zinc-800"
       )}>
-        <div className="flex h-full items-center justify-center">
+        <div className="flex h-full w-full items-center justify-center">
           {isUser ? (
-            <User className="h-5 w-5 text-white" />
+            <AvatarImage src={user?.avatar} alt={user?.fullName} />
           ) : (
             <Bot className="h-5 w-5 text-white" />
           )}
@@ -69,7 +71,13 @@ export function LoadingMessage() {
           <Bot className="h-5 w-5 text-white" />
         </div>
       </Avatar>
-      <Card className="w-24 h-8 animate-pulse bg-gray-200" />
+      <Card className="px-6 py-4 bg-gray-100">
+        <div className="flex space-x-2">
+          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        </div>
+      </Card>
     </div>
   );
 }

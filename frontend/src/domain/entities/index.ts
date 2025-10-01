@@ -100,6 +100,41 @@ export interface AddReplyDto {
   parentId?: number;
 }
 
+// Forum Statistics DTOs
+export interface ForumStatsDto {
+  totalTopics: number;
+  totalPosts: number;
+  totalMembers: number;
+  topicsToday: number;
+  postsToday: number;
+  membersToday: number;
+}
+
+export interface PopularTopicDto {
+  id: number;
+  title: string;
+  categoryName: string;
+  categorySlug: string;
+  views: number;
+  replyCount: number;
+  badge?: 'hot' | 'solved' | 'trending' | null;
+}
+
+export interface CategoryStatsDto {
+  id: number;
+  name: string;
+  slug: string;
+  icon?: string;
+  topicCount: number;
+  totalPostCount: number;
+  topicsToday: number;
+}
+
+export interface PopularTagDto {
+  tag: string;
+  count: number;
+}
+
 // Keep legacy interfaces for compatibility
 export interface Post {
   id: number;
@@ -133,12 +168,13 @@ export interface Comment {
 export interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'USER' | 'ASSISTANT';
   createdAt: Date;
 }
 
 export interface ChatConversation {
   id: string;
+  type?: 'PDF_QA' | 'QA';
   title: string;
   messages: Message[];
   lastMessage: string;
@@ -201,4 +237,49 @@ export interface PdfSummaryResult {
   model_used: string;
   processing_time: number;
   timestamp: string;
+}
+
+// Chat Q/A entities for Python backend
+export interface ChatQARequest {
+  question: string;
+  top_k?: number;
+}
+
+export interface ChatQAResponse {
+  answer: string;
+  processing_time: number;
+  model_used: string;
+  timestamp: string;
+}
+
+// Messaging entities for user-to-user messages
+export interface UserMessage {
+  id: number;
+  conversationId: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar?: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface UserConversation {
+  id: number;
+  participant: {
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string;
+    role: UserRole;
+    online: boolean;
+  };
+  lastMessage?: {
+    content: string;
+    timestamp: string;
+    senderId: number;
+  };
+  unreadCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

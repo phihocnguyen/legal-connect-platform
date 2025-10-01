@@ -12,15 +12,24 @@ import {
   PdfMessage, 
   PdfUploadResult,
   PythonPdfUploadResult,
-  PdfSummaryResult
+  PdfSummaryResult,
+  UserMessage,
+  UserConversation,
+  ForumStatsDto,
+  PopularTopicDto,
+  CategoryStatsDto,
+  PopularTagDto,
+  ChatQARequest,
+  ChatQAResponse
 } from '../entities';
 
 export interface ChatRepository {
   getConversations(): Promise<ChatConversation[]>;
   getConversation(id: string): Promise<ChatConversation>;
+  getMessages(conversationId: string): Promise<Message[]>;
   createConversation(title: string): Promise<ChatConversation>;
   deleteConversation(id: string): Promise<void>;
-  sendMessage(conversationId: string, content: string): Promise<Message>;
+  sendMessage(conversationId: string, content: string, role: 'USER' | 'ASSISTANT'): Promise<Message>;
 }
 
 export interface AuthRepository {
@@ -128,4 +137,24 @@ export interface PdfRepository {
   // Python API methods
   uploadPdfToPython(file: File): Promise<PythonPdfUploadResult>;
   getPdfSummary(fileId: string, maxLength?: number): Promise<PdfSummaryResult>;
+}
+
+export interface MessagingRepository {
+  getConversations(userId: number): Promise<UserConversation[]>;
+  getConversationMessages(conversationId: string): Promise<UserMessage[]>;
+  sendMessage(conversationId: string, content: string, senderId: number): Promise<UserMessage>;
+  createConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
+  getOrCreateConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
+  markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
+}
+
+export interface ForumRepository {
+  getForumStats(): Promise<ForumStatsDto>;
+  getPopularTopics(limit: number): Promise<PopularTopicDto[]>;
+  getCategoryStats(): Promise<CategoryStatsDto[]>;
+  getPopularTags(limit: number): Promise<PopularTagDto[]>;
+}
+
+export interface ChatQARepository {
+  askQuestion(request: ChatQARequest): Promise<ChatQAResponse>;
 }

@@ -28,25 +28,21 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public MessageDto sendMessage(SendMessageRequest request, Long userId) {
-        log.info("Sending message for conversation: {} by user: {}", request.getConversationId(), userId);
+        log.info("Sending message for conversation: {} by user: {}, role: {}", 
+                request.getConversationId(), userId, request.getRole());
         
         // Verify user has access to the conversation
         Conversation conversation = conversationRepository.findByIdAndUserId(request.getConversationId(), userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
         
-        // Save user message
-        saveMessage(request.getConversationId(), request.getContent(), MessageRole.USER);
-        
-        // Here you would typically call an AI service to get a response
-        // For now, we'll just return a placeholder response
-        String aiResponse = generateAIResponse(request.getContent(), conversation.getType());
-        MessageDto assistantMessage = saveMessage(request.getConversationId(), aiResponse, MessageRole.ASSISTANT);
+        // Save message with the role from request (USER or ASSISTANT)
+        MessageDto message = saveMessage(request.getConversationId(), request.getContent(), request.getRole());
         
         // Update conversation updated_at timestamp
         conversation.setUpdatedAt(java.time.LocalDateTime.now());
         conversationRepository.save(conversation);
         
-        return assistantMessage;
+        return message;
     }
 
     @Override
@@ -80,19 +76,5 @@ public class MessageServiceImpl implements MessageService {
     public void deleteConversationMessages(Long conversationId) {
         log.info("Deleting all messages for conversation: {}", conversationId);
         messageRepository.deleteByConversationId(conversationId);
-    }
-
-    private String generateAIResponse(String userMessage, Conversation.ConversationType conversationType) {
-        // TODO: Implement actual AI integration
-        // This is a placeholder response
-        if (conversationType == Conversation.ConversationType.PDF_QA) {
-            return "Tôi đã phân tích tài liệu PDF của bạn. Dựa trên câu hỏi: \"" + userMessage + 
-                   "\", tôi sẽ cần tham khảo nội dung tài liệu để đưa ra câu trả lời chính xác. " +
-                   "Đây là phản hồi mẫu cho hệ thống PDF Q&A.";
-        } else {
-            return "Cảm ơn bạn đã hỏi: \"" + userMessage + "\". " +
-                   "Tôi là trợ lý AI pháp lý và sẽ giúp bạn giải đáp các thắc mắc về luật. " +
-                   "Đây là phản hồi mẫu cho hệ thống Q&A.";
-        }
     }
 }

@@ -1,8 +1,7 @@
 'use client';
 
-import { PlusCircle, MessageSquare, Trash2, ChevronLeft } from 'lucide-react';
+import { PlusCircle, MessageSquare, Trash2, Edit3, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -11,20 +10,24 @@ import {
 } from '@/components/ui/tooltip';
 
 interface Conversation {
-  id: string;
+  id: string | number;
   title: string;
-  timestamp: Date;
+  timestamp?: Date;
+  updatedAt?: Date;
+  lastMessage?: string;
 }
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
-  activeId?: string;
-  onSelect: (id: string) => void;
-  onDelete: (id: string) => void;
+  activeId?: string | number;
+  onSelect: (id: string | number) => void;
+  onDelete: (conversation: Conversation) => void;
+  onRename?: (conversation: Conversation) => void;
   onNew: () => void;
   className?: string;
   isCollapsed?: boolean;
-  onToggleCollapse: () => void;
+  onToggleCollapse?: () => void;
+  newButtonText?: string;
 }
 
 export function ConversationSidebar({
@@ -32,11 +35,19 @@ export function ConversationSidebar({
   activeId,
   onSelect,
   onDelete,
+  onRename,
   onNew,
   className,
   isCollapsed = false,
   onToggleCollapse,
+  newButtonText = "Cuộc trò chuyện mới",
 }: ConversationSidebarProps) {
+  const getDisplayDate = (conversation: Conversation) => {
+    const date = conversation.updatedAt || conversation.timestamp;
+    if (!date) return '';
+    return new Date(date).toLocaleDateString();
+  };
+
   return (
     <TooltipProvider>
       <div 
@@ -50,7 +61,7 @@ export function ConversationSidebar({
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           {!isCollapsed && (
             <h2 className="text-sm font-semibold text-gray-900">
-              Conversations
+              Cuộc trò chuyện
             </h2>
           )}
           <div className="flex items-center gap-2">
@@ -65,19 +76,21 @@ export function ConversationSidebar({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>New conversation</p>
+                  <p>{newButtonText}</p>
                 </TooltipContent>
               </Tooltip>
             )}
-            <button
-              onClick={onToggleCollapse}
-              className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
-            >
-              <ChevronLeft className={cn(
-                "w-5 h-5 transition-transform",
-                isCollapsed && "rotate-180"
-              )} />
-            </button>
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+              >
+                <ChevronLeft className={cn(
+                  "w-5 h-5 transition-transform",
+                  isCollapsed && "rotate-180"
+                )} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -87,8 +100,8 @@ export function ConversationSidebar({
             <div
               key={conversation.id}
               className={cn(
-                "group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50",
-                activeId === conversation.id && "bg-gray-50",
+                "group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors",
+                activeId === conversation.id && "bg-gray-100",
                 isCollapsed && "justify-center"
               )}
               onClick={() => onSelect(conversation.id)}
@@ -105,19 +118,36 @@ export function ConversationSidebar({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {conversation.title}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {conversation.timestamp.toLocaleDateString()}
-                    </p>
+                    {(conversation.lastMessage || getDisplayDate(conversation)) && (
+                      <p className="text-xs text-gray-500 truncate">
+                        {conversation.lastMessage || getDisplayDate(conversation)}
+                      </p>
+                    )}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(conversation.id);
-                    }}
-                    className="p-1 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 rounded"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onRename && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRename(conversation);
+                        }}
+                        className="p-1 text-gray-400 hover:text-teal-600 rounded"
+                        title="Đổi tên"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(conversation);
+                      }}
+                      className="p-1 text-gray-400 hover:text-red-600 rounded"
+                      title="Xóa"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </>
               )}
             </div>

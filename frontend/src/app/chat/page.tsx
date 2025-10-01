@@ -6,10 +6,10 @@ import { ChatMessage, LoadingMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeScreen } from "@/components/chat/welcome-screen";
 import { DeleteConversationModal, RenameConversationModal } from "@/components/chat/modals";
-import { cn } from "@/lib/utils";
-import { Trash2, Edit3 } from "lucide-react";
+import { ConversationSidebar } from "@/components/pdf/conversation-sidebar";
 import { useChatUseCases, useChatQAUseCases } from "@/hooks";
 import { Message, ChatConversation } from "@/domain/entities";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function ChatPage() {
   const router = useRouter();
@@ -19,9 +19,9 @@ export default function ChatPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   
-  // Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null);
@@ -49,7 +49,6 @@ export default function ChatPage() {
       try {
         setIsLoadingMessages(true);
         const messages = await getConversationHistory(activeConversationId);
-        
         setConversations(prev => {
           const conversationIndex = prev.findIndex(c => c.id === activeConversationId);
           if (conversationIndex === -1) return prev;
@@ -65,11 +64,12 @@ export default function ChatPage() {
       } catch (error) {
         console.error('Error loading messages:', error);
       } finally {
-        setIsLoadingMessages(false);
       }
     };
     
     loadMessages();
+    setIsLoadingMessages(false);
+  
   }, [activeConversationId, getConversationHistory]);
 
   const currentMessages = useMemo(() => 
@@ -149,19 +149,15 @@ export default function ChatPage() {
 
   const handleSendMessage = async (content: string) => {
     let currentConvId = activeConversationId;
-    
-    // Create new conversation if none exists
     if (!currentConvId) {
       try {
         const conversation = await createConversation("New Conversation");
-        // Initialize messages array if not present
         if (!conversation.messages) {
           conversation.messages = [];
         }
         setConversations(prev => [conversation, ...prev]);
         setActiveConversationId(conversation.id);
         currentConvId = conversation.id;
-        // Push conversation ID to URL
         router.push(`/chat?id=${conversation.id}`);
       } catch (error) {
         console.error('Error creating conversation:', error);
@@ -244,7 +240,6 @@ export default function ChatPage() {
 
           const updatedConversations = [...prev];
           const conversation = { ...updatedConversations[conversationIndex] };
-          // Ensure messages array exists
           conversation.messages = conversation.messages || [];
           conversation.messages = [...conversation.messages, errorMessage];
           
@@ -257,67 +252,30 @@ export default function ChatPage() {
     }
   };
 
+  if(isLoadingMessages) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+        <LoadingSpinner size="lg"/>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-96px)] overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-80 flex flex-col border-r bg-white">
-        <div className="flex-shrink-0 p-4 border-b">
-          <button
-            onClick={handleNewChat}
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-          >
-            Cuộc trò chuyện mới
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              className={cn(
-                "p-4 cursor-pointer hover:bg-stone-50 transition-colors",
-                activeConversationId === conv.id && "bg-stone-100"
-              )}
-              onClick={() => {
-                setActiveConversationId(conv.id);
-                router.push(`/chat?id=${conv.id}`);
-              }}
-            >
-              <div className="flex justify-between items-start group">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">
-                    {conv.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 truncate mt-1">
-                    {conv.lastMessage}
-                  </p>
-                </div>
-                <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRenameChat(conv);
-                    }}
-                    className="p-1 text-gray-400 hover:text-teal-600"
-                    title="Đổi tên"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChat(conv);
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-500"
-                    title="Xóa"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
+      <ConversationSidebar
+        conversations={conversations}
+        activeId={activeConversationId}
+        onSelect={(id) => {
+          setActiveConversationId(id as string);
+          router.push(`/chat?id=${id}`);
+        }}
+        onDelete={(conv) => handleDeleteChat(conv as ChatConversation)}
+        onRename={(conv) => handleRenameChat(conv as ChatConversation)}
+        onNew={handleNewChat}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
 
       <main className="flex-1 flex flex-col bg-stone-50 min-w-0">
         <div className="flex-1 overflow-y-auto">

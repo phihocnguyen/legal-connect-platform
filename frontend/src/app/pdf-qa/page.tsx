@@ -14,8 +14,8 @@ interface PdfFile {
   url: string;
   name: string;
   conversationId?: number;
-  fileId?: string; // Python API file ID
-  summary?: string; // PDF summary from Python API
+  fileId?: string;
+  summary?: string;
 }
 
 export default function PdfQAPage() {
@@ -100,12 +100,9 @@ export default function PdfQAPage() {
   const handleFileSelect = async (url: string, file: File) => {
     setLoading(true);
     try {
-      // Step 1: Upload PDF to Python API for processing
       console.log('Uploading PDF to Python API...');
       const pythonResult = await uploadPdfToPython(file);
       console.log('Python upload result:', pythonResult);
-      
-      // Step 2: Get PDF summary from Python API
       console.log('Getting PDF summary with fileId:', pythonResult.file_id);
       if (!pythonResult.file_id) {
         throw new Error('No file_id received from Python upload');
@@ -113,12 +110,10 @@ export default function PdfQAPage() {
       const summaryResult = await getPdfSummary(pythonResult.file_id, 200);
       console.log('Summary result:', summaryResult);
       
-      // Step 3: Upload to Spring Boot API and create conversation with summary
       console.log('Creating conversation in Spring Boot with summary...');
       const result = await uploadPdf(file, file.name.replace('.pdf', ''), summaryResult.summary);
       
       if (result.success && result.conversation) {
-        // Set PDF file with all information
         setPdfFile({
           url: getPdfViewUrl(result.conversation.id),
           name: file.name,
@@ -127,19 +122,14 @@ export default function PdfQAPage() {
           summary: summaryResult.summary
         });
         
-        // Refresh conversations list
         await loadConversations();
         
-        // Set as active conversation
         setActiveConversationId(result.conversation.id);
-        
-        // Clean up the temporary URL
         URL.revokeObjectURL(url);
         
         console.log('PDF processing completed successfully');
       } else {
         console.error('Upload failed:', result.error);
-        // Keep the local URL for preview but include Python API data
         setPdfFile({
           url,
           name: file.name,
@@ -211,20 +201,20 @@ export default function PdfQAPage() {
   }));
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-gradient-to-b from-gray-50 to-white flex">
+    <div className="h-[calc(100vh-90px)] bg-gradient-to-b from-gray-50 to-white flex overflow-hidden">
       {/* Conversation Sidebar - Always visible */}
       <ConversationSidebar 
         conversations={legacyConversations}
         activeId={activeConversationId?.toString()}
-        onSelect={(id) => handleSelectConversation(parseInt(id))}
-        onDelete={(id) => handleDeleteConversation(parseInt(id))}
+        onSelect={(id) => handleSelectConversation(id as number)}
+        onDelete={(conversation) => handleDeleteConversation(conversation.id as number)}
         onNew={handleNewConversation}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
       />
       
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 flex flex-col h-full overflow-y-scroll">
         {!pdfFile ? (
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
@@ -245,8 +235,8 @@ export default function PdfQAPage() {
             </div>
           </div>
         ) : (
-          <div className="container mx-auto p-4 lg:p-8 max-w-5xl">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+          <div className="flex-1 flex flex-col p-4 lg:p-8 mx-auto w-full">
+            <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg border border-gray-200">
               {/* Header */}
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -286,7 +276,7 @@ export default function PdfQAPage() {
               )}
 
               {/* Notebook-style Chat Interface */}
-              <div className="divide-y divide-gray-200">
+              <div className="flex-1 flex flex-col divide-y divide-gray-200">
                 <NotebookChat 
                   conversationId={activeConversationId}
                   onSendMessage={sendMessage}

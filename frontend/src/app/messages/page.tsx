@@ -18,8 +18,6 @@ import { UserConversation, UserMessage } from '@/domain/entities';
 type ViewMode = 'conversations' | 'newConversation';
 
 export default function MessagesPage() {
-  // Lấy trạng thái connected từ store
-  const connected = useWebSocketStore((state) => state.connected);
 
   const [conversations, setConversations] = useState<UserConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<UserConversation | null>(null);
@@ -41,7 +39,6 @@ export default function MessagesPage() {
       useWebSocketStore.getState().connect();
     }
   }, [currentUser]);
-  // Chỉ gọi hook khi selectedConversation đã có giá trị
   const wsProps = selectedConversation
     ? {
         conversationId: selectedConversation.id.toString(),
@@ -189,16 +186,14 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+        <LoadingSpinner size="lg" text="Đang tải..." />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
+        <div className="container mx-auto py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tin nhắn</h1>

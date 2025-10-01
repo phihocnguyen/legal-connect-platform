@@ -32,3 +32,19 @@ export class CreateConversationUseCase {
     return this.chatRepository.createConversation(title);
   }
 }
+
+export class UpdateConversationTitleUseCase {
+  constructor(private chatRepository: ChatRepository) {}
+
+  async execute(id: string, title: string): Promise<ChatConversation> {
+    return this.chatRepository.updateConversationTitle(id, title);
+  }
+}
+
+export class DeleteConversationUseCase {
+  constructor(private chatRepository: ChatRepository) {}
+
+  async execute(id: string): Promise<void> {
+    return this.chatRepository.deleteConversation(id);
+  }
+}

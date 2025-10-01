@@ -5,20 +5,28 @@ import { useRouter } from "next/navigation";
 import { ChatMessage, LoadingMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeScreen } from "@/components/chat/welcome-screen";
+import { DeleteConversationModal, RenameConversationModal } from "@/components/chat/modals";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit3 } from "lucide-react";
 import { useChatUseCases, useChatQAUseCases } from "@/hooks";
 import { Message, ChatConversation } from "@/domain/entities";
 
 export default function ChatPage() {
   const router = useRouter();
-  const { createConversation, getConversations, sendMessage, getConversationHistory } = useChatUseCases();
+  const { createConversation, getConversations, sendMessage, getConversationHistory, updateConversationTitle, deleteConversation } = useChatUseCases();
   const { askQuestion } = useChatQAUseCases();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  
+  // Modal states
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -34,7 +42,6 @@ export default function ChatPage() {
     loadConversations();
   }, [getConversations]);
 
-  // Load messages when activeConversationId changes
   useEffect(() => {
     const loadMessages = async () => {
       if (!activeConversationId) return;
@@ -43,7 +50,6 @@ export default function ChatPage() {
         setIsLoadingMessages(true);
         const messages = await getConversationHistory(activeConversationId);
         
-        // Update the conversation with loaded messages
         setConversations(prev => {
           const conversationIndex = prev.findIndex(c => c.id === activeConversationId);
           if (conversationIndex === -1) return prev;
@@ -92,12 +98,52 @@ export default function ChatPage() {
     }
   };
 
-  const handleDeleteChat = (id: string) => {
-    if (confirm('Are you sure you want to delete this conversation?')) {
-      setConversations(prev => prev.filter(c => c.id !== id));
-      if (activeConversationId === id) {
+  const handleDeleteChat = (conversation: ChatConversation) => {
+    setSelectedConversation(conversation);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedConversation) return;
+    
+    try {
+      setIsDeleting(true);
+      await deleteConversation(selectedConversation.id);
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      if (activeConversationId === selectedConversation.id) {
         setActiveConversationId(undefined);
+        router.push('/chat');
       }
+      setIsDeleteModalOpen(false);
+      setSelectedConversation(null);
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRenameChat = (conversation: ChatConversation) => {
+    setSelectedConversation(conversation);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleConfirmRename = async (newTitle: string) => {
+    if (!selectedConversation) return;
+    
+    try {
+      setIsRenaming(true);
+      await updateConversationTitle(selectedConversation.id, newTitle);
+      setConversations(prev => 
+        prev.map(c => c.id === selectedConversation.id ? { ...c, title: newTitle } : c)
+      );
+      setIsRenameModalOpen(false);
+      setSelectedConversation(null);
+    } catch (error) {
+      console.error('Error renaming conversation:', error);
+      throw error; // Re-throw to let modal handle the error
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -245,15 +291,28 @@ export default function ChatPage() {
                     {conv.lastMessage}
                   </p>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteChat(conv.id);
-                  }}
-                  className="ml-2 p-1 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRenameChat(conv);
+                    }}
+                    className="p-1 text-gray-400 hover:text-teal-600"
+                    title="Đổi tên"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteChat(conv);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-500"
+                    title="Xóa"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -295,6 +354,30 @@ export default function ChatPage() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConversationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedConversation(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        conversationTitle={selectedConversation?.title || ''}
+        isDeleting={isDeleting}
+      />
+
+      {/* Rename Conversation Modal */}
+      <RenameConversationModal
+        isOpen={isRenameModalOpen}
+        onClose={() => {
+          setIsRenameModalOpen(false);
+          setSelectedConversation(null);
+        }}
+        onConfirm={handleConfirmRename}
+        currentTitle={selectedConversation?.title || ''}
+        isRenaming={isRenaming}
+      />
     </div>
   );
 }

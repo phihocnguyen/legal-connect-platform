@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Editor } from '@tinymce/tinymce-react';
 
 import { usePostUseCases } from '@/hooks/use-post-cases';
 import { PostCategoryDto, PostCreateDto } from '@/domain/entities';
+
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key';
 
 export default function NewThreadPage() {
   const router = useRouter();
@@ -60,6 +63,13 @@ export default function NewThreadPage() {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  // Helper function to strip HTML tags for validation
+  const stripHtmlTags = (html: string): string => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -73,7 +83,9 @@ export default function NewThreadPage() {
       return;
     }
 
-    if (content.trim().length < 30) {
+    // Validate content length (strip HTML tags for validation)
+    const plainTextContent = stripHtmlTags(content);
+    if (plainTextContent.trim().length < 30) {
       setError('Nội dung phải có ít nhất 30 ký tự');
       return;
     }
@@ -209,18 +221,25 @@ export default function NewThreadPage() {
             {/* Content */}
             <div className="space-y-2">
               <Label htmlFor="content">Nội dung</Label>
-              <textarea
-                id="content"
+              <Editor
+                apiKey={TINYMCE_API_KEY}
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full min-h-[400px] p-4 rounded-md border border-gray-300 resize-y"
-                placeholder="Nhập nội dung chi tiết của chủ đề..."
-                required
+                onEditorChange={(content: string) => setContent(content)}
+                init={{
+                  menubar: false,
+                  height: 400,
+                  plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview', 'anchor',
+                    'searchreplace', 'visualblocks', 'code', 'insertdatetime', 'table', 'help', 'wordcount'
+                  ],
+                  toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code | help',
+                  placeholder: 'Nhập nội dung chi tiết của chủ đề...',
+                  content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
+                }}
                 disabled={loading}
-                minLength={30}
               />
               <div className="flex justify-between text-sm text-gray-500">
-                <span>Hỗ trợ định dạng Markdown</span>
+                <span>Hỗ trợ định dạng văn bản phong phú</span>
                 <span>Tối thiểu 30 ký tự</span>
               </div>
             </div>

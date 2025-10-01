@@ -237,8 +237,6 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
           ))}
         </div>
       )}
-
-      {/* Reply Form */}
       <div id="reply-form" className="mt-6 bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Trả lời</h3>
         <form onSubmit={handleSubmitReply}>
@@ -248,6 +246,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
             onEditorChange={(content: string) => setReplyContent(content)}
             init={{
               menubar: false,
+              height: 200,
               plugins: [
                 'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview', 'anchor',
                 'searchreplace', 'visualblocks', 'code', 'insertdatetime', 'table', 'help', 'wordcount'

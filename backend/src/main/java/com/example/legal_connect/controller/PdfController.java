@@ -2,6 +2,7 @@ package com.example.legal_connect.controller;
 
 import com.example.legal_connect.dto.conversation.PdfUploadResponse;
 import com.example.legal_connect.security.UserPrincipal;
+import com.example.legal_connect.service.ApiKeyValidationService;
 import com.example.legal_connect.service.PdfService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PdfController {
 
     private final PdfService pdfService;
+    private final ApiKeyValidationService apiKeyValidationService;
 
     @PostMapping("/upload")
     @Operation(summary = "Upload PDF file and create a new PDF-QA conversation")
@@ -34,12 +36,23 @@ public class PdfController {
             @RequestParam(value = "summary", required = false) String summary,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, userPrincipal.getId());
-        
-        if (response.isSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
+        try {
+            // Validate and deduct API key
+            apiKeyValidationService.validateAndUseApiKey(userPrincipal.getId(), "pdf");
+            
+            PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, userPrincipal.getId());
+            
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(PdfUploadResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build());
         }
     }
 

@@ -5,8 +5,11 @@ import { NotebookChat } from '@/components/pdf/notebook-chat';
 import { DocumentUpload } from '@/components/pdf/document-upload';
 import { ConversationSidebar } from '@/components/pdf/conversation-sidebar';
 import { ConfirmationModal } from '@/components/ui/confirmation-modal';
+import { ApiKeyInput } from '@/components/shared/api-key-input';
+import { ApiLimitModal } from '@/components/shared/api-limit-modal';
 import { useState, useCallback, useEffect } from 'react';
 import { usePdfCases } from '@/hooks/use-pdf-cases';
+import { useApiKey } from '@/hooks/use-user-cases';
 import { PdfConversation } from '@/domain/entities';
 import { toast } from 'sonner';
 
@@ -24,6 +27,11 @@ export default function PdfQAPage() {
   const [activeConversationId, setActiveConversationId] = useState<number>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // API Key state
+  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
+  const [showApiLimitModal, setShowApiLimitModal] = useState(false);
+  const { apiKey, getMyApiKey } = useApiKey();
   
   // Modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -73,6 +81,15 @@ export default function PdfQAPage() {
   // Load conversations on component mount and restore last active conversation
   useEffect(() => {
     const initializePage = async () => {
+      // Check API key first
+      const storedKey = localStorage.getItem('user_api_key');
+      if (storedKey) {
+        setIsApiKeyValid(true);
+      }
+      
+      // Load API key info
+      await getMyApiKey();
+      
       await loadConversations();
       
       // Try to restore last active conversation from localStorage
@@ -86,7 +103,7 @@ export default function PdfQAPage() {
     };
     
     initializePage();
-  }, [loadConversations, handleSelectConversation]);
+  }, [loadConversations, handleSelectConversation, getMyApiKey]);
 
   // Save active conversation to localStorage
   useEffect(() => {
@@ -98,6 +115,17 @@ export default function PdfQAPage() {
   }, [activeConversationId]);
 
   const handleFileSelect = async (url: string, file: File) => {
+    // Check API key validity and limit
+    if (!isApiKeyValid) {
+      toast.error('Vui lòng xác thực API key trước khi upload PDF');
+      return;
+    }
+
+    if (apiKey && apiKey.remainingCalls <= 0) {
+      setShowApiLimitModal(true);
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('Uploading PDF to Python API...');
@@ -215,7 +243,19 @@ export default function PdfQAPage() {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-y-scroll">
-        {!pdfFile ? (
+        {!isApiKeyValid ? (
+          <div className="w-full h-full flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+              <ApiKeyInput 
+                onValidKey={() => {
+                  setIsApiKeyValid(true);
+                  toast.success('API key đã được xác thực thành công!');
+                }}
+                featureName="PDF Q/A"
+              />
+            </div>
+          </div>
+        ) : !pdfFile ? (
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
               <div className="text-center mb-8">
@@ -300,6 +340,13 @@ export default function PdfQAPage() {
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
+      />
+
+      {/* API Limit Modal */}
+      <ApiLimitModal
+        open={showApiLimitModal}
+        onClose={() => setShowApiLimitModal(false)}
+        remainingCalls={apiKey?.remainingCalls || 0}
       />
     </div>
   );

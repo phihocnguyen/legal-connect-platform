@@ -86,38 +86,45 @@ public class ChatController {
     }
     @MessageMapping("/chat.private")
     public void sendPrivateMessage(@Payload ChatMessage chatMessage, Principal principal) {
-        UserPrincipal userPrincipal = getUserFromPrincipal(principal);
-        if (userPrincipal == null) {
-            log.warn("Unauthorized private message attempt");
-            return;
-        }
+    UserPrincipal userPrincipal = getUserFromPrincipal(principal);
+    if (userPrincipal == null) {
+        log.warn("Unauthorized private message attempt");
+        return;
+    }
 
-        String userId = userPrincipal.getId().toString();
-        String userName = userPrincipal.getFullName();
-        
-        log.info("Private message from {} to {}: {}", 
-                userName, chatMessage.getReceiverId(), chatMessage.getContent());
+    String userId = userPrincipal.getId().toString();
+    String userName = userPrincipal.getFullName();
+    String principalName = principal.getName();
 
-        chatMessage.setSenderId(userId);
-        chatMessage.setSenderName(userName);
-        chatMessage.setType(ChatMessage.MessageType.CHAT);
-        chatMessage.setTimestamp(LocalDateTime.now());
-        chatMessage.setId(UUID.randomUUID().toString());
+    log.info("[WS] principal.getName(): {} | senderId: {} | senderName: {} | receiverId: {} | content: {}", principalName, userId, userName, chatMessage.getReceiverId(), chatMessage.getContent());
 
-        // Update last seen của sender
-        onlineUserService.updateLastSeen(userId);
+    chatMessage.setSenderId(userId);
+    chatMessage.setSenderName(userName);
+    chatMessage.setType(ChatMessage.MessageType.CHAT);
+    chatMessage.setTimestamp(LocalDateTime.now());
+    chatMessage.setId(UUID.randomUUID().toString());
 
-        // Gửi tin nhắn tới receiver
-        messagingTemplate.convertAndSendToUser(
-                chatMessage.getReceiverId(),
-                "/queue/private",
-                chatMessage
-        );
-        messagingTemplate.convertAndSendToUser(
-                userId,
-                "/queue/private",
-                chatMessage
-        );
+    // Update last seen của sender
+    onlineUserService.updateLastSeen(userId);
+
+    // Log trước khi gửi cho receiver
+    log.info("[WS] Sending to receiverId: {} (convertAndSendToUser)", chatMessage.getReceiverId());
+    messagingTemplate.convertAndSendToUser(
+        chatMessage.getReceiverId(),
+        "/queue/private",
+        chatMessage
+    );
+
+    // Log principal.getName() của receiver (nếu có session)
+    log.info("[WS] principal.getName() của người nhận (receiverId): {}", chatMessage.getReceiverId());
+
+    // Log trước khi gửi cho sender
+    log.info("[WS] Sending to sender principal: {} (convertAndSendToUser)", principalName);
+    messagingTemplate.convertAndSendToUser(
+        principalName,
+        "/queue/private",
+        chatMessage
+    );
     }
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload ChatMessage chatMessage, Principal principal) {

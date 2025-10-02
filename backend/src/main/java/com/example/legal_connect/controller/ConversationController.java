@@ -3,6 +3,7 @@ package com.example.legal_connect.controller;
 import com.example.legal_connect.dto.conversation.*;
 import com.example.legal_connect.entity.Conversation.ConversationType;
 import com.example.legal_connect.security.UserPrincipal;
+import com.example.legal_connect.service.ApiKeyValidationService;
 import com.example.legal_connect.service.ConversationService;
 import com.example.legal_connect.service.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +25,7 @@ public class ConversationController {
 
     private final ConversationService conversationService;
     private final MessageService messageService;
+    private final ApiKeyValidationService apiKeyValidationService;
 
     @PostMapping
     @Operation(summary = "Create a new conversation")
@@ -105,6 +107,9 @@ public class ConversationController {
     public ResponseEntity<MessageDto> sendMessage(
             @Valid @RequestBody SendMessageRequest request,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        // Validate and deduct API key for chat
+        apiKeyValidationService.validateAndUseApiKey(userPrincipal.getId(), "chat");
         
         MessageDto response = messageService.sendMessage(request, userPrincipal.getId());
         return ResponseEntity.ok(response);

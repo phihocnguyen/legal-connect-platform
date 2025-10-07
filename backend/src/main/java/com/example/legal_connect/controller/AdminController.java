@@ -3,6 +3,7 @@ package com.example.legal_connect.controller;
 import com.example.legal_connect.dto.admin.UserManagementDto;
 import com.example.legal_connect.dto.admin.PostModerationDto;
 import com.example.legal_connect.dto.admin.LawyerApplicationDto;
+import com.example.legal_connect.dto.admin.AdminDashboardStatsDto;
 import com.example.legal_connect.dto.common.ApiResponse;
 import com.example.legal_connect.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +27,22 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final AdminService adminService;
+
+    // ========== DASHBOARD STATISTICS ==========
+    
+    @GetMapping("/dashboard/stats")
+    @Operation(summary = "Get dashboard statistics")
+    public ResponseEntity<ApiResponse<AdminDashboardStatsDto>> getDashboardStats() {
+        log.info("Getting admin dashboard statistics");
+        
+        AdminDashboardStatsDto stats = adminService.getDashboardStatistics();
+        
+        return ResponseEntity.ok(ApiResponse.<AdminDashboardStatsDto>builder()
+            .success(true)
+            .message("Dashboard statistics retrieved successfully")
+            .data(stats)
+            .build());
+    }
 
     // ========== USER MANAGEMENT ==========
     
@@ -159,19 +176,6 @@ public class AdminController {
             .success(true)
             .message("Lawyer application rejected successfully")
             .data("Application rejected with admin notes")
-            .build());
-    }
-
-    // ========== DASHBOARD STATISTICS ==========
-    
-    @GetMapping("/dashboard/stats")
-    @Operation(summary = "Get admin dashboard statistics")
-    public ResponseEntity<ApiResponse<Object>> getDashboardStats() {
-        // TODO: Implement dashboard statistics
-        return ResponseEntity.ok(ApiResponse.builder()
-            .success(true)
-            .message("Dashboard statistics retrieved successfully")
-            .data("Statistics feature will be implemented")
             .build());
     }
 }

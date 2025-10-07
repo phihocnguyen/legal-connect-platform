@@ -62,6 +62,10 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Temporarily commented to fix cached plan issue
+    // @Column(name = "last_login")
+    // private LocalDateTime lastLogin;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

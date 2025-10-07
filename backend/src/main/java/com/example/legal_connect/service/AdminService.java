@@ -1,0 +1,348 @@
+package com.example.legal_connect.service;
+
+import com.example.legal_connect.dto.admin.UserManagementDto;
+import com.example.legal_connect.dto.admin.PostModerationDto;
+import com.example.legal_connect.dto.admin.LawyerApplicationDto;
+import com.example.legal_connect.dto.admin.AdminDashboardStatsDto;
+import com.example.legal_connect.entity.User;
+import com.example.legal_connect.entity.Post;
+import com.example.legal_connect.entity.LawyerApplication;
+import com.example.legal_connect.repository.UserRepository;
+import com.example.legal_connect.repository.ForumRepository;
+import com.example.legal_connect.repository.LawyerApplicationRepository;
+import com.example.legal_connect.security.UserPrincipal;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AdminService {
+
+    private final UserRepository userRepository;
+    private final ForumRepository forumRepository;
+    private final LawyerApplicationRepository lawyerApplicationRepository;
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<UserManagementDto> getAllUsers(String search, String role, Pageable pageable) {
+        Page<User> users;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            users = userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                search.trim(), search.trim(), pageable);
+        } else if (role != null && !role.trim().isEmpty()) {
+            try {
+                User.Role userRole = User.Role.valueOf(role.toUpperCase());
+                users = userRepository.findByRole(userRole, pageable);
+            } catch (IllegalArgumentException e) {
+                users = userRepository.findAll(pageable);
+            }
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+
+        return users.map(this::convertToUserManagementDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<PostModerationDto> getPostsForModeration(String search, Boolean isActive, Pageable pageable) {
+        Page<Post> posts;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            posts = forumRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                search.trim(), search.trim(), pageable);
+        } else if (isActive != null) {
+            posts = forumRepository.findByIsActive(isActive, pageable);
+        } else {
+            posts = forumRepository.findAll(pageable);
+        }
+
+        return posts.map(this::convertToPostModerationDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<LawyerApplicationDto> getLawyerApplications(String status, String search, Pageable pageable) {
+        LawyerApplication.ApplicationStatus appStatus = null;
+        
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                appStatus = LawyerApplication.ApplicationStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status provided: {}", status);
+            }
+        }
+
+        Page<LawyerApplication> applications = lawyerApplicationRepository.findByStatusAndSearch(
+            appStatus, search != null ? search.trim() : "", pageable);
+
+        return applications.map(this::convertToLawyerApplicationDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updateUserStatus(Long userId, Boolean isEnabled) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setIsEnabled(isEnabled);
+        userRepository.save(user);
+        
+        log.info("User {} status updated to: {}", userId, isEnabled ? "enabled" : "disabled");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updatePostStatus(Long postId, Boolean isActive) {
+        Post post = forumRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        post.setIsActive(isActive);
+        forumRepository.save(post);
+        
+        log.info("Post {} status updated to: {}", postId, isActive ? "active" : "inactive");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void approveLawyerApplication(Long applicationId, String adminNotes) {
+        LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
+            .orElseThrow(() -> new RuntimeException("Application not found"));
+        
+        // Get current admin user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
+        
+        // Update application status
+        application.setStatus(LawyerApplication.ApplicationStatus.APPROVED);
+        application.setAdminNotes(adminNotes);
+        application.setReviewedBy(userPrincipal.getId());
+        application.setReviewedAt(LocalDateTime.now());
+        
+        // Update user role to lawyer
+        User user = application.getUser();
+        user.setRole(User.Role.LAWYER);
+        
+        lawyerApplicationRepository.save(application);
+        userRepository.save(user);
+        
+        log.info("Lawyer application {} approved by admin {}", applicationId, userPrincipal.getId());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void rejectLawyerApplication(Long applicationId, String adminNotes) {
+        LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
+            .orElseThrow(() -> new RuntimeException("Application not found"));
+        
+        // Get current admin user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
+        
+        // Update application status
+        application.setStatus(LawyerApplication.ApplicationStatus.REJECTED);
+        application.setAdminNotes(adminNotes);
+        application.setReviewedBy(userPrincipal.getId());
+        application.setReviewedAt(LocalDateTime.now());
+        
+        lawyerApplicationRepository.save(application);
+        
+        log.info("Lawyer application {} rejected by admin {}", applicationId, userPrincipal.getId());
+    }
+
+    private UserManagementDto convertToUserManagementDto(User user) {
+        return UserManagementDto.builder()
+            .id(user.getId())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .phoneNumber(user.getPhoneNumber())
+            .avatar(user.getAvatar())
+            .role(user.getRole().toString())
+            .authProvider(user.getAuthProvider().toString())
+            .isEmailVerified(user.getIsEmailVerified())
+            .isEnabled(user.getIsEnabled())
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
+            .postsCount(0) // TODO: implement count
+            .messagesCount(0) // TODO: implement count
+            .build();
+    }
+
+    private PostModerationDto convertToPostModerationDto(Post post) {
+        PostModerationDto.AuthorDto authorDto = PostModerationDto.AuthorDto.builder()
+            .id(post.getAuthor().getId())
+            .fullName(post.getAuthor().getFullName())
+            .email(post.getAuthor().getEmail())
+            .avatar(post.getAuthor().getAvatar())
+            .role(post.getAuthor().getRole().toString())
+            .build();
+
+        return PostModerationDto.builder()
+            .id(post.getId())
+            .title(post.getTitle())
+            .content(post.getContent())
+            .categoryName(post.getCategory().getName())
+            .author(authorDto)
+            .views(post.getViews())
+            .replyCount(post.getReplyCount())
+            .isActive(post.getIsActive())
+            .isPinned(post.getPinned())
+            .isHot(post.getIsHot())
+            .createdAt(post.getCreatedAt())
+            .updatedAt(post.getUpdatedAt())
+            .violationReason("") // TODO: implement violation reporting
+            .isReported(false) // TODO: implement violation reporting
+            .reportCount(0) // TODO: implement violation reporting
+            .build();
+    }
+
+    private LawyerApplicationDto convertToLawyerApplicationDto(LawyerApplication application) {
+        LawyerApplicationDto.UserSummaryDto userDto = LawyerApplicationDto.UserSummaryDto.builder()
+            .id(application.getUser().getId())
+            .fullName(application.getUser().getFullName())
+            .email(application.getUser().getEmail())
+            .avatar(application.getUser().getAvatar())
+            .build();
+
+        return LawyerApplicationDto.builder()
+            .id(application.getId())
+            .user(userDto)
+            .licenseNumber(application.getLicenseNumber())
+            .lawSchool(application.getLawSchool())
+            .graduationYear(application.getGraduationYear())
+            .specializations(application.getSpecializations() != null ? 
+                Arrays.asList(application.getSpecializations().split(",")) : null)
+            .yearsOfExperience(application.getYearsOfExperience())
+            .currentFirm(application.getCurrentFirm())
+            .bio(application.getBio())
+            .phoneNumber(application.getPhoneNumber())
+            .officeAddress(application.getOfficeAddress())
+            .documentUrls(application.getDocumentUrls())
+            .status(application.getStatus().toString())
+            .adminNotes(application.getAdminNotes())
+            .reviewedBy(application.getReviewedBy())
+            .reviewedAt(application.getReviewedAt())
+            .createdAt(application.getCreatedAt())
+            .build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public AdminDashboardStatsDto getDashboardStatistics() {
+        log.info("Generating admin dashboard statistics");
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime thirtyDaysAgo = now.minus(30, ChronoUnit.DAYS);
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        
+        // Basic counts
+        long totalUsers = userRepository.count();
+        long totalPosts = forumRepository.count();
+        long totalLawyers = userRepository.countByRole(User.Role.LAWYER);
+        long totalCategories = forumRepository.countDistinctCategories();
+        
+        // Pending/Active items
+        long pendingApplications = lawyerApplicationRepository.countByStatus(LawyerApplication.ApplicationStatus.PENDING);
+        long activeUsers = userRepository.count(); // Temporarily use total count instead of lastLogin
+        long reportedPosts = forumRepository.countByIsReportedTrue();
+        
+        // Growth metrics
+        long newUsersThisMonth = userRepository.countByCreatedAtAfter(startOfMonth);
+        long newPostsThisMonth = forumRepository.countByCreatedAtAfter(startOfMonth);
+        long newLawyersThisMonth = lawyerApplicationRepository.countByStatusAndReviewedAtAfter(
+            LawyerApplication.ApplicationStatus.APPROVED, startOfMonth);
+        
+        // User statistics by role
+        List<AdminDashboardStatsDto.UserRoleStatsDto> usersByRole = new ArrayList<>();
+        for (User.Role role : User.Role.values()) {
+            long count = userRepository.countByRole(role);
+            long activeCount = count; // Temporarily use same count instead of lastLogin
+            
+            usersByRole.add(AdminDashboardStatsDto.UserRoleStatsDto.builder()
+                .role(role.toString())
+                .count(count)
+                .activeCount(activeCount)
+                .build());
+        }
+        
+        // Popular posts (top 5 by views in last 30 days)
+        List<Post> popularPostsEntities = forumRepository.findTopPostsByViews(thirtyDaysAgo, 5);
+        List<AdminDashboardStatsDto.PopularContentDto> popularPosts = popularPostsEntities.stream()
+            .map(post -> AdminDashboardStatsDto.PopularContentDto.builder()
+                .postId(post.getId())
+                .title(post.getTitle())
+                .categoryName(post.getCategory().getName())
+                .views(post.getViews())
+                .replies(post.getReplyCount())
+                .createdAt(post.getCreatedAt())
+                .build())
+            .collect(Collectors.toList());
+        
+        // Recent activities (last 10)
+        List<AdminDashboardStatsDto.RecentActivityDto> recentActivities = new ArrayList<>();
+        
+        // Add recent user registrations
+        List<User> recentUsers = userRepository.findTop5ByOrderByCreatedAtDesc();
+        for (User user : recentUsers) {
+            recentActivities.add(AdminDashboardStatsDto.RecentActivityDto.builder()
+                .type("USER_REGISTERED")
+                .description("New user registered: " + user.getFullName())
+                .timestamp(user.getCreatedAt())
+                .userEmail(user.getEmail())
+                .entityId(user.getId())
+                .build());
+        }
+        
+        // Add recent posts
+        List<Post> recentPosts = forumRepository.findTop5ByOrderByCreatedAtDesc();
+        for (Post post : recentPosts) {
+            recentActivities.add(AdminDashboardStatsDto.RecentActivityDto.builder()
+                .type("POST_CREATED")
+                .description("New post: " + post.getTitle())
+                .timestamp(post.getCreatedAt())
+                .userEmail(post.getAuthor().getEmail())
+                .entityId(post.getId())
+                .build());
+        }
+        
+        // Sort by timestamp descending and limit to 10
+        recentActivities = recentActivities.stream()
+            .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+            .limit(10)
+            .collect(Collectors.toList());
+        
+        return AdminDashboardStatsDto.builder()
+            .totalUsers(totalUsers)
+            .totalPosts(totalPosts)
+            .totalLawyers(totalLawyers)
+            .totalCategories(totalCategories)
+            .pendingApplications(pendingApplications)
+            .activeUsers(activeUsers)
+            .reportedPosts(reportedPosts)
+            .unresolvedReports(reportedPosts) // Assuming all reported posts are unresolved for now
+            .newUsersThisMonth(newUsersThisMonth)
+            .newPostsThisMonth(newPostsThisMonth)
+            .newLawyersThisMonth(newLawyersThisMonth)
+            .totalMessages(0L) // TODO: Implement when message system is ready
+            .totalConversations(0L) // TODO: Implement when message system is ready
+            .recentActivities(recentActivities)
+            .popularPosts(popularPosts)
+            .usersByRole(usersByRole)
+            .lastUpdated(now)
+            .build();
+    }
+}

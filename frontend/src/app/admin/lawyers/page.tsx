@@ -30,93 +30,55 @@ import {
   CheckCircle, 
   XCircle,
   Eye,
-  FileText,
-  User as UserIcon,
-  Calendar,
-  GraduationCap,
-  Building,
-  Phone,
-  MapPin
+  User as UserIcon
 } from 'lucide-react';
-import { toast } from 'sonner';
-
-interface LawyerApplication {
-  id: number;
-  user: {
-    id: number;
-    fullName: string;
-    email: string;
-    avatar?: string;
-  };
-  licenseNumber: string;
-  lawSchool: string;
-  graduationYear: number;
-  specializations: string[];
-  yearsOfExperience: number;
-  currentFirm?: string;
-  bio: string;
-  phoneNumber?: string;
-  officeAddress?: string;
-  documentUrls: string[];
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  adminNotes?: string;
-  reviewedBy?: number;
-  reviewedAt?: string;
-  createdAt: string;
-}
+import { useAdminCases } from '@/hooks/use-admin-cases';
+import { LawyerApplication } from '@/domain/entities';
+import { LawyerDetailModal } from '@/components/admin/lawyer-detail-modal';
 
 export default function LawyerApplicationsPage() {
   const [applications, setApplications] = useState<LawyerApplication[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Review dialog state
+  // Use admin cases hook
+  const {
+    loading,
+    getLawyerApplications,
+    approveLawyerApplication,
+    rejectLawyerApplication,
+  } = useAdminCases();
+
+  // Modal state
   const [selectedApplication, setSelectedApplication] = useState<LawyerApplication | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // Review dialog state (for approve/reject actions)
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
-  const [reviewing, setReviewing] = useState(false);
 
   const fetchApplications = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        size: '10',
-        sortBy: 'createdAt',
-        sortDir: 'desc'
-      });
+    const params = {
+      page,
+      size: 10,
+      sortBy: 'createdAt',
+      sortDir: 'desc' as const,
+      ...(search.trim() && { search: search.trim() }),
+      ...(statusFilter && statusFilter !== '' && { status: statusFilter }),
+    };
 
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
-      if (statusFilter) {
-        params.append('status', statusFilter);
-      }
-
-      const response = await fetch(`/api/admin/lawyer-applications?${params}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch applications');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setApplications(result.data.content || []);
-        setTotalPages(result.data.totalPages || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-      toast.error('Có lỗi khi tải danh sách đơn đăng ký');
-    } finally {
-      setLoading(false);
+    const result = await getLawyerApplications(params);
+    if (result) {
+      console.log('Fetched lawyer applications:', result);
+      setApplications(result.content || []);
+      setTotalPages(result.totalPages || 0);
+    } else {
+      console.log('No result from getLawyerApplications');
     }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, getLawyerApplications]);
 
   useEffect(() => {
     fetchApplications();
@@ -129,43 +91,35 @@ export default function LawyerApplicationsPage() {
     setShowReviewDialog(true);
   };
 
+  const handleViewDetails = (application: LawyerApplication) => {
+    setSelectedApplication(application);
+    setShowModal(true);
+  };
+
+  const handleModalApprove = async () => {
+    setShowModal(false);
+    if (selectedApplication) {
+      handleReview(selectedApplication, 'approve');
+    }
+  };
+
+  const handleModalReject = async () => {
+    setShowModal(false);
+    if (selectedApplication) {
+      handleReview(selectedApplication, 'reject');
+    }
+  };
+
   const submitReview = async () => {
     if (!selectedApplication) return;
 
-    try {
-      setReviewing(true);
-      const endpoint = reviewAction === 'approve' ? 'approve' : 'reject';
-      const params = new URLSearchParams();
-      if (adminNotes.trim()) {
-        params.append('adminNotes', adminNotes.trim());
-      }
+    const success = reviewAction === 'approve'
+      ? await approveLawyerApplication(selectedApplication.id, adminNotes.trim() || undefined)
+      : await rejectLawyerApplication(selectedApplication.id, adminNotes.trim() || undefined);
 
-      const response = await fetch(
-        `/api/admin/lawyer-applications/${selectedApplication.id}/${endpoint}?${params}`,
-        {
-          method: 'PUT',
-          credentials: 'include'
-        }
-      );
-
-      const result = await response.json();
-      
-      if (result.success) {
-        toast.success(
-          reviewAction === 'approve' 
-            ? 'Đơn đăng ký đã được phê duyệt!' 
-            : 'Đơn đăng ký đã bị từ chối!'
-        );
-        setShowReviewDialog(false);
-        fetchApplications(); // Refresh the list
-      } else {
-        toast.error(result.message || 'Có lỗi xảy ra khi xử lý đơn đăng ký');
-      }
-    } catch (error) {
-      console.error('Error reviewing application:', error);
-      toast.error('Có lỗi xảy ra khi xử lý đơn đăng ký');
-    } finally {
-      setReviewing(false);
+    if (success) {
+      setShowReviewDialog(false);
+      fetchApplications(); // Refresh the list
     }
   };
 
@@ -328,9 +282,12 @@ export default function LawyerApplicationsPage() {
                             )}
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <button
+                              onClick={() => handleViewDetails(application)}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                            >
                               {application.user.fullName}
-                            </div>
+                            </button>
                             <div className="text-sm text-gray-500">
                               {application.user.email}
                             </div>
@@ -361,10 +318,10 @@ export default function LawyerApplicationsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedApplication(application)}
+                            onClick={() => handleViewDetails(application)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Xem
+                            Chi tiết
                           </Button>
                           {application.status === 'PENDING' && (
                             <>
@@ -422,136 +379,14 @@ export default function LawyerApplicationsPage() {
           </CardContent>
         </Card>
 
-        {/* Application Details Dialog */}
-        {selectedApplication && !showReviewDialog && (
-          <Dialog open={true} onOpenChange={() => setSelectedApplication(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Chi tiết đơn đăng ký</DialogTitle>
-                <DialogDescription>
-                  Đơn đăng ký #{selectedApplication.id} - {getStatusBadge(selectedApplication.status)}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {/* Personal Info */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Thông tin cá nhân</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <UserIcon className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">{selectedApplication.user.fullName}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Scale className="h-4 w-4 text-gray-400" />
-                      <span>{selectedApplication.licenseNumber}</span>
-                    </div>
-                    {selectedApplication.phoneNumber && (
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span>{selectedApplication.phoneNumber}</span>
-                      </div>
-                    )}
-                    {selectedApplication.officeAddress && (
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{selectedApplication.officeAddress}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Education */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Học vấn và kinh nghiệm</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <GraduationCap className="h-4 w-4 text-gray-400" />
-                      <span>{selectedApplication.lawSchool}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span>Tốt nghiệp {selectedApplication.graduationYear}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Scale className="h-4 w-4 text-gray-400" />
-                      <span>{selectedApplication.yearsOfExperience} năm kinh nghiệm</span>
-                    </div>
-                    {selectedApplication.currentFirm && (
-                      <div className="flex items-center space-x-2">
-                        <Building className="h-4 w-4 text-gray-400" />
-                        <span>{selectedApplication.currentFirm}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Specializations */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Chuyên môn</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedApplication.specializations.map((spec, index) => (
-                      <Badge key={index} variant="outline">{spec}</Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bio */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Giới thiệu bản thân</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {selectedApplication.bio}
-                  </p>
-                </div>
-
-                {/* Documents */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Tài liệu đính kèm</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedApplication.documentUrls.map((url, index) => (
-                      <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                        <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">Tài liệu {index + 1}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Admin Notes */}
-                {selectedApplication.adminNotes && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Ghi chú của admin</h3>
-                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                      {selectedApplication.adminNotes}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setSelectedApplication(null)}>
-                  Đóng
-                </Button>
-                {selectedApplication.status === 'PENDING' && (
-                  <>
-                    <Button
-                      onClick={() => handleReview(selectedApplication, 'approve')}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Phê duyệt
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReview(selectedApplication, 'reject')}
-                    >
-                      Từ chối
-                    </Button>
-                  </>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+        {/* Lawyer Detail Modal */}
+        <LawyerDetailModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          application={selectedApplication}
+          onApprove={handleModalApprove}
+          onReject={handleModalReject}
+        />
 
         {/* Review Dialog */}
         <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
@@ -592,10 +427,10 @@ export default function LawyerApplicationsPage() {
               </Button>
               <Button
                 onClick={submitReview}
-                disabled={reviewing || (reviewAction === 'reject' && !adminNotes.trim())}
+                disabled={loading || (reviewAction === 'reject' && !adminNotes.trim())}
                 variant={reviewAction === 'approve' ? 'default' : 'destructive'}
               >
-                {reviewing ? 'Đang xử lý...' : (reviewAction === 'approve' ? 'Phê duyệt' : 'Từ chối')}
+                {loading ? 'Đang xử lý...' : (reviewAction === 'approve' ? 'Phê duyệt' : 'Từ chối')}
               </Button>
             </DialogFooter>
           </DialogContent>

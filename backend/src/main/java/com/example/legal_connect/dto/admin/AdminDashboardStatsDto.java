@@ -81,4 +81,31 @@ public class AdminDashboardStatsDto {
     }
     
     private List<UserRoleStatsDto> usersByRole;
+    
+    // Chart data
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MonthlyGrowthDto {
+        private String month; // "2024-01", "2024-02", etc.
+        private long users;
+        private long lawyers;
+        private long posts;
+    }
+    
+    private List<MonthlyGrowthDto> monthlyGrowth;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WeeklyActivityDto {
+        private String day; // "Monday", "Tuesday", etc.
+        private long posts;
+        private long replies;
+        private long views;
+    }
+    
+    private List<WeeklyActivityDto> weeklyActivity;
 }

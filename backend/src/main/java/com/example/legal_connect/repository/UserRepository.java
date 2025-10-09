@@ -26,6 +26,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole(User.Role role);
     List<User> findTop5ByOrderByCreatedAtDesc();
     
+    // Chart data methods
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    long countByRoleAndCreatedAtBetween(User.Role role, LocalDateTime start, LocalDateTime end);
+    
     // Temporarily disabled lastLogin methods to fix cached plan issue
     // default long countByLastLoginAfter(LocalDateTime since) {
     //     return count(); // Return total count for now

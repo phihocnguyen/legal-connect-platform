@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { AdminDashboardRepository, AdminDashboardStats } from '../infrastructure/repositories/admin-dashboard.repository';
+import { AdminDashboardRepository } from '../infrastructure/repositories/admin-dashboard.repository';
+import { AdminDashboardStats } from '../domain/entities';
 import { toast } from 'sonner';
 
 export const useAdminDashboard = () => {

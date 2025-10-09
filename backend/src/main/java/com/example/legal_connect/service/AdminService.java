@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 
 @Service
@@ -324,6 +323,12 @@ public class AdminService {
             .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
             .limit(10)
             .collect(Collectors.toList());
+
+        // Monthly growth data (last 6 months)
+        List<AdminDashboardStatsDto.MonthlyGrowthDto> monthlyGrowth = generateMonthlyGrowthData();
+        
+        // Weekly activity data (last 7 days)
+        List<AdminDashboardStatsDto.WeeklyActivityDto> weeklyActivity = generateWeeklyActivityData();
         
         return AdminDashboardStatsDto.builder()
             .totalUsers(totalUsers)
@@ -342,7 +347,69 @@ public class AdminService {
             .recentActivities(recentActivities)
             .popularPosts(popularPosts)
             .usersByRole(usersByRole)
+            .monthlyGrowth(monthlyGrowth)
+            .weeklyActivity(weeklyActivity)
             .lastUpdated(now)
             .build();
+    }
+
+    private List<AdminDashboardStatsDto.MonthlyGrowthDto> generateMonthlyGrowthData() {
+        List<AdminDashboardStatsDto.MonthlyGrowthDto> monthlyData = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        
+        for (int i = 5; i >= 0; i--) {
+            LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+            LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
+            
+            String monthLabel = monthStart.format(java.time.format.DateTimeFormatter.ofPattern("MM/yyyy"));
+            
+            // Count users/posts created within this specific month
+            long users = userRepository.countByCreatedAtBetween(monthStart, monthEnd);
+            long lawyers = userRepository.countByRoleAndCreatedAtBetween(User.Role.LAWYER, monthStart, monthEnd);
+            long posts = forumRepository.countByCreatedAtBetween(monthStart, monthEnd);
+            
+            monthlyData.add(AdminDashboardStatsDto.MonthlyGrowthDto.builder()
+                .month(monthLabel)
+                .users(users)
+                .lawyers(lawyers)
+                .posts(posts)
+                .build());
+        }
+        
+        return monthlyData;
+    }
+
+    private List<AdminDashboardStatsDto.WeeklyActivityDto> generateWeeklyActivityData() {
+        List<AdminDashboardStatsDto.WeeklyActivityDto> weeklyData = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Get Monday of current week
+        LocalDateTime monday = now.with(java.time.DayOfWeek.MONDAY);
+        
+        // If today is before Monday, get Monday of previous week
+        if (now.isBefore(monday)) {
+            monday = monday.minusWeeks(1);
+        }
+        
+        String[] dayNames = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"};
+        
+        // Loop from Monday to Sunday
+        for (int i = 0; i < 7; i++) {
+            LocalDateTime dayStart = monday.plusDays(i).withHour(0).withMinute(0).withSecond(0);
+            LocalDateTime dayEnd = dayStart.plusDays(1).minusSeconds(1);
+            
+            long posts = forumRepository.countByCreatedAtBetween(dayStart, dayEnd);
+            long replies = 0; // TODO: Implement reply counting when PostReply entity is ready
+            long views = posts * 25; // Rough estimate: 25 views per post
+            
+            weeklyData.add(AdminDashboardStatsDto.WeeklyActivityDto.builder()
+                .day(dayNames[i])
+                .posts(posts)
+                .replies(replies)
+                .views(views)
+                .build());
+        }
+        
+        return weeklyData;
     }
 }

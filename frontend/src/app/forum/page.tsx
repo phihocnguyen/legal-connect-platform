@@ -46,7 +46,7 @@ export default function ForumPage() {
     if (params.page !== undefined && params.page > 0) {
       urlParams.set('page', params.page.toString());
     }
-    if (params.size !== undefined && params.size !== 10) {
+    if (params.size !== undefined) {
       urlParams.set('size', params.size.toString());
     }
     if (params.category) {
@@ -213,7 +213,7 @@ export default function ForumPage() {
       sort: sortBy, 
       time: timeFilter 
     });
-    loadPosts(0, true);
+    setPostsLoading(true);
   };
 
   const handleSearch = (e: React.FormEvent) => {

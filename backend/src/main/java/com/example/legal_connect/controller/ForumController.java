@@ -44,7 +44,7 @@ public class ForumController {
 
     @GetMapping("/posts")
     public ResponseEntity<Page<PostDto>> getAllPosts(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            Pageable pageable,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String timeFilter) {
         System.out.println("getAllPosts - Pageable: " + pageable);

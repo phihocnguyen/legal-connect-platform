@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,8 @@ const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key';
 export default function NewThreadPage() {
   const router = useRouter();
   const { getAllCategories, createPostNew } = usePostUseCases();
-
+  const searchParams = useSearchParams();
+  console.log(searchParams)
   // Form states
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -31,13 +32,20 @@ export default function NewThreadPage() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load categories on component mount
   useEffect(() => {
     const loadCategories = async () => {
       try {
         setLoadingCategories(true);
         const categoriesData = await getAllCategories();
         setCategories(categoriesData);
+        
+        const categorySlug = searchParams.get('category');
+        if (categorySlug) {
+          const foundCategory = categoriesData.find(cat => cat.slug === categorySlug);
+          if (foundCategory) {
+            setSelectedCategoryId(foundCategory.id);
+          }
+        }
       } catch (err) {
         console.error('Error loading categories:', err);
         setError('Không thể tải danh sách chuyên mục');
@@ -47,7 +55,7 @@ export default function NewThreadPage() {
     };
 
     loadCategories();
-  }, [getAllCategories]);
+  }, [getAllCategories, searchParams]);
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
@@ -63,7 +71,6 @@ export default function NewThreadPage() {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // Helper function to strip HTML tags for validation
   const stripHtmlTags = (html: string): string => {
     const temp = document.createElement('div');
     temp.innerHTML = html;
@@ -151,21 +158,30 @@ export default function NewThreadPage() {
             {/* Category Selection */}
             <div className="space-y-2">
               <Label htmlFor="category">Chuyên mục</Label>
-              <select
-                id="category"
-                value={selectedCategoryId || ''}
-                onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full rounded-md border border-gray-300 p-2"
-                required
-                disabled={loading}
-              >
-                <option value="">Chọn chuyên mục</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              {searchParams.get('category') ? (
+                // Read-only display when category is pre-selected from URL
+                <div className="w-full rounded-md border border-gray-300 bg-gray-50 p-2 text-gray-700">
+                  {categories.find(cat => cat.id === selectedCategoryId)?.name || 'Đang tải...'}
+                  <input type="hidden" value={selectedCategoryId || ''} />
+                </div>
+              ) : (
+                // Normal dropdown when no category specified
+                <select
+                  id="category"
+                  value={selectedCategoryId || ''}
+                  onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full rounded-md border border-gray-300 p-2"
+                  required
+                  disabled={loading}
+                >
+                  <option value="">Chọn chuyên mục</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Title */}

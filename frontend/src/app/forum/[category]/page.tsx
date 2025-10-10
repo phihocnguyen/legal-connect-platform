@@ -89,7 +89,7 @@ export default function CategoryPage() {
                   )}
                 </div>
               </div>
-              <Link href="/forum/new">
+              <Link href={`/forum/new?category=${categorySlug}`}>
                 <Button>Tạo chủ đề mới</Button>
               </Link>
             </div>

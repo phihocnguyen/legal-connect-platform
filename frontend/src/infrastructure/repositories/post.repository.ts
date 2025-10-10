@@ -1,5 +1,16 @@
 import { PostRepository } from '../../domain/interfaces/repositories';
-import { Post, PostDto, PostCreateDto, PostCategoryDto, PostReplyDto, AddReplyDto } from '../../domain/entities';
+import { 
+  Post, 
+  PostDto, 
+  PostCreateDto, 
+  PostCategoryDto, 
+  PostReplyDto, 
+  AddReplyDto,
+  ForumStatsDto,
+  PopularTopicDto,
+  CategoryStatsDto,
+  PopularTagDto
+} from '../../domain/entities';
 import { apiClient } from '../../lib/axiosInstance';
 
 export class HttpPostRepository implements PostRepository {
@@ -83,7 +94,7 @@ export class HttpPostRepository implements PostRepository {
     return response.data;
   }
 
-  async getAllPosts(params: { page?: number; size?: number; sort?: string }): Promise<{
+  async getAllPosts(params: { page?: number; size?: number; sort?: string; categoryId?: number; timeFilter?: string }): Promise<{
     content: PostDto[];
     totalElements: number;
     totalPages: number;
@@ -94,15 +105,27 @@ export class HttpPostRepository implements PostRepository {
     if (params.page !== undefined) queryParams.append('page', params.page.toString());
     if (params.size !== undefined) queryParams.append('size', params.size.toString());
     if (params.sort) queryParams.append('sort', params.sort);
+    if (params.categoryId !== undefined) queryParams.append('categoryId', params.categoryId.toString());
+    if (params.timeFilter && params.timeFilter !== 'all') queryParams.append('timeFilter', params.timeFilter);
 
     const response = await apiClient.get<{
       content: PostDto[];
-      totalElements: number;
-      totalPages: number;
-      size: number;
-      number: number;
+      page: {
+        size: number;
+        number: number;
+        totalElements: number;
+        totalPages: number;
+      };
     }>(`/forum/posts?${queryParams.toString()}`);
-    return response.data;
+    
+    // Transform response to expected format
+    return {
+      content: response.data.content,
+      totalElements: response.data.page.totalElements,
+      totalPages: response.data.page.totalPages,
+      size: response.data.page.size,
+      number: response.data.page.number,
+    };
   }
 
   async getPostsByCategory(
@@ -122,14 +145,24 @@ export class HttpPostRepository implements PostRepository {
 
     const response = await apiClient.get<{
       content: PostDto[];
-      totalElements: number;
-      totalPages: number;
-      size: number;
-      number: number;
+      page: {
+        size: number;
+        number: number;
+        totalElements: number;
+        totalPages: number;
+      };
     }>(
       `/forum/categories/${categorySlug}/posts?${queryParams.toString()}`
     );
-    return response.data;
+    
+    // Transform response to expected format
+    return {
+      content: response.data.content,
+      totalElements: response.data.page.totalElements,
+      totalPages: response.data.page.totalPages,
+      size: response.data.page.size,
+      number: response.data.page.number,
+    };
   }
 
   async searchPosts(
@@ -150,12 +183,22 @@ export class HttpPostRepository implements PostRepository {
 
     const response = await apiClient.get<{
       content: PostDto[];
-      totalElements: number;
-      totalPages: number;
-      size: number;
-      number: number;
+      page: {
+        size: number;
+        number: number;
+        totalElements: number;
+        totalPages: number;
+      };
     }>(`/forum/posts/search?${queryParams.toString()}`);
-    return response.data;
+    
+    // Transform response to expected format
+    return {
+      content: response.data.content,
+      totalElements: response.data.page.totalElements,
+      totalPages: response.data.page.totalPages,
+      size: response.data.page.size,
+      number: response.data.page.number,
+    };
   }
 
   async searchPostsByCategory(
@@ -177,14 +220,24 @@ export class HttpPostRepository implements PostRepository {
 
     const response = await apiClient.get<{
       content: PostDto[];
-      totalElements: number;
-      totalPages: number;
-      size: number;
-      number: number;
+      page: {
+        size: number;
+        number: number;
+        totalElements: number;
+        totalPages: number;
+      };
     }>(
       `/forum/categories/${categorySlug}/posts/search?${queryParams.toString()}`
     );
-    return response.data;
+    
+    // Transform response to expected format
+    return {
+      content: response.data.content,
+      totalElements: response.data.page.totalElements,
+      totalPages: response.data.page.totalPages,
+      size: response.data.page.size,
+      number: response.data.page.number,
+    };
   }
 
   async getPostById(id: number): Promise<PostDto> {
@@ -218,5 +271,26 @@ export class HttpPostRepository implements PostRepository {
 
   async deleteReply(replyId: number): Promise<void> {
     await apiClient.delete(`/forum/replies/${replyId}`);
+  }
+
+  // Statistics API methods
+  async getForumStats(): Promise<ForumStatsDto> {
+    const response = await apiClient.get<ForumStatsDto>('/forum/stats');
+    return response.data;
+  }
+
+  async getPopularTopics(limit: number = 5): Promise<PopularTopicDto[]> {
+    const response = await apiClient.get<PopularTopicDto[]>(`/forum/popular-topics?limit=${limit}`);
+    return response.data;
+  }
+
+  async getCategoryStats(): Promise<CategoryStatsDto[]> {
+    const response = await apiClient.get<CategoryStatsDto[]>('/forum/category-stats');
+    return response.data;
+  }
+
+  async getPopularTags(limit: number = 10): Promise<PopularTagDto[]> {
+    const response = await apiClient.get<PopularTagDto[]>(`/forum/popular-tags?limit=${limit}`);
+    return response.data;
   }
 }

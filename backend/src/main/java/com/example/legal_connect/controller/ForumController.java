@@ -44,8 +44,13 @@ public class ForumController {
 
     @GetMapping("/posts")
     public ResponseEntity<Page<PostDto>> getAllPosts(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        Page<PostDto> posts = postService.getAllPosts(pageable);
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String timeFilter) {
+        System.out.println("getAllPosts - Pageable: " + pageable);
+        System.out.println("getAllPosts - CategoryId: " + categoryId);
+        System.out.println("getAllPosts - TimeFilter: " + timeFilter);
+        Page<PostDto> posts = postService.getAllPosts(pageable, categoryId, timeFilter);
         return ResponseEntity.ok(posts);
     }
 
@@ -104,9 +109,6 @@ public class ForumController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
     }
 
-    /**
-     * Update post
-     */
     @PutMapping("/posts/{id}")
     public ResponseEntity<PostDto> updatePost(
             @PathVariable Long id,
@@ -117,9 +119,6 @@ public class ForumController {
         return ResponseEntity.ok(updatedPost);
     }
 
-    /**
-     * Delete post (soft delete)
-     */
     @DeleteMapping("/posts/{id}")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long id,
@@ -129,20 +128,12 @@ public class ForumController {
         return ResponseEntity.noContent().build();
     }
 
-    // === REPLY ENDPOINTS ===
-
-    /**
-     * Get replies for a post
-     */
     @GetMapping("/posts/{postId}/replies")
     public ResponseEntity<List<PostReplyDto>> getRepliesByPost(@PathVariable Long postId) {
         List<PostReplyDto> replies = postService.getRepliesByPost(postId);
         return ResponseEntity.ok(replies);
     }
 
-    /**
-     * Add reply to a post
-     */
     @PostMapping("/posts/{postId}/replies")
     public ResponseEntity<PostReplyDto> addReply(
             @PathVariable Long postId,
@@ -169,11 +160,6 @@ public class ForumController {
         return ResponseEntity.noContent().build();
     }
 
-    // === UTILITY METHODS ===
-
-    /**
-     * Extract user ID from authentication
-     */
     private Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
@@ -193,9 +179,6 @@ public class ForumController {
         return ResponseEntity.ok(stats);
     }
     
-    /**
-     * Get popular topics
-     */
     @GetMapping("/popular-topics")
     public ResponseEntity<List<PopularTopicDto>> getPopularTopics(
             @RequestParam(defaultValue = "5") int limit) {
@@ -203,18 +186,14 @@ public class ForumController {
         return ResponseEntity.ok(topics);
     }
     
-    /**
-     * Get category statistics
-     */
+
     @GetMapping("/category-stats")
     public ResponseEntity<List<CategoryStatsDto>> getCategoryStats() {
         List<CategoryStatsDto> stats = postService.getCategoryStats();
         return ResponseEntity.ok(stats);
     }
     
-    /**
-     * Get popular tags
-     */
+
     @GetMapping("/popular-tags")
     public ResponseEntity<List<PopularTagDto>> getPopularTags(
             @RequestParam(defaultValue = "10") int limit) {

@@ -1,21 +1,47 @@
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { PostDto } from '@/domain/entities';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination } from '@/components/ui/pagination';
+import { PostDto, PostCategoryDto } from '@/domain/entities';
+import { PostsSkeleton } from './posts-skeleton';
 import Image from 'next/image';
 
 interface RecentPostsProps {
   posts: PostDto[];
+  categories: PostCategoryDto[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+  pageSize: number;
+  selectedCategory: number | null;
+  sortBy: string;
+  timeFilter: string;
+  isLoading?: boolean;
+  onPageChange: (page: number) => void;
+  onCategoryChange: (categoryId: number | null) => void;
+  onSortChange: (sort: string) => void;
+  onTimeFilterChange: (filter: string) => void;
+  onPageSizeChange: (size: number) => void;
 }
 
-// const roleColors = {
-//   admin: 'text-red-600',
-//   moderator: 'text-blue-600',
-//   lawyer: 'text-green-600',
-//   user: 'text-gray-500'
-// };
-
-export function RecentPosts({ posts }: RecentPostsProps) {
+export function RecentPosts({ 
+  posts, 
+  categories, 
+  totalPages, 
+  totalElements, 
+  currentPage, 
+  pageSize,
+  selectedCategory,
+  sortBy,
+  timeFilter,
+  isLoading = false,
+  onPageChange,
+  onCategoryChange,
+  onSortChange,
+  onTimeFilterChange,
+  onPageSizeChange
+}: RecentPostsProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -34,30 +60,55 @@ export function RecentPosts({ posts }: RecentPostsProps) {
           <h2 className="text-xl font-semibold">Bài viết mới nhất</h2>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <select className="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
-            <option value="all">Tất cả danh mục</option>
-          </select>
+          <Select value={selectedCategory?.toString() || 'all'} onValueChange={(value) => onCategoryChange(value === 'all' ? null : parseInt(value))}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Chọn danh mục" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả danh mục</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id.toString()}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <select className="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
-            <option value="latest">Mới nhất</option>
-            <option value="most-viewed">Xem nhiều nhất</option>
-            <option value="most-replied">Nhiều phản hồi nhất</option>
-          </select>
+          <Select value={sortBy} onValueChange={onSortChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Sắp xếp theo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="createdAt,desc">Mới nhất</SelectItem>
+              <SelectItem value="views,desc">Xem nhiều nhất</SelectItem>
+              <SelectItem value="replyCount,desc">Nhiều phản hồi nhất</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <select className="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
-            <option value="today">Hôm nay</option>
-            <option value="week">Tuần này</option>
-            <option value="month">Tháng này</option>
-            <option value="all-time">Tất cả</option>
-          </select>
+          <Select value={timeFilter} onValueChange={onTimeFilterChange}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Thời gian" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="today">Hôm nay</SelectItem>
+              <SelectItem value="week">Tuần này</SelectItem>
+              <SelectItem value="month">Tháng này</SelectItem>
+            </SelectContent>
+          </Select>
 
           <div className="flex items-center gap-2 ml-auto">
             <label className="text-sm text-gray-500">Hiển thị:</label>
-            <select className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
+            <Select value={pageSize.toString()} onValueChange={(value) => onPageSizeChange(parseInt(value))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="15">15</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -76,7 +127,9 @@ export function RecentPosts({ posts }: RecentPostsProps) {
       </div>
       
       <div className="divide-y">
-        {posts.length > 0 ? (
+        {isLoading ? (
+          <PostsSkeleton count={pageSize} />
+        ) : posts.length > 0 ? (
           posts.map((post) => (
             <div key={post.id} className="p-6 hover:bg-gray-50">
               <div className="flex items-start gap-4">
@@ -123,6 +176,16 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             Chưa có bài viết nào
           </div>
         )}
+      </div>
+      
+      <div className="border-t">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

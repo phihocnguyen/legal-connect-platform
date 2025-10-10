@@ -19,6 +19,7 @@ public interface ForumService {
 
     // Post
     Page<PostDto> getAllPosts(Pageable pageable);
+    Page<PostDto> getAllPosts(Pageable pageable, Long categoryId, String timeFilter);
     Page<PostDto> getPostsByCategory(String categorySlug, Pageable pageable);
     Page<PostDto> searchPosts(String keyword, Pageable pageable);
     Page<PostDto> searchPostsByCategory(String keyword, String categorySlug, Pageable pageable);

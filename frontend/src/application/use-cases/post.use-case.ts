@@ -55,7 +55,7 @@ export class GetCategoryBySlugUseCase {
 export class GetAllPostsUseCase {
   constructor(private postRepository: PostRepository) {}
 
-  async execute(params: { page?: number; size?: number; sort?: string }) {
+  async execute(params: { page?: number; size?: number; sort?: string; categoryId?: number; timeFilter?: string }) {
     return this.postRepository.getAllPosts(params);
   }
 }

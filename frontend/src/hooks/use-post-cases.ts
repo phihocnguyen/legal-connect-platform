@@ -64,7 +64,7 @@ export function usePostUseCases() {
     return useCase.execute(slug);
   }, []);
 
-  const getAllPosts = useCallback((params: { page?: number; size?: number; sort?: string }) => {
+  const getAllPosts = useCallback((params: { page?: number; size?: number; sort?: string; categoryId?: number; timeFilter?: string }) => {
     const useCase = container.getUseCase<GetAllPostsUseCase>('GetAllPostsUseCase');
     return useCase.execute(params);
   }, []);

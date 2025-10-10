@@ -61,6 +61,43 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    public Page<PostDto> getAllPosts(Pageable pageable, Long categoryId, String timeFilter) {
+        if (categoryId != null) {
+            // Filter by category
+            return postRepository.findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(categoryId, pageable)
+                    .map(postMapper::toDto);
+        }
+        
+        if (timeFilter != null && !timeFilter.equals("all")) {
+            LocalDateTime startDate = null;
+            LocalDateTime now = LocalDateTime.now();
+            
+            switch (timeFilter) {
+                case "today":
+                    startDate = now.toLocalDate().atStartOfDay();
+                    break;
+                case "week":
+                    startDate = now.minusWeeks(1);
+                    break;
+                case "month":
+                    startDate = now.minusMonths(1);
+                    break;
+                case "year":
+                    startDate = now.minusYears(1);
+                    break;
+            }
+            
+            if (startDate != null) {
+                return postRepository.findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(startDate, pageable)
+                        .map(postMapper::toDto);
+            }
+        }
+        
+        // Default: return all posts
+        return getAllPosts(pageable);
+    }
+
+    @Override
     public Page<PostDto> getPostsByCategory(String categorySlug, Pageable pageable) {
         return postRepository.findByCategorySlugAndIsActiveTrue(categorySlug, pageable)
                 .map(postMapper::toDto);

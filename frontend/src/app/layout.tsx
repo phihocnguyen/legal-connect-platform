@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css"; 
 import "@fontsource/alexandria"; 
-import { Header } from "@/components/navbar/header";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LoadingProvider } from "@/contexts/loading-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { GlobalLoadingIndicator } from "@/components/ui/global-loading-indicator";
 import { Toaster } from "@/components/ui/sonner";
 import WebSocketProvider from "@/components/web-socket-provider";
+import ConditionalHeader from "@/components/shared/conditional-header";
 
 export const metadata: Metadata = {
   title: "Legal Connect - Nền tảng tư vấn pháp lý",
@@ -27,7 +27,7 @@ export default function RootLayout({
             <AuthGuard>
               <WebSocketProvider>
                 <div className="flex min-h-screen flex-col">
-                <Header />
+                <ConditionalHeader />
                 <main className="flex-1">
                   {children}
                 </main>
@@ -35,7 +35,7 @@ export default function RootLayout({
               </WebSocketProvider>
             </AuthGuard>
             <GlobalLoadingIndicator />
-            <Toaster />
+            <Toaster position="top-right" />
           </AuthProvider>
         </LoadingProvider>
       </body>

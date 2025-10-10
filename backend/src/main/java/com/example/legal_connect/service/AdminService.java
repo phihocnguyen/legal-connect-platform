@@ -4,12 +4,18 @@ import com.example.legal_connect.dto.admin.UserManagementDto;
 import com.example.legal_connect.dto.admin.PostModerationDto;
 import com.example.legal_connect.dto.admin.LawyerApplicationDto;
 import com.example.legal_connect.dto.admin.AdminDashboardStatsDto;
+import com.example.legal_connect.dto.admin.CategoryCreateDto;
+import com.example.legal_connect.dto.admin.CategoryUpdateDto;
+import com.example.legal_connect.dto.forum.PostCategoryDto;
 import com.example.legal_connect.entity.User;
 import com.example.legal_connect.entity.Post;
+import com.example.legal_connect.entity.PostCategory;
 import com.example.legal_connect.entity.LawyerApplication;
 import com.example.legal_connect.repository.UserRepository;
 import com.example.legal_connect.repository.ForumRepository;
+import com.example.legal_connect.repository.PostCategoryRepository;
 import com.example.legal_connect.repository.LawyerApplicationRepository;
+import com.example.legal_connect.mapper.PostCategoryMapper;
 import com.example.legal_connect.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +42,9 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final ForumRepository forumRepository;
+    private final PostCategoryRepository postCategoryRepository;
     private final LawyerApplicationRepository lawyerApplicationRepository;
+    private final PostCategoryMapper postCategoryMapper;
 
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserManagementDto> getAllUsers(String search, String role, Pageable pageable) {
@@ -411,5 +419,115 @@ public class AdminService {
         }
         
         return weeklyData;
+    }
+
+    // ========== CATEGORY MANAGEMENT ==========
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<PostCategoryDto> getAllCategoriesForAdmin(String search, Pageable pageable) {
+        Page<PostCategory> categories;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            // For now, get all and filter (can be optimized with custom repository method later)
+            categories = postCategoryRepository.findAll(pageable);
+            // TODO: Add custom repository method for search functionality
+        } else {
+            categories = postCategoryRepository.findAll(pageable);
+        }
+        
+        return categories.map(postCategoryMapper::toDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public PostCategoryDto createCategory(CategoryCreateDto categoryCreateDto) {
+        log.info("Creating category: {}", categoryCreateDto.getName());
+        
+        // Check if slug already exists
+        if (postCategoryRepository.existsBySlug(categoryCreateDto.getSlug())) {
+            throw new IllegalArgumentException("Category slug already exists: " + categoryCreateDto.getSlug());
+        }
+        
+        // Check if name already exists (case insensitive)
+        if (postCategoryRepository.findByNameIgnoreCase(categoryCreateDto.getName()).isPresent()) {
+            throw new IllegalArgumentException("Category name already exists: " + categoryCreateDto.getName());
+        }
+        
+        PostCategory category = new PostCategory();
+        category.setName(categoryCreateDto.getName());
+        category.setSlug(categoryCreateDto.getSlug());
+        category.setDescription(categoryCreateDto.getDescription());
+        category.setIcon(categoryCreateDto.getIcon());
+        category.setDisplayOrder(categoryCreateDto.getDisplayOrder() != null ? categoryCreateDto.getDisplayOrder() : 0);
+        category.setIsActive(categoryCreateDto.getIsActive() != null ? categoryCreateDto.getIsActive() : true);
+        
+        PostCategory savedCategory = postCategoryRepository.save(category);
+        
+        log.info("Category created successfully with ID: {}", savedCategory.getId());
+        return postCategoryMapper.toDto(savedCategory);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public PostCategoryDto updateCategory(Long categoryId, CategoryUpdateDto categoryUpdateDto) {
+        log.info("Updating category ID: {}", categoryId);
+        
+        PostCategory existingCategory = postCategoryRepository.findById(categoryId)
+            .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
+        
+        // Check if slug already exists for different category
+        if (postCategoryRepository.existsBySlugAndIdNot(categoryUpdateDto.getSlug(), categoryId)) {
+            throw new IllegalArgumentException("Category slug already exists: " + categoryUpdateDto.getSlug());
+        }
+        
+        // Update category fields
+        existingCategory.setName(categoryUpdateDto.getName());
+        existingCategory.setSlug(categoryUpdateDto.getSlug());
+        existingCategory.setDescription(categoryUpdateDto.getDescription());
+        existingCategory.setIcon(categoryUpdateDto.getIcon());
+        existingCategory.setDisplayOrder(categoryUpdateDto.getDisplayOrder() != null ? categoryUpdateDto.getDisplayOrder() : 0);
+        existingCategory.setIsActive(categoryUpdateDto.getIsActive() != null ? categoryUpdateDto.getIsActive() : true);
+        
+        PostCategory updatedCategory = postCategoryRepository.save(existingCategory);
+        
+        log.info("Category updated successfully: {}", updatedCategory.getName());
+        return postCategoryMapper.toDto(updatedCategory);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void deleteCategory(Long categoryId) {
+        log.info("Deleting category ID: {}", categoryId);
+        
+        PostCategory category = postCategoryRepository.findById(categoryId)
+            .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
+        
+        // Check if category has associated posts
+        if (category.getPosts() != null && !category.getPosts().isEmpty()) {
+            log.warn("Category ID: {} has {} associated posts. Deactivating instead of deleting.", 
+                categoryId, category.getPosts().size());
+            
+            // Instead of deleting, deactivate the category
+            category.setIsActive(false);
+            postCategoryRepository.save(category);
+        } else {
+            // Safe to delete if no posts
+            postCategoryRepository.delete(category);
+            log.info("Category deleted successfully: {}", category.getName());
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updateCategoryStatus(Long categoryId, Boolean isActive) {
+        log.info("Updating category ID: {} status to: {}", categoryId, isActive);
+        
+        PostCategory category = postCategoryRepository.findById(categoryId)
+            .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
+        
+        category.setIsActive(isActive);
+        postCategoryRepository.save(category);
+        
+        log.info("Category status updated successfully: {} -> {}", category.getName(), isActive);
     }
 }

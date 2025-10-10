@@ -1,5 +1,6 @@
 import { 
   User, 
+  AdminUser,
   ChatConversation, 
   Message, 
   Post, 
@@ -20,7 +21,10 @@ import {
   CategoryStatsDto,
   PopularTagDto,
   ChatQARequest,
-  ChatQAResponse
+  ChatQAResponse,
+  LawyerApplication,
+  AdminDashboardStats,
+  AdminPost
 } from '../entities';
 
 export interface ChatRepository {
@@ -28,6 +32,7 @@ export interface ChatRepository {
   getConversation(id: string): Promise<ChatConversation>;
   getMessages(conversationId: string): Promise<Message[]>;
   createConversation(title: string): Promise<ChatConversation>;
+  updateConversationTitle(id: string, title: string): Promise<ChatConversation>;
   deleteConversation(id: string): Promise<void>;
   sendMessage(conversationId: string, content: string, role: 'USER' | 'ASSISTANT'): Promise<Message>;
 }
@@ -157,4 +162,85 @@ export interface ForumRepository {
 
 export interface ChatQARepository {
   askQuestion(request: ChatQARequest): Promise<ChatQAResponse>;
+}
+
+export interface AdminRepository {
+  // User management
+  getUsers(params: {
+    page?: number;
+    size?: number;
+    search?: string;
+    role?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }): Promise<{
+    content: AdminUser[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+  }>;
+  
+  updateUserStatus(userId: number, isEnabled: boolean): Promise<void>;
+
+  // Post moderation
+  getPosts(params: {
+    page?: number;
+    size?: number;
+    search?: string;
+    isActive?: boolean;
+    sortBy?: string;
+    sortDir?: string;
+  }): Promise<{
+    content: AdminPost[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+  }>;
+  
+  updatePostStatus(postId: number, isActive: boolean): Promise<void>;
+
+  // Lawyer applications
+  getLawyerApplications(params: {
+    page?: number;
+    size?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }): Promise<{
+    content: LawyerApplication[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+  }>;
+  
+  approveLawyerApplication(applicationId: number, adminNotes?: string): Promise<void>;
+  rejectLawyerApplication(applicationId: number, adminNotes?: string): Promise<void>;
+
+  // Dashboard stats
+  getDashboardStats(): Promise<AdminDashboardStats>;
+}
+
+export interface LawyerRepository {
+  uploadDocuments(files: File[]): Promise<string[]>;
+  submitApplication(application: {
+    licenseNumber: string;
+    lawSchool: string;
+    graduationYear: number;
+    specializations: string[];
+    yearsOfExperience: number;
+    currentFirm: string;
+    bio: string;
+    phoneNumber: string;
+    officeAddress: string;
+    documentUrls: string[];
+  }): Promise<LawyerApplication>;
+  getUserApplication(): Promise<LawyerApplication | null>;
+  canUserApply(): Promise<boolean>;
+  hasUserApplied(): Promise<boolean>;
+  updateApplicationDocuments(applicationId: number, documentUrls: string[]): Promise<LawyerApplication>;
+  deleteApplication(applicationId: number): Promise<void>;
 }

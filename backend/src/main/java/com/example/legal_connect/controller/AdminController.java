@@ -4,6 +4,9 @@ import com.example.legal_connect.dto.admin.UserManagementDto;
 import com.example.legal_connect.dto.admin.PostModerationDto;
 import com.example.legal_connect.dto.admin.LawyerApplicationDto;
 import com.example.legal_connect.dto.admin.AdminDashboardStatsDto;
+import com.example.legal_connect.dto.admin.CategoryCreateDto;
+import com.example.legal_connect.dto.admin.CategoryUpdateDto;
+import com.example.legal_connect.dto.forum.PostCategoryDto;
 import com.example.legal_connect.dto.common.ApiResponse;
 import com.example.legal_connect.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -176,6 +180,95 @@ public class AdminController {
             .success(true)
             .message("Lawyer application rejected successfully")
             .data("Application rejected with admin notes")
+            .build());
+    }
+
+    // ========== CATEGORY MANAGEMENT ==========
+    
+    @GetMapping("/categories")
+    @Operation(summary = "Get all categories for admin management")
+    public ResponseEntity<ApiResponse<Page<PostCategoryDto>>> getAllCategoriesForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "displayOrder") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(required = false) String search) {
+        
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<PostCategoryDto> categories = adminService.getAllCategoriesForAdmin(search, pageable);
+        
+        return ResponseEntity.ok(ApiResponse.<Page<PostCategoryDto>>builder()
+            .success(true)
+            .message("Categories retrieved successfully")
+            .data(categories)
+            .build());
+    }
+
+    @PostMapping("/categories")
+    @Operation(summary = "Create a new category")
+    public ResponseEntity<ApiResponse<PostCategoryDto>> createCategory(
+            @RequestBody @Valid CategoryCreateDto categoryCreateDto) {
+        
+        log.info("Creating new category: {}", categoryCreateDto.getName());
+        
+        PostCategoryDto createdCategory = adminService.createCategory(categoryCreateDto);
+        
+        return ResponseEntity.ok(ApiResponse.<PostCategoryDto>builder()
+            .success(true)
+            .message("Category created successfully")
+            .data(createdCategory)
+            .build());
+    }
+
+    @PutMapping("/categories/{categoryId}")
+    @Operation(summary = "Update an existing category")
+    public ResponseEntity<ApiResponse<PostCategoryDto>> updateCategory(
+            @PathVariable Long categoryId,
+            @RequestBody @Valid CategoryUpdateDto categoryUpdateDto) {
+        
+        log.info("Updating category ID: {} with data: {}", categoryId, categoryUpdateDto.getName());
+        
+        PostCategoryDto updatedCategory = adminService.updateCategory(categoryId, categoryUpdateDto);
+        
+        return ResponseEntity.ok(ApiResponse.<PostCategoryDto>builder()
+            .success(true)
+            .message("Category updated successfully")
+            .data(updatedCategory)
+            .build());
+    }
+
+    @DeleteMapping("/categories/{categoryId}")
+    @Operation(summary = "Delete a category")
+    public ResponseEntity<ApiResponse<String>> deleteCategory(@PathVariable Long categoryId) {
+        
+        log.info("Deleting category ID: {}", categoryId);
+        
+        adminService.deleteCategory(categoryId);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Category deleted successfully")
+            .data("Category and associated posts have been removed")
+            .build());
+    }
+
+    @PutMapping("/categories/{categoryId}/status")
+    @Operation(summary = "Toggle category active status")
+    public ResponseEntity<ApiResponse<String>> toggleCategoryStatus(
+            @PathVariable Long categoryId,
+            @RequestParam Boolean isActive) {
+        
+        log.info("Toggling category ID: {} status to: {}", categoryId, isActive);
+        
+        adminService.updateCategoryStatus(categoryId, isActive);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Category status updated successfully")
+            .data("Category " + (isActive ? "activated" : "deactivated"))
             .build());
     }
 }

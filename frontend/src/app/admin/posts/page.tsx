@@ -1,191 +1,255 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { AdminLayout } from '@/components/admin/admin-layout';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAdminPosts, type PostModerationDto } from '@/hooks/use-admin-posts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  Search, 
-  AlertTriangle, 
-  Eye,
-  Ban,
-  CheckCircle,
-  XCircle,
-  Flag,
-  Calendar,
-  User as UserIcon
-} from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination } from '@/components/ui/pagination';
+import { TableSkeleton } from '@/components/admin/table-skeleton';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Search, Eye, Pin, Flame, ToggleLeft, ToggleRight, Trash2, FileText, Calendar, MessageSquare, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { AdminLayout } from '@/components/admin/admin-layout';
+import Image from 'next/image';
 
-interface ViolationPost {
-  id: number;
-  title: string;
-  content: string;
-  author: {
-    id: number;
-    fullName: string;
-    email: string;
-    avatar?: string;
-  };
-  category: string;
-  createdAt: string;
-  reportCount: number;
-  reportReasons: string[];
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'BANNED';
-  adminNotes?: string;
-  reviewedBy?: number;
-  reviewedAt?: string;
-}
+const PAGE_SIZE = 5;
 
-export default function PostsPage() {
-  const [posts, setPosts] = useState<ViolationPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('PENDING');
-  const [page, setPage] = useState(0);
+export default function AdminPostsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const searchQuery = searchParams.get('search') || '';
+  const statusFilter = searchParams.get('status') || 'all';
+  const categoryFilter = searchParams.get('category') || 'all';
+  const pinFilter = searchParams.get('pinned') || 'all';
+  const hotFilter = searchParams.get('hot') || 'all';
+  const reportFilter = searchParams.get('reported') || 'all';
+  const authorRoleFilter = searchParams.get('authorRole') || 'all';
+  const sortBy = searchParams.get('sortBy') || 'createdAt';
+  const sortDir = (searchParams.get('sortDir') as 'asc' | 'desc') || 'desc';
+
+  // Local state
+  const [posts, setPosts] = useState<PostModerationDto[]>([]);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [selectedPost, setSelectedPost] = useState<PostModerationDto | null>(null);
+  
+  // Local filter states (before applying)
+  const [localStatusFilter, setLocalStatusFilter] = useState(statusFilter);
+  const [localCategoryFilter, setLocalCategoryFilter] = useState(categoryFilter);
+  const [localPinFilter, setLocalPinFilter] = useState(pinFilter);
+  const [localHotFilter, setLocalHotFilter] = useState(hotFilter);
+  const [localReportFilter, setLocalReportFilter] = useState(reportFilter);
+  const [localAuthorRoleFilter, setLocalAuthorRoleFilter] = useState(authorRoleFilter);
+  
+  // Filtering loading state
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
 
-  // Review dialog state
-  const [selectedPost, setSelectedPost] = useState<ViolationPost | null>(null);
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
-  const [adminNotes, setAdminNotes] = useState('');
-  const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | 'ban'>('approve');
-  const [reviewing, setReviewing] = useState(false);
+  const { loading, error, getAllPosts, updatePostStatus, deletePost, updatePostPinStatus, updatePostHotStatus, getPostDetails } = useAdminPosts();
 
-  const fetchPosts = useCallback(async () => {
+  // Update URL parameters
+  const updateUrl = (params: Record<string, string | number>) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === '' || value === 'all' || (key === 'page' && value === 1)) {
+        newSearchParams.delete(key);
+      } else {
+        newSearchParams.set(key, value.toString());
+      }
+    });
+
+    router.push(`/admin/posts?${newSearchParams.toString()}`);
+  };
+
+  // Load posts
+  const loadPosts = useCallback(async () => {
     try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        size: '10',
-        sortBy: 'reportCount',
-        sortDir: 'desc'
-      });
+      const params = {
+        page: currentPage - 1, // Backend uses 0-based indexing
+        size: PAGE_SIZE,
+        search: searchQuery || undefined,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+        sortBy,
+        sortDir,
+      };
 
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
-      if (statusFilter && statusFilter !== 'ALL') {
-        params.append('status', statusFilter);
-      }
-
-      const response = await fetch(`/api/admin/posts/violations?${params}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setPosts(result.data.content || []);
-        setTotalPages(result.data.totalPages || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast.error('Có lỗi khi tải danh sách bài viết');
+      const result = await getAllPosts(params);
+      setPosts(result.content);
+      setTotalPages(result.totalPages);
+      setTotalElements(result.totalElements);
+    } catch (err) {
+      console.error('Failed to load posts:', err);
+      toast.error('Failed to load posts');
     } finally {
-      setLoading(false);
+      // Reset loading states after API completes
+      setPaginationLoading(false);
+      setFilterLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [currentPage, searchQuery, statusFilter, sortBy, sortDir, getAllPosts]);
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    loadPosts();
+  }, [loadPosts]);
 
-  const handleReview = (post: ViolationPost, action: 'approve' | 'reject' | 'ban') => {
-    setSelectedPost(post);
-    setReviewAction(action);
-    setAdminNotes('');
-    setShowReviewDialog(true);
+  // Handlers
+  const handleSearch = () => {
+    updateUrl({ search: localSearch, page: 1 });
   };
 
-  const submitReview = async () => {
-    if (!selectedPost) return;
+  const handleSort = (field: string) => {
+    const newSortDir = sortBy === field && sortDir === 'desc' ? 'asc' : 'desc';
+    updateUrl({ sortBy: field, sortDir: newSortDir, page: 1 });
+  };
 
-    try {
-      setReviewing(true);
-      const params = new URLSearchParams();
-      if (adminNotes.trim()) {
-        params.append('adminNotes', adminNotes.trim());
-      }
+  const handlePageChange = (page: number) => {
+    setPaginationLoading(true);
+    updateUrl({ page });
+  };
 
-      const response = await fetch(
-        `/api/admin/posts/${selectedPost.id}/${reviewAction}?${params}`,
-        {
-          method: 'PUT',
-          credentials: 'include'
-        }
-      );
+  // Apply filters function
+  const handleApplyFilters = () => {
+    setFilterLoading(true);
+    updateUrl({ 
+      search: localSearch,
+      status: localStatusFilter,
+      category: localCategoryFilter,
+      pinned: localPinFilter,
+      hot: localHotFilter,
+      reported: localReportFilter,
+      authorRole: localAuthorRoleFilter,
+      page: 1 
+    });
+  };
 
-      const result = await response.json();
+  // Filter handlers - now only update local state
+  const handleCategoryFilter = (category: string) => {
+    setLocalCategoryFilter(category);
+  };
+
+  const handlePinFilter = (pinned: string) => {
+    setLocalPinFilter(pinned);
+  };
+
+  const handleHotFilter = (hot: string) => {
+    setLocalHotFilter(hot);
+  };
+
+  const handleReportFilter = (reported: string) => {
+    setLocalReportFilter(reported);
+  };
+
+  const handleAuthorRoleFilter = (authorRole: string) => {
+    setLocalAuthorRoleFilter(authorRole);
+  };
+
+  // Local filtering function
+  const getFilteredPosts = () => {
+    return posts.filter(post => {
+      // Category filter
+      if (categoryFilter !== 'all' && post.categoryName !== categoryFilter) return false;
       
-      if (result.success) {
-        const actionText = {
-          approve: 'Bài viết đã được phê duyệt!',
-          reject: 'Bài viết đã bị từ chối!',
-          ban: 'Bài viết và tác giả đã bị cấm!'
-        };
-        toast.success(actionText[reviewAction]);
-        setShowReviewDialog(false);
-        fetchPosts();
-      } else {
-        toast.error(result.message || 'Có lỗi xảy ra khi xử lý bài viết');
-      }
-    } catch (error) {
-      console.error('Error reviewing post:', error);
-      toast.error('Có lỗi xảy ra khi xử lý bài viết');
-    } finally {
-      setReviewing(false);
+      // Pin filter
+      if (pinFilter === 'pinned' && !post.isPinned) return false;
+      if (pinFilter === 'unpinned' && post.isPinned) return false;
+      
+      // Hot filter  
+      if (hotFilter === 'hot' && !post.isHot) return false;
+      if (hotFilter === 'normal' && post.isHot) return false;
+      
+      // Report filter
+      if (reportFilter === 'reported' && !post.isReported) return false;
+      if (reportFilter === 'clean' && post.isReported) return false;
+      
+      // Author role filter
+      if (authorRoleFilter !== 'all' && post.author.role !== authorRoleFilter) return false;
+      
+      return true;
+    });
+  };
+
+  // Get unique categories for filter dropdown
+  const getUniqueCategories = () => {
+    const categories = [...new Set(posts.map(post => post.categoryName))];
+    return categories.sort();
+  };
+
+  const filteredPosts = getFilteredPosts();
+
+  // Get active filter count
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (statusFilter !== 'all') count++;
+    if (categoryFilter !== 'all') count++;
+    if (pinFilter !== 'all') count++;
+    if (hotFilter !== 'all') count++;
+    if (reportFilter !== 'all') count++;
+    if (authorRoleFilter !== 'all') count++;
+    if (searchQuery.trim()) count++;
+    return count;
+  };
+
+  const activeFilterCount = getActiveFilterCount();
+
+  const handlePostAction = async (action: () => Promise<void>, successMessage: string) => {
+    try {
+      await action();
+      toast.success(successMessage);
+      await loadPosts();
+    } catch (err) {
+      console.error('Action failed:', err);
+      toast.error('Action failed. Please try again.');
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <Badge variant="secondary">Chờ kiểm duyệt</Badge>;
-      case 'APPROVED':
-        return <Badge variant="default" className="bg-green-600">Đã phê duyệt</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive">Bị từ chối</Badge>;
-      case 'BANNED':
-        return <Badge variant="destructive" className="bg-black">Bị cấm</Badge>;
-      default:
-        return <Badge variant="outline">Không xác định</Badge>;
+  const handleToggleStatus = (post: PostModerationDto) => {
+    handlePostAction(
+      () => updatePostStatus(post.id, !post.isActive),
+      `Post ${post.isActive ? 'deactivated' : 'activated'} successfully`
+    );
+  };
+
+  const handleTogglePin = (post: PostModerationDto) => {
+    handlePostAction(
+      () => updatePostPinStatus(post.id, !post.isPinned),
+      `Post ${post.isPinned ? 'unpinned' : 'pinned'} successfully`
+    );
+  };
+
+  const handleToggleHot = (post: PostModerationDto) => {
+    handlePostAction(
+      () => updatePostHotStatus(post.id, !post.isHot),
+      `Post ${post.isHot ? 'unmarked as hot' : 'marked as hot'} successfully`
+    );
+  };
+
+  const handleDeletePost = (post: PostModerationDto) => {
+    if (window.confirm(`Are you sure you want to delete "${post.title}"? This action cannot be undone.`)) {
+      handlePostAction(
+        () => deletePost(post.id),
+        'Post deleted successfully'
+      );
     }
   };
 
-  const getSeverityColor = (reportCount: number) => {
-    if (reportCount >= 10) return 'text-red-600 font-bold';
-    if (reportCount >= 5) return 'text-orange-600 font-semibold';
-    return 'text-yellow-600';
+  const handleViewPost = async (postId: number) => {
+    try {
+      const post = await getPostDetails(postId);
+      setSelectedPost(post);
+    } catch (err) {
+      console.error('Failed to load post details:', err);
+      toast.error('Failed to load post details');
+    }
   };
 
   return (
@@ -193,9 +257,9 @@ export default function PostsPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý bài viết vi phạm</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý bài viết</h1>
           <p className="text-gray-600 mt-2">
-            Kiểm duyệt và xử lý các bài viết bị báo cáo vi phạm
+            Quản lý và kiểm duyệt tất cả bài viết trong forum
           </p>
         </div>
 
@@ -203,367 +267,561 @@ export default function PostsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Chờ kiểm duyệt</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <CardTitle className="text-sm font-medium">Tổng bài viết</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {posts.filter(p => p.status === 'PENDING').length}
-              </div>
+              <div className="text-2xl font-bold">{totalElements || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Đã phê duyệt</CardTitle>
+              <CardTitle className="text-sm font-medium">Bài viết hoạt động</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {posts.filter(p => p.status === 'APPROVED').length}
+                {filteredPosts.filter(p => p.isActive).length || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bị từ chối</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
+              <CardTitle className="text-sm font-medium">Bài viết ghim</CardTitle>
+              <Pin className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {posts.filter(p => p.status === 'REJECTED').length}
+                {filteredPosts.filter(p => p.isPinned).length || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bị cấm</CardTitle>
-              <Ban className="h-4 w-4 text-black" />
+              <CardTitle className="text-sm font-medium">Bài viết nổi bật</CardTitle>
+              <Flame className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {posts.filter(p => p.status === 'BANNED').length}
+                {filteredPosts.filter(p => p.isHot).length || 0}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Bộ lọc</CardTitle>
-            <CardDescription>
-              Tìm kiếm và lọc bài viết theo trạng thái
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <div className="relative">
+        {/* Results Summary */}
+        <div className="flex justify-between items-center text-sm text-muted-foreground">
+          <span>
+            Hiển thị {filteredPosts.length || 0} trong tổng số {totalElements || 0} bài viết
+          </span>
+          {activeFilterCount > 0 && (
+            <span>
+              {filteredPosts.length || 0} bài viết phù hợp với bộ lọc
+            </span>
+          )}
+        </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Bộ lọc</CardTitle>
+              <CardDescription>
+                Tìm kiếm và lọc bài viết theo các tiêu chí
+              </CardDescription>
+            </div>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary">
+                {activeFilterCount} bộ lọc đang áp dụng
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tìm kiếm</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Tìm kiếm theo tiêu đề hoặc tác giả..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Tìm kiếm bài viết theo tiêu đề, nội dung hoặc tác giả..."
+                    value={localSearch}
+                    onChange={(e) => setLocalSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="pl-10"
                   />
                 </div>
+                <Button onClick={handleSearch}>Tìm kiếm</Button>
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Lọc theo trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="PENDING">Chờ kiểm duyệt</SelectItem>
-                  <SelectItem value="APPROVED">Đã phê duyệt</SelectItem>
-                  <SelectItem value="REJECTED">Bị từ chối</SelectItem>
-                  <SelectItem value="BANNED">Bị cấm</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Posts Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Danh sách bài viết</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Đang tải...</p>
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Bộ lọc cơ bản</label>
+              <div className="flex flex-wrap gap-1">
+                {/* Status Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Trạng thái</label>
+                  <Select value={localStatusFilter} onValueChange={setLocalStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                      <SelectItem value="active">Đang hoạt động</SelectItem>
+                      <SelectItem value="inactive">Bị vô hiệu hóa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Danh mục</label>
+                  <Select value={localCategoryFilter} onValueChange={handleCategoryFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Danh mục" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả danh mục</SelectItem>
+                      {getUniqueCategories().map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Pin Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Ghim</label>
+                  <Select value={localPinFilter} onValueChange={handlePinFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Ghim" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="pinned">Đã ghim</SelectItem>
+                      <SelectItem value="unpinned">Chưa ghim</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Hot Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Nổi bật</label>
+                  <Select value={localHotFilter} onValueChange={handleHotFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Nổi bật" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="hot">Nổi bật</SelectItem>
+                      <SelectItem value="normal">Bình thường</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bài viết</TableHead>
-                    <TableHead>Tác giả</TableHead>
-                    <TableHead>Báo cáo</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead>Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
+            </div>
+
+            {/* Filter Row 2 */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Bộ lọc nâng cao</label>
+              <div className="flex flex-wrap gap-1">
+                {/* Report Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Báo cáo vi phạm</label>
+                  <Select value={localReportFilter} onValueChange={handleReportFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Báo cáo vi phạm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="reported">Có báo cáo</SelectItem>
+                      <SelectItem value="clean">Không có báo cáo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Author Role Filter */}
+                <div className="space-y-1 ml-1">
+                  <label className="text-xs text-muted-foreground">Vai trò tác giả</label>
+                  <Select value={localAuthorRoleFilter} onValueChange={handleAuthorRoleFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Vai trò tác giả" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả vai trò</SelectItem>
+                      <SelectItem value="USER">Người dùng</SelectItem>
+                      <SelectItem value="LAWYER">Luật sư</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setLocalSearch('');
+                  setLocalStatusFilter('all');
+                  setLocalCategoryFilter('all');
+                  setLocalPinFilter('all');
+                  setLocalHotFilter('all');
+                  setLocalReportFilter('all');
+                  setLocalAuthorRoleFilter('all');
+                  updateUrl({ 
+                    status: 'all', 
+                    category: 'all', 
+                    pinned: 'all', 
+                    hot: 'all', 
+                    reported: 'all', 
+                    authorRole: 'all',
+                    search: '',
+                    page: 1 
+                  });
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+              
+              <Button 
+                onClick={handleApplyFilters}
+                disabled={filterLoading}
+                className="min-w-24"
+              >
+                Áp dụng
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Posts Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Danh sách bài viết</CardTitle>
+          <CardDescription>
+            Quản lý và kiểm duyệt tất cả bài viết trong hệ thống
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="p-4 text-center text-red-500">
+              Error: {error}
+            </div>
+          )}
+
+          {filterLoading || (loading && posts.length === 0) ? (
+            <div className="text-center py-8">
+              <LoadingSpinner size='md'/>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('title')}
+                  >
+                    Tiêu đề {sortBy === 'title' && (sortDir === 'desc' ? '↓' : '↑')}
+                  </TableHead>
+                  <TableHead>Tác giả</TableHead>
+                  <TableHead>Danh mục</TableHead>
+                  <TableHead className="text-center">Thống kê</TableHead>
+                  <TableHead className="text-center">Trạng thái</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    Ngày tạo {sortBy === 'createdAt' && (sortDir === 'desc' ? '↓' : '↑')}
+                  </TableHead>
+                  <TableHead className="text-center">Hành động</TableHead>
+                </TableRow>
+              </TableHeader>
+              {paginationLoading ? (
+                <TableSkeleton rows={PAGE_SIZE} columns={7} />
+              ) : (
                 <TableBody>
-                  {posts.map((post) => (
-                    <TableRow key={post.id}>
-                      <TableCell>
-                        <div className="max-w-md">
-                          <div className="font-medium text-gray-900 truncate">
-                            {post.title}
-                          </div>
-                          <div className="text-sm text-gray-500 truncate">
-                            {post.content}
-                          </div>
-                          <Badge variant="outline" className="mt-1">
-                            {post.category}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <UserIcon className="h-4 w-4 text-gray-400" />
-                          <div>
-                            <div className="text-sm font-medium">{post.author.fullName}</div>
-                            <div className="text-xs text-gray-500">{post.author.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Flag className="h-4 w-4 text-red-500" />
-                          <span className={getSeverityColor(post.reportCount)}>
-                            {post.reportCount} báo cáo
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(post.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">
-                            {new Date(post.createdAt).toLocaleDateString('vi-VN')}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedPost(post)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Xem
-                          </Button>
-                          {post.status === 'PENDING' && (
-                            <>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleReview(post, 'approve')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Duyệt
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleReview(post, 'reject')}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Từ chối
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleReview(post, 'ban')}
-                                className="bg-black hover:bg-gray-800"
-                              >
-                                <Ban className="h-4 w-4 mr-1" />
-                                Cấm
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                  {filteredPosts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        Không tìm thấy bài viết nào phù hợp với bộ lọc
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 0}
-                >
-                  Trước
-                </Button>
-                <div className="text-sm text-gray-500">
-                  Trang {page + 1} / {totalPages}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Sau
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Post Details Dialog */}
-        {selectedPost && !showReviewDialog && (
-          <Dialog open={true} onOpenChange={() => setSelectedPost(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Chi tiết bài viết</DialogTitle>
-                <DialogDescription>
-                  Bài viết #{selectedPost.id} - {getStatusBadge(selectedPost.status)}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {/* Post Content */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">{selectedPost.title}</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                    {selectedPost.content}
-                  </p>
-                  <Badge variant="outline">{selectedPost.category}</Badge>
-                </div>
-
-                {/* Report Details */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Thông tin báo cáo</h3>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Flag className="h-5 w-5 text-red-500" />
-                      <span className="font-medium text-red-700">
-                        {selectedPost.reportCount} báo cáo vi phạm
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {selectedPost.reportReasons.map((reason, index) => (
-                        <div key={index} className="text-sm text-red-600">
-                          • {reason}
+                ) : (
+                  filteredPosts.map((post) => (
+                  <TableRow key={post.id}>
+                    <TableCell className="max-w-sm">
+                      <div className="space-y-1">
+                        <div className="font-medium line-clamp-2">{post.title}</div>
+                        <div className="flex gap-1">
+                          {post.isPinned && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Pin className="h-3 w-3 mr-1" />
+                              Được ghim
+                            </Badge>
+                          )}
+                          {post.isHot && (
+                            <Badge variant="destructive" className="text-xs">
+                              <Flame className="h-3 w-3 mr-1" />
+                              Nổi bật
+                            </Badge>
+                          )}
+                          {post.isReported && (
+                            <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                              Bị báo cáo ({post.reportCount})
+                            </Badge>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {post.author.avatar && (
+                          <Image
+                            width={100}
+                            height={100} 
+                            src={post.author.avatar} 
+                            alt={post.author.fullName}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium text-sm">{post.author.fullName}</div>
+                          <div className="text-xs text-muted-foreground">{post.author.role}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{post.categoryName}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {post.views}
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          {post.replyCount}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={post.isActive ? "default" : "secondary"}
+                        className={post.isActive ? "bg-green-500" : ""}
+                      >
+                        {post.isActive ? 'Hoạt động' : 'Bị vô hiệu hóa'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {/* View Details */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewPost(post.id)}
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
 
-                {/* Admin Notes */}
-                {selectedPost.adminNotes && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Ghi chú của admin</h3>
-                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                      {selectedPost.adminNotes}
-                    </p>
-                  </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleStatus(post)}
+                          title={post.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                        >
+                          {post.isActive ? (
+                            <ToggleRight className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+
+                        {/* Toggle Pin */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTogglePin(post)}
+                          title={post.isPinned ? 'Bỏ ghim' : 'Ghim bài viết'}
+                        >
+                          <Pin className={`h-4 w-4 ${post.isPinned ? 'text-blue-500' : 'text-gray-400'}`} />
+                        </Button>
+
+                        {/* Toggle Hot */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleHot(post)}
+                          title={post.isHot ? 'Bỏ nổi bật' : 'Đánh dấu nổi bật'}
+                        >
+                          <Flame className={`h-4 w-4 ${post.isHot ? 'text-red-500' : 'text-gray-400'}`} />
+                        </Button>
+
+                        {/* Delete */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePost(post)}
+                          title="Xóa bài viết"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
                 )}
-              </div>
+                </TableBody>
+              )}
+            </Table>
+          )}
 
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setSelectedPost(null)}>
-                  Đóng
-                </Button>
-                {selectedPost.status === 'PENDING' && (
-                  <>
-                    <Button
-                      onClick={() => handleReview(selectedPost, 'approve')}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Phê duyệt
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReview(selectedPost, 'reject')}
-                    >
-                      Từ chối
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleReview(selectedPost, 'ban')}
-                      className="bg-black hover:bg-gray-800"
-                    >
-                      Cấm
-                    </Button>
-                  </>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Review Dialog */}
-        <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-          <DialogContent>
+          {/* Pagination */}
+          {!filterLoading && !(loading && posts.length === 0) && totalPages > 1 && (
+            <div className="p-4 border-t">
+              <Pagination
+                currentPage={currentPage - 1}
+                totalPages={totalPages}
+                onPageChange={(page) => handlePageChange(page + 1)}
+                totalElements={totalElements}
+                pageSize={PAGE_SIZE}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>      {/* Post Details Dialog */}
+      {selectedPost && (
+        <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {reviewAction === 'approve' && 'Phê duyệt bài viết'}
-                {reviewAction === 'reject' && 'Từ chối bài viết'}
-                {reviewAction === 'ban' && 'Cấm bài viết và tác giả'}
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Chi tiết bài viết
               </DialogTitle>
               <DialogDescription>
-                {reviewAction === 'approve' && 'Bài viết sẽ được hiển thị công khai sau khi phê duyệt.'}
-                {reviewAction === 'reject' && 'Bài viết sẽ bị ẩn và tác giả sẽ được thông báo.'}
-                {reviewAction === 'ban' && 'Bài viết sẽ bị xóa và tác giả sẽ bị cấm hoạt động.'}
+                Xem nội dung chi tiết và thông tin bài viết
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">
-                  Ghi chú {reviewAction === 'ban' ? '(bắt buộc)' : '(tùy chọn)'}
-                </label>
-                <Textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder={
-                    reviewAction === 'approve' 
-                      ? 'Ghi chú về quá trình phê duyệt...' 
-                      : reviewAction === 'reject'
-                      ? 'Lý do từ chối và hướng dẫn sửa đổi...'
-                      : 'Lý do cấm và các vi phạm nghiêm trọng...'
-                  }
-                  rows={4}
+            <div className="space-y-6">
+              {/* Post Header */}
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold">{selectedPost.title}</h2>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">{selectedPost.categoryName}</Badge>
+                  {selectedPost.isPinned && (
+                    <Badge variant="secondary">
+                      <Pin className="h-3 w-3 mr-1" />
+                      Được ghim
+                    </Badge>
+                  )}
+                  {selectedPost.isHot && (
+                    <Badge variant="destructive">
+                      <Flame className="h-3 w-3 mr-1" />
+                      Nổi bật
+                    </Badge>
+                  )}
+                  <Badge variant={selectedPost.isActive ? "default" : "secondary"}>
+                    {selectedPost.isActive ? 'Hoạt động' : 'Bị vô hiệu hóa'}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    {selectedPost.author.avatar && (
+                      <Image
+                        width={100}
+                        height={100} 
+                        src={selectedPost.author.avatar} 
+                        alt={selectedPost.author.fullName}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    )}
+                    <span>Bởi {selectedPost.author.fullName}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatDistanceToNow(new Date(selectedPost.createdAt), { addSuffix: true })}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    {selectedPost.views} lượt xem
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MessageSquare className="h-4 w-4" />
+                    {selectedPost.replyCount} phản hồi
+                  </div>
+                </div>
+              </div>
+
+              {/* Post Content */}
+              <div className="prose max-w-none">
+                <div 
+                  className="whitespace-pre-wrap bg-muted/30 p-4 rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: selectedPost.content }}
                 />
               </div>
-            </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowReviewDialog(false)}>
-                Hủy
-              </Button>
-              <Button
-                onClick={submitReview}
-                disabled={reviewing || (reviewAction === 'ban' && !adminNotes.trim())}
-                variant={reviewAction === 'approve' ? 'default' : 'destructive'}
-                className={reviewAction === 'ban' ? 'bg-black hover:bg-gray-800' : ''}
-              >
-                {reviewing ? 'Đang xử lý...' : 
-                  reviewAction === 'approve' ? 'Phê duyệt' : 
-                  reviewAction === 'reject' ? 'Từ chối' : 'Cấm'
-                }
-              </Button>
-            </DialogFooter>
+              {/* Author Details */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3">Thông tin tác giả</h3>
+                <div className="flex items-center gap-4">
+                  {selectedPost.author.avatar && (
+                    <Image 
+                      src={selectedPost.author.avatar} 
+                      width={100}
+                      height={100}
+                      alt={selectedPost.author.fullName}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">{selectedPost.author.fullName}</div>
+                    <div className="text-sm text-muted-foreground">{selectedPost.author.email}</div>
+                    <Badge variant="outline" className="mt-1">{selectedPost.author.role}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Moderation Info */}
+              {(selectedPost.isReported || selectedPost.violationReason) && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 text-orange-600">Thông tin kiểm duyệt</h3>
+                  {selectedPost.isReported && (
+                    <div className="mb-2">
+                      <Badge variant="outline" className="border-orange-500 text-orange-600">
+                        Bị báo cáo {selectedPost.reportCount} lần
+                      </Badge>
+                    </div>
+                  )}
+                  {selectedPost.violationReason && (
+                    <div className="bg-orange-50 p-3 rounded-lg">
+                      <div className="font-medium text-orange-800">Lý do vi phạm:</div>
+                      <div className="text-orange-700">{selectedPost.violationReason}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
+      )}
       </div>
     </AdminLayout>
   );

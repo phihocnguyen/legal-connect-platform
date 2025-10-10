@@ -128,7 +128,92 @@ public class AdminController {
             .build());
     }
 
-    // ========== LAWYER APPLICATIONS ==========
+    @DeleteMapping("/posts/{postId}")
+    @Operation(summary = "Delete a post permanently")
+    public ResponseEntity<ApiResponse<String>> deletePost(@PathVariable Long postId) {
+        
+        log.info("Deleting post ID: {}", postId);
+        
+        adminService.deletePost(postId);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Post deleted successfully")
+            .data("Post and associated replies have been removed")
+            .build());
+    }
+
+    @PutMapping("/posts/{postId}/pin")
+    @Operation(summary = "Pin or unpin a post")
+    public ResponseEntity<ApiResponse<String>> updatePostPinStatus(
+            @PathVariable Long postId,
+            @RequestParam Boolean isPinned) {
+        
+        log.info("Updating post ID: {} pin status to: {}", postId, isPinned);
+        
+        adminService.updatePostPinStatus(postId, isPinned);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Post pin status updated successfully")
+            .data("Post " + (isPinned ? "pinned" : "unpinned"))
+            .build());
+    }
+
+    @PutMapping("/posts/{postId}/hot")
+    @Operation(summary = "Mark or unmark a post as hot")
+    public ResponseEntity<ApiResponse<String>> updatePostHotStatus(
+            @PathVariable Long postId,
+            @RequestParam Boolean isHot) {
+        
+        log.info("Updating post ID: {} hot status to: {}", postId, isHot);
+        
+        adminService.updatePostHotStatus(postId, isHot);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Post hot status updated successfully")
+            .data("Post " + (isHot ? "marked as hot" : "unmarked as hot"))
+            .build());
+    }
+
+    @GetMapping("/posts/{postId}")
+    @Operation(summary = "Get post details for admin review")
+    public ResponseEntity<ApiResponse<PostModerationDto>> getPostDetails(@PathVariable Long postId) {
+        
+        PostModerationDto post = adminService.getPostForModeration(postId);
+        
+        return ResponseEntity.ok(ApiResponse.<PostModerationDto>builder()
+            .success(true)
+            .message("Post details retrieved successfully")
+            .data(post)
+            .build());
+    }
+
+    
+    @GetMapping("/violations")
+    @Operation(summary = "Get reported posts for violation review")
+    public ResponseEntity<ApiResponse<Page<PostModerationDto>>> getViolationPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean isActive) {
+        
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<PostModerationDto> violationPosts = adminService.getViolationPosts(search, isActive, pageable);
+        
+        return ResponseEntity.ok(ApiResponse.<Page<PostModerationDto>>builder()
+            .success(true)
+            .message("Violation posts retrieved successfully")
+            .data(violationPosts)
+            .build());
+    }
+
     
     @GetMapping("/lawyer-applications")
     @Operation(summary = "Get lawyer applications for admin review")

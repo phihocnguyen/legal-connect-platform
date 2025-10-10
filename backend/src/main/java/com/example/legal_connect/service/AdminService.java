@@ -84,6 +84,30 @@ public class AdminService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    public Page<PostModerationDto> getViolationPosts(String search, Boolean isActive, Pageable pageable) {
+        Page<Post> posts;
+        
+        // Base query - only get reported posts (reportCount > 0)
+        if (search != null && !search.trim().isEmpty()) {
+            if (isActive != null) {
+                posts = forumRepository.findByReportCountGreaterThanAndIsActiveAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                    0, isActive, search.trim(), search.trim(), pageable);
+            } else {
+                posts = forumRepository.findByReportCountGreaterThanAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                    0, search.trim(), search.trim(), pageable);
+            }
+        } else {
+            if (isActive != null) {
+                posts = forumRepository.findByReportCountGreaterThanAndIsActive(0, isActive, pageable);
+            } else {
+                posts = forumRepository.findByReportCountGreaterThan(0, pageable);
+            }
+        }
+
+        return posts.map(this::convertToPostModerationDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     public Page<LawyerApplicationDto> getLawyerApplications(String status, String search, Pageable pageable) {
         LawyerApplication.ApplicationStatus appStatus = null;
         
@@ -212,9 +236,9 @@ public class AdminService {
             .isHot(post.getIsHot())
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
-            .violationReason("") // TODO: implement violation reporting
-            .isReported(false) // TODO: implement violation reporting
-            .reportCount(0) // TODO: implement violation reporting
+            .violationReason(post.getViolationReason())
+            .isReported(post.getIsReported() != null ? post.getIsReported() : false)
+            .reportCount(post.getReportCount() != null ? post.getReportCount() : 0)
             .build();
     }
 
@@ -529,5 +553,86 @@ public class AdminService {
         postCategoryRepository.save(category);
         
         log.info("Category status updated successfully: {} -> {}", category.getName(), isActive);
+    }
+
+    // ========== ADDITIONAL POST MANAGEMENT METHODS ==========
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void deletePost(Long postId) {
+        log.info("Deleting post ID: {}", postId);
+        
+        Post post = forumRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        // Delete the post (this will cascade to replies if configured)
+        forumRepository.delete(post);
+        
+        log.info("Post deleted successfully: {}", post.getTitle());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updatePostPinStatus(Long postId, Boolean isPinned) {
+        log.info("Updating post ID: {} pin status to: {}", postId, isPinned);
+        
+        Post post = forumRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        post.setPinned(isPinned);
+        forumRepository.save(post);
+        
+        log.info("Post pin status updated successfully: {} -> {}", post.getTitle(), isPinned);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updatePostHotStatus(Long postId, Boolean isHot) {
+        log.info("Updating post ID: {} hot status to: {}", postId, isHot);
+        
+        Post post = forumRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        post.setIsHot(isHot);
+        forumRepository.save(post);
+        
+        log.info("Post hot status updated successfully: {} -> {}", post.getTitle(), isHot);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public PostModerationDto getPostForModeration(Long postId) {
+        log.info("Getting post ID: {} for moderation", postId);
+        
+        Post post = forumRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        return mapToPostModerationDto(post);
+    }
+
+    // Helper method to map Post entity to PostModerationDto
+    private PostModerationDto mapToPostModerationDto(Post post) {
+        return PostModerationDto.builder()
+            .id(post.getId())
+            .title(post.getTitle())
+            .content(post.getContent())
+            .categoryName(post.getCategory() != null ? post.getCategory().getName() : "Unknown")
+            .author(PostModerationDto.AuthorDto.builder()
+                .id(post.getAuthor().getId())
+                .fullName(post.getAuthor().getFullName())
+                .email(post.getAuthor().getEmail())
+                .avatar(post.getAuthor().getAvatar())
+                .role(post.getAuthor().getRole().toString())
+                .build())
+            .views(post.getViews())
+            .replyCount(post.getReplies() != null ? post.getReplies().size() : 0)
+            .isActive(post.getIsActive())
+            .isPinned(post.getPinned())
+            .isHot(post.getIsHot())
+            .createdAt(post.getCreatedAt())
+            .updatedAt(post.getUpdatedAt())
+            .violationReason(null) // TODO: Add violation reason field to Post entity if needed
+            .isReported(false) // TODO: Implement reporting system
+            .reportCount(0) // TODO: Implement reporting system
+            .build();
     }
 }

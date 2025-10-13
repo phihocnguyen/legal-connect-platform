@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChatMessage, LoadingMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeScreen } from "@/components/chat/welcome-screen";
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 export default function ChatPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { createConversation, getConversations, sendMessage, getConversationHistory, updateConversationTitle, deleteConversation } = useChatUseCases();
   const { askQuestion } = useChatQAUseCases();
   const { apiKey, getMyApiKey } = useApiKey();
@@ -39,6 +40,14 @@ export default function ChatPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
 
+  // Read URL parameter on mount
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      setActiveConversationId(id);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const loadConversations = async () => {
       try {
@@ -52,7 +61,19 @@ export default function ChatPage() {
         
         const convs = await getConversations();
         const qaConversations = convs.filter(c => c.type === 'QA');
-        setConversations(qaConversations);
+        setConversations(prev => {
+          // Preserve messages for conversations that already have them loaded
+          return qaConversations.map(newConv => {
+            const existingConv = prev.find(c => c.id == newConv.id);
+            if (existingConv && existingConv.messages && existingConv.messages.length > 0) {
+              return { ...newConv, messages: existingConv.messages };
+            }
+            return newConv;
+          });
+        });
+        
+        // If we have an activeConversationId from URL but it's not in the list, 
+        // the loadMessages effect will handle adding it
       } catch (error) {
         console.error('Error loading conversations:', error);
       } finally {
@@ -69,10 +90,23 @@ export default function ChatPage() {
       
       try {
         setIsLoadingMessages(true);
+        console.log('🔥 Loading messages for conversationId:', activeConversationId);
         const messages = await getConversationHistory(activeConversationId);
+        console.log('🔥 API returned messages:', messages);
         setConversations(prev => {
-          const conversationIndex = prev.findIndex(c => c.id === activeConversationId);
-          if (conversationIndex === -1) return prev;
+          const conversationIndex = prev.findIndex(c => c.id == activeConversationId);
+          if (conversationIndex === -1) {
+            // If conversation doesn't exist in list, create a placeholder
+            return [...prev, {
+              id: activeConversationId,
+              title: 'Loading...',
+              messages: messages || [],
+              type: 'QA',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              lastMessage: messages && messages.length > 0 ? messages[messages.length - 1].content : ''
+            }];
+          }
           
           const updatedConversations = [...prev];
           updatedConversations[conversationIndex] = {
@@ -92,11 +126,16 @@ export default function ChatPage() {
     loadMessages();
   }, [activeConversationId, getConversationHistory]);
 
-  const currentMessages = useMemo(() => 
-    activeConversationId 
-      ? conversations.find(c => c.id === activeConversationId)?.messages || []
-      : []
-  , [activeConversationId, conversations]);
+  const currentMessages = useMemo(() => {
+    console.log('Debug - activeConversationId:', activeConversationId);
+    console.log('Debug - conversations:', conversations);
+    const found = activeConversationId 
+      ? conversations.find(c => c.id == activeConversationId)
+      : null;
+    console.log('Debug - found conversation:', found);
+    console.log('Debug - messages:', found?.messages);
+    return found?.messages || [];
+  }, [activeConversationId, conversations]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -290,7 +329,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-96px)] overflow-hidden">
+    <div className="flex h-[calc(100vh-81px)] overflow-hidden">
       <ConversationSidebar
         conversations={conversations}
         activeId={activeConversationId}
@@ -321,15 +360,18 @@ export default function ChatPage() {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto">
-              <div className="w-full mx-auto p-4">
+              <div className="mx-auto px-4 py-6">
                 {isLoadingMessages ? (
-                  <div className="flex justify-center items-center h-[75vh]">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                  <div className="flex justify-center items-center h-[calc(100vh-300px)]">
+                    <div className="text-center space-y-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+                      <p className="text-gray-500 text-sm">Đang tải tin nhắn...</p>
+                    </div>
                   </div>
                 ) : !activeConversationId || currentMessages.length === 0 ? (
                   <WelcomeScreen onPromptClick={handleSendMessage} />
                 ) : (
-                  <>
+                  <div className="space-y-6">
                     {currentMessages.map((message: Message) => (
                       <ChatMessage
                         key={message.id}
@@ -337,7 +379,7 @@ export default function ChatPage() {
                         content={message.content}
                       />
                     ))}
-                  </>
+                  </div>
                 )}
                 
                 {isProcessing && <LoadingMessage />}
@@ -345,12 +387,15 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <div className="flex-shrink-0 border-t bg-white p-4">
-              <div className="max-w-3xl mx-auto">
+            <div className="flex-shrink-0 border-t bg-white shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 py-4">
                 <ChatInput 
                   onSend={handleSendMessage} 
                   disabled={isProcessing} 
                 />
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
+                </p>
               </div>
             </div>
           </>

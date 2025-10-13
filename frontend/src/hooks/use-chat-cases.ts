@@ -5,6 +5,8 @@ import {
   GetConversationHistoryUseCase,
   GetConversationsUseCase,
   CreateConversationUseCase,
+  UpdateConversationTitleUseCase,
+  DeleteConversationUseCase,
 } from '../application/use-cases/chat.use-case';
 
 export function useChatUseCases() {
@@ -37,10 +39,26 @@ export function useChatUseCases() {
     return useCase.execute(title);
   }, []);
 
+  const updateConversationTitle = useCallback((id: string, title: string) => {
+    const useCase = container.getUseCase<UpdateConversationTitleUseCase>(
+      'UpdateConversationTitleUseCase'
+    );
+    return useCase.execute(id, title);
+  }, []);
+
+  const deleteConversation = useCallback((id: string) => {
+    const useCase = container.getUseCase<DeleteConversationUseCase>(
+      'DeleteConversationUseCase'
+    );
+    return useCase.execute(id);
+  }, []);
+
   return {
     sendMessage,
     getConversationHistory,
     getConversations,
     createConversation,
+    updateConversationTitle,
+    deleteConversation,
   };
 }

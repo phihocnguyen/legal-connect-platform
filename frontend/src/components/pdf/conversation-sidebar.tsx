@@ -101,7 +101,7 @@ export function ConversationSidebar({
               key={conversation.id}
               className={cn(
                 "group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                activeId === conversation.id && "bg-gray-100",
+                activeId == conversation.id && "bg-gray-100",
                 isCollapsed && "justify-center"
               )}
               onClick={() => onSelect(conversation.id)}
@@ -109,7 +109,7 @@ export function ConversationSidebar({
               <MessageSquare 
                 className={cn(
                   "w-5 h-5 shrink-0",
-                  activeId === conversation.id ? "text-teal-600" : "text-gray-400"
+                  activeId == conversation.id ? "text-teal-600" : "text-gray-400"
                 )} 
               />
               {!isCollapsed && (

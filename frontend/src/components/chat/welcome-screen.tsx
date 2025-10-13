@@ -26,73 +26,77 @@ export function WelcomeScreen({ onPromptClick }: WelcomeScreenProps) {
   ];
 
   return (
-    <div className="py-8 space-y-8">
-      {/* Welcome Header */}
-      <div className="text-center space-y-2">
-        <div className="flex justify-center">
-          <div className="p-4 bg-teal-100 rounded-full">
-            <Bot className="w-8 h-8 text-teal-600" />
-          </div>
-        </div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Chào mừng đến với Legal Assistant
-        </h1>
-        <p className="text-gray-600 max-w-xl mx-auto">
-          Tôi là trợ lý AI được đào tạo để tư vấn về các vấn đề pháp lý tại Việt Nam.
-          Tôi có thể giúp bạn tìm hiểu về luật pháp, thủ tục hành chính, và giải đáp các thắc mắc của bạn.
-        </p>
-      </div>
-
-      {/* Capabilities */}
-      <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-        {[
-          {
-            icon: <Scale className="w-6 h-6 text-teal-600" />,
-            title: "Tư vấn pháp lý",
-            desc: "Giải đáp thắc mắc về luật pháp và quy định hiện hành"
-          },
-          {
-            icon: <BookText className="w-6 h-6 text-teal-600" />,
-            title: "Hướng dẫn thủ tục",
-            desc: "Cung cấp thông tin chi tiết về các thủ tục hành chính"
-          },
-          {
-            icon: <MessageSquare className="w-6 h-6 text-teal-600" />,
-            title: "Phân tích case",
-            desc: "Phân tích và đề xuất giải pháp cho các tình huống cụ thể"
-          }
-        ].map((item, i) => (
-          <Card key={i} className="p-4 hover:bg-stone-50 transition-colors">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-teal-50 rounded-lg">
-                {item.icon}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                <p className="text-sm text-gray-600">{item.desc}</p>
-              </div>
+    <div className="min-h-[calc(100vh-300px)] flex items-center justify-center py-8">
+      <div className="max-w-4xl w-full space-y-10">
+        {/* Welcome Header */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="p-4 bg-gradient-to-br from-teal-100 to-teal-50 rounded-2xl shadow-sm">
+              <Bot className="w-10 h-10 text-teal-600" />
             </div>
-          </Card>
-        ))}
-      </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Chào mừng đến với Legal Assistant
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
+            Tôi là trợ lý AI được đào tạo để tư vấn về các vấn đề pháp lý tại Việt Nam.
+            Tôi có thể giúp bạn tìm hiểu về luật pháp, thủ tục hành chính, và giải đáp các thắc mắc của bạn.
+          </p>
+        </div>
 
-      {/* Example Prompts */}
-      <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-4 text-center">
-          Hãy thử hỏi tôi
-        </h2>
-        <div className="space-y-3 max-w-2xl mx-auto">
-          {examplePrompts.map((prompt, i) => (
-            <Button
-              key={i}
-              variant="outline"
-              className="w-full justify-start gap-2 py-6 text-left hover:bg-stone-50"
-              onClick={() => onPromptClick(prompt.prompt)}
-            >
-              {prompt.icon}
-              <span>{prompt.text}</span>
-            </Button>
+        {/* Capabilities */}
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: <Scale className="w-6 h-6 text-teal-600" />,
+              title: "Tư vấn pháp lý",
+              desc: "Giải đáp thắc mắc về luật pháp và quy định hiện hành"
+            },
+            {
+              icon: <BookText className="w-6 h-6 text-teal-600" />,
+              title: "Hướng dẫn thủ tục",
+              desc: "Cung cấp thông tin chi tiết về các thủ tục hành chính"
+            },
+            {
+              icon: <MessageSquare className="w-6 h-6 text-teal-600" />,
+              title: "Phân tích case",
+              desc: "Phân tích và đề xuất giải pháp cho các tình huống cụ thể"
+            }
+          ].map((item, i) => (
+            <Card key={i} className="p-6 hover:shadow-md transition-all duration-200 border-gray-200">
+              <div className="space-y-3">
+                <div className="p-3 bg-teal-50 rounded-xl w-fit">
+                  {item.icon}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            </Card>
           ))}
+        </div>
+
+        {/* Example Prompts */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900 text-center">
+            Hãy thử hỏi tôi
+          </h2>
+          <div className="space-y-3">
+            {examplePrompts.map((prompt, i) => (
+              <Button
+                key={i}
+                variant="outline"
+                className="w-full justify-start gap-3 py-6 px-6 text-left hover:bg-teal-50 hover:border-teal-200 transition-all duration-200 h-auto"
+                onClick={() => onPromptClick(prompt.prompt)}
+              >
+                <div className="p-2 bg-teal-50 rounded-lg shrink-0">
+                  {prompt.icon}
+                </div>
+                <span className="text-gray-700 font-medium">{prompt.text}</span>
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

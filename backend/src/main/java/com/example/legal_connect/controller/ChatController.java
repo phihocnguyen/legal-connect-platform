@@ -115,16 +115,19 @@ public class ChatController {
         chatMessage
     );
 
-    // Log principal.getName() của receiver (nếu có session)
     log.info("[WS] principal.getName() của người nhận (receiverId): {}", chatMessage.getReceiverId());
-
-    // Log trước khi gửi cho sender
     log.info("[WS] Sending to sender principal: {} (convertAndSendToUser)", principalName);
     messagingTemplate.convertAndSendToUser(
         principalName,
         "/queue/private",
         chatMessage
     );
+
+    if (chatMessage.getConversationId() != null) {
+        String topic = "/topic/conversation/" + chatMessage.getConversationId();
+        log.info("[WS] Broadcasting to topic: {}", topic);
+        messagingTemplate.convertAndSend(topic, chatMessage);
+    }
     }
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload ChatMessage chatMessage, Principal principal) {
@@ -191,7 +194,22 @@ public class ChatController {
     @GetMapping("/online-users")
     @ResponseBody
     public OnlineUsersResponse getOnlineUsers() {
-        return onlineUserService.getOnlineUsers();
+        OnlineUsersResponse response = onlineUserService.getOnlineUsers();
+        log.info("📊 Online users API called - Users: {}, Lawyers: {}, Total: {}", 
+                response.getUsers().size(), 
+                response.getLawyers().size(), 
+                response.getTotalOnline());
+        
+        // Log chi tiết từng user
+        response.getUsers().forEach(user -> 
+            log.info("  👤 User: id={}, name={}, type={}, online={}", 
+                    user.getUserId(), user.getUserName(), user.getUserType(), user.isOnline()));
+                    
+        response.getLawyers().forEach(lawyer -> 
+            log.info("  ⚖️ Lawyer: id={}, name={}, type={}, online={}", 
+                    lawyer.getUserId(), lawyer.getUserName(), lawyer.getUserType(), lawyer.isOnline()));
+        
+        return response;
     }
 
     /**

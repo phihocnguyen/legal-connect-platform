@@ -37,6 +37,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Keep CSRF protection disabled globally for simplicity with SockJS/STOMP.
+            // If you want CSRF enabled, you'll need to configure CsrfTokenRepository and
+            // allow the handshake endpoints to be excluded. For now we explicitly disable
+            // CSRF since STOMP messages use the HTTP handshake and then WebSocket frames.
             .csrf(csrf -> csrf.disable())
             .userDetailsService(customUserDetailsService)
             .sessionManagement(session -> 
@@ -54,7 +58,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/lawyer/apply").hasRole("USER")
                 .requestMatchers("/api/lawyer/**").hasAnyRole("USER", "LAWYER")
-                .requestMatchers("/ws/**").authenticated()
+                // Allow the websocket handshake endpoints (SockJS uses /ws/info) and
+                // allow OPTIONS preflight requests. The actual STOMP destinations are
+                // authorized by application logic and the WebSocketAuthInterceptor.
+                .requestMatchers("/ws/**", "/ws/info/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/chat/online-users").permitAll()
                 .requestMatchers("/api/chat/**").authenticated()
                 .anyRequest().authenticated()

@@ -52,8 +52,17 @@ export const useWebSocketStore = create<WebSocketStore>((set) => ({
   setClient: (client: Client | null) => set({ client }),
 }));
 
-export function useSyncWebSocket(url: string, onMessage?: (msg: IMessage) => void) {
-  const store = useWebSocketStore.getState();
+
+
+export function useSyncWebSocket(
+  url: string,
+  onMessage?: (msg: IMessage) => void,
+  headers?: StompHeaders
+) {
+  const hasInitialized = useRef(false);
+  const lastUrl = useRef<string>('');
+  const lastOnMessage = useRef<((msg: IMessage) => void) | undefined>(undefined);
+  const lastHeaders = useRef<StompHeaders | undefined>(undefined);
 
   const {
     connected,
@@ -63,28 +72,38 @@ export function useSyncWebSocket(url: string, onMessage?: (msg: IMessage) => voi
     getOnlineUsers,
     subscribe,
     send,
-  } = useSockJsStomp({ url, onMessage });
-
-  const hasInitialized = useRef(false);
-
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    useWebSocketStore.setState({
-      connect,
-      disconnect,
-      getOnlineUsers,
-      subscribe,
-      send,
-    });
-  }, [connect, disconnect, getOnlineUsers, subscribe, send]);
+  } = useSockJsStomp({
+    url,
+    onMessage,
+    headers: headers || {},
+  });
 
   useEffect(() => {
-    store.setConnected(connected);
-  }, [connected, store]);
+    // Chỉ khởi tạo một lần hoặc khi có thay đổi quan trọng
+    const hasUrlChanged = lastUrl.current !== url;
+    const hasOnMessageChanged = lastOnMessage.current !== onMessage;
+    const hasHeadersChanged = JSON.stringify(lastHeaders.current || {}) !== JSON.stringify(headers || {});
+    if (!hasInitialized.current || hasUrlChanged || hasOnMessageChanged || hasHeadersChanged) {
+      console.log('Initializing WebSocket store - URL:', url, 'Changed:', { hasUrlChanged, hasOnMessageChanged, hasHeadersChanged });
+      hasInitialized.current = true;
+      lastUrl.current = url;
+      lastOnMessage.current = onMessage;
+      lastHeaders.current = headers;
+      useWebSocketStore.setState({
+        connect,
+        disconnect,
+        getOnlineUsers,
+        subscribe,
+        send,
+      });
+    }
+  }, [connect, disconnect, getOnlineUsers, subscribe, send, url, onMessage, headers]);
 
   useEffect(() => {
-    store.setClient(client);
-  }, [client, store]);
+    useWebSocketStore.getState().setConnected(connected);
+  }, [connected]);
+
+  useEffect(() => {
+    useWebSocketStore.getState().setClient(client);
+  }, [client]);
 }

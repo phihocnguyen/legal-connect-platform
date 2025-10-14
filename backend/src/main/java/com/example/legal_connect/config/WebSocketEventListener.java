@@ -28,26 +28,36 @@ public class WebSocketEventListener {
         String sessionId = headerAccessor.getSessionId();
         
         log.info("WebSocket connection established - Session: {}", sessionId);
-        
-        Authentication authentication = (Authentication) headerAccessor.getUser();
-        
-        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal) {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            
-            String userId = userPrincipal.getId().toString();
-            String userName = userPrincipal.getFullName();
-            String userType = userPrincipal.getRole().name();
-            String avatar = userPrincipal.getAvatar();
-            
-            headerAccessor.getSessionAttributes().put("userId", userId);
-            headerAccessor.getSessionAttributes().put("userName", userName);
-            headerAccessor.getSessionAttributes().put("userType", userType);
-            
-            onlineUserService.addUser(userId, userName, userType, sessionId, avatar);
-            
-            log.info("User {} ({}) connected via WebSocket - Session: {}", userName, userType, sessionId);
-        } else {
-            log.warn("WebSocket connection without valid authentication - Session: {}", sessionId);
+        try {
+            Authentication authentication = (Authentication) headerAccessor.getUser();
+            log.debug("Authentication object: {}", authentication);
+            if (authentication != null) {
+                Object principal = authentication.getPrincipal();
+                log.debug("Principal object: {}", principal);
+                if (principal instanceof UserPrincipal) {
+                    UserPrincipal userPrincipal = (UserPrincipal) principal;
+                    String userId = userPrincipal.getId().toString();
+                    String userName = userPrincipal.getFullName();
+                    String userType = userPrincipal.getRole().name();
+                    String avatar = userPrincipal.getAvatar();
+                    log.debug("Extracted user info: id={}, name={}, type={}, avatar={}", userId, userName, userType, avatar);
+                    headerAccessor.getSessionAttributes().put("userId", userId);
+                    headerAccessor.getSessionAttributes().put("userName", userName);
+                    headerAccessor.getSessionAttributes().put("userType", userType);
+                    try {
+                        onlineUserService.addUser(userId, userName, userType, sessionId, avatar);
+                        log.info("User {} ({}) connected via WebSocket - Session: {}", userName, userType, sessionId);
+                    } catch (Exception e) {
+                        log.error("Exception when adding user to onlineUserService: {}", e.getMessage(), e);
+                    }
+                } else {
+                    log.warn("Principal is not instance of UserPrincipal: {} - Session: {}", principal, sessionId);
+                }
+            } else {
+                log.warn("Authentication is null - Session: {}", sessionId);
+            }
+        } catch (Exception ex) {
+            log.error("Exception in handleWebSocketConnectListener: {}", ex.getMessage(), ex);
         }
     }
 

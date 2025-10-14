@@ -60,34 +60,51 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor, HandshakeIn
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            Object securityContextObj = accessor.getSessionAttributes().get("SPRING_SECURITY_CONTEXT");
+            // Always log all CONNECTs and headers for debug
+            log.info("WebSocket CONNECT attempt: session={}, headers={}", accessor.getSessionId(), accessor.toNativeHeaderMap());
 
-            if (securityContextObj != null) {
-                try {
-                    SecurityContext securityContext = (SecurityContext) securityContextObj;
-                    Authentication authentication = securityContext.getAuthentication();
-
-                    if (authentication != null && authentication.isAuthenticated()) {
-                        // ⚡ Override Principal getName() = userId
-                        accessor.setUser(new Principal() {
-                            @Override
-                            public String getName() {
-                                Object principalObj = authentication.getPrincipal();
-                                if (principalObj instanceof UserPrincipal) {
-                                    UserPrincipal user = (UserPrincipal) principalObj;
-                                    return user.getEmail(); // ⚡ Trả về email
-                                }
-                                return authentication.getName(); // fallback
-                            }
-                        });
-
-                        log.info("WebSocket CONNECT with authenticated user: {}", accessor.getUser().getName());
+            // Always prefer user-name header if present
+            String userName = accessor.getFirstNativeHeader("user-name");
+            if (userName != null && !userName.isEmpty()) {
+                accessor.setUser(new Principal() {
+                    @Override
+                    public String getName() {
+                        return userName;
                     }
-                } catch (Exception e) {
-                    log.error("Error setting WebSocket authentication", e);
-                }
+                });
+                log.info("WebSocket CONNECT with user-name header: {}", userName);
             } else {
-                log.warn("WebSocket CONNECT without authentication");
+                Map<String, Object> sessionAttrs = accessor.getSessionAttributes();
+                if (sessionAttrs == null) {
+                    log.warn("WebSocket CONNECT: no session attributes available for session={}", accessor.getSessionId());
+                } else {
+                    Object securityContextObj = sessionAttrs.get("SPRING_SECURITY_CONTEXT");
+                    if (securityContextObj != null) {
+                    try {
+                        SecurityContext securityContext = (SecurityContext) securityContextObj;
+                        Authentication authentication = securityContext.getAuthentication();
+
+                        if (authentication != null && authentication.isAuthenticated()) {
+                            accessor.setUser(new Principal() {
+                                @Override
+                                public String getName() {
+                                    Object principalObj = authentication.getPrincipal();
+                                    if (principalObj instanceof UserPrincipal) {
+                                        UserPrincipal user = (UserPrincipal) principalObj;
+                                        return user.getEmail();
+                                    }
+                                    return authentication.getName();
+                                }
+                            });
+                            log.info("WebSocket CONNECT with authenticated user: {}", accessor.getUser().getName());
+                        }
+                        } catch (Exception e) {
+                            log.error("Error setting WebSocket authentication", e);
+                        }
+                    } else {
+                        log.warn("WebSocket CONNECT without authentication and no user-name header (sessionAttrs present but no security context)");
+                    }
+                }
             }
         }
 

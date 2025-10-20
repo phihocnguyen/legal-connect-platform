@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -24,9 +25,10 @@ public class PostModerationDto {
     private Boolean isHot;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String violationReason;
+    private String violationReason; // Admin's note about violation
     private Boolean isReported;
     private Integer reportCount;
+    private List<String> reportReasons; // User report reasons
 
     @Data
     @Builder

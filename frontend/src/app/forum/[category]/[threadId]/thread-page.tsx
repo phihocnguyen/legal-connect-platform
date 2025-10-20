@@ -10,6 +10,9 @@ import { usePostUseCases } from '@/hooks/use-post-cases';
 import { PostDto, PostReplyDto, UserRole } from '@/domain/entities';
 import { useLoadingState } from '@/hooks/use-loading-state';
 import { Editor } from '@tinymce/tinymce-react';
+import { Flag } from 'lucide-react';
+import { ReportPostDialog } from '@/components/forum/report-post-dialog';
+
 const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key';
 
 interface ThreadPageProps {
@@ -23,6 +26,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   const { getPostById, getRepliesByPost, addReply } = usePostUseCases();
   const { startLoading, stopLoading } = useLoadingState();
@@ -80,18 +84,18 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
 
   const getRoleDisplayName = (role: UserRole): string => {
     switch (role) {
-      case 'lawyer': return 'Luật sư';
-      case 'admin': return 'Quản trị viên';
-      case 'user': return 'Thành viên';
+      case 'LAWYER': return 'Luật sư';
+      case 'ADMIN': return 'Quản trị viên';
+      case 'USER': return 'Thành viên';
       default: return 'Thành viên';
     }
   };
 
   const getRoleBadgeStyle = (role: UserRole): string => {
     switch (role) {
-      case 'lawyer': return 'bg-[#004646] text-white';
-      case 'admin': return 'bg-red-600 text-white';
-      case 'user': return 'bg-gray-100 text-gray-700';
+      case 'LAWYER': return 'bg-[#004646] text-white';
+      case 'ADMIN': return 'bg-red-600 text-white';
+      case 'USER': return 'bg-gray-100 text-gray-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -141,7 +145,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
 
       {/* Main Post */}
       <div className={`bg-white rounded-lg shadow mb-6 ${
-        post.author.role === 'lawyer' 
+        post.author.role === 'LAWYER' 
           ? 'ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50' 
           : ''
       }`}>
@@ -169,12 +173,20 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
               </div>
             </div>
 
-            {/* Post Content */}
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-start mb-4">
                 <span className="text-sm text-gray-500">{formatDate(post.createdAt)}</span>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Tác giả bài viết</Badge>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setReportDialogOpen(true)}
+                    className="text-gray-500 hover:text-red-600"
+                  >
+                    <Flag className="h-4 w-4 mr-1" />
+                    Báo cáo
+                  </Button>
                 </div>
               </div>
               <div className="prose max-w-none whitespace-pre-wrap">
@@ -197,7 +209,7 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
         <div className="space-y-6">
           {replies.map((reply) => (
             <div key={reply.id} className={`bg-white rounded-lg shadow ${
-              reply.author.role === 'lawyer' 
+              reply.author.role === 'LAWYER' 
                 ? 'ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50' 
                 : ''
             }`}>
@@ -266,6 +278,15 @@ export function ThreadPageContent({ category, threadId }: ThreadPageProps) {
           </div>
         </form>
       </div>
+
+      {/* Report Dialog */}
+      {post && (
+        <ReportPostDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          postId={post.id}
+        />
+      )}
     </div>
   );
 }

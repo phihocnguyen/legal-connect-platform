@@ -15,6 +15,7 @@ import com.example.legal_connect.repository.UserRepository;
 import com.example.legal_connect.repository.ForumRepository;
 import com.example.legal_connect.repository.PostCategoryRepository;
 import com.example.legal_connect.repository.LawyerApplicationRepository;
+import com.example.legal_connect.repository.PostReportRepository;
 import com.example.legal_connect.mapper.PostCategoryMapper;
 import com.example.legal_connect.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class AdminService {
     private final PostCategoryRepository postCategoryRepository;
     private final LawyerApplicationRepository lawyerApplicationRepository;
     private final PostCategoryMapper postCategoryMapper;
+    private final PostReportRepository postReportRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserManagementDto> getAllUsers(String search, String role, Pageable pageable) {
@@ -90,11 +92,11 @@ public class AdminService {
         // Base query - only get reported posts (reportCount > 0)
         if (search != null && !search.trim().isEmpty()) {
             if (isActive != null) {
-                posts = forumRepository.findByReportCountGreaterThanAndIsActiveAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
-                    0, isActive, search.trim(), search.trim(), pageable);
+                posts = forumRepository.findReportedPostsBySearchTermAndStatus(
+                    0, isActive, search.trim(), pageable);
             } else {
-                posts = forumRepository.findByReportCountGreaterThanAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
-                    0, search.trim(), search.trim(), pageable);
+                posts = forumRepository.findReportedPostsBySearchTerm(
+                    0, search.trim(), pageable);
             }
         } else {
             if (isActive != null) {
@@ -223,6 +225,13 @@ public class AdminService {
             .role(post.getAuthor().getRole().toString())
             .build();
 
+        // Get report reasons from PostReport entities
+        List<String> reportReasons = postReportRepository.findByPostIdOrderByCreatedAtDesc(post.getId())
+            .stream()
+            .map(com.example.legal_connect.entity.PostReport::getReason)
+            .distinct()
+            .collect(java.util.stream.Collectors.toList());
+
         return PostModerationDto.builder()
             .id(post.getId())
             .title(post.getTitle())
@@ -239,6 +248,7 @@ public class AdminService {
             .violationReason(post.getViolationReason())
             .isReported(post.getIsReported() != null ? post.getIsReported() : false)
             .reportCount(post.getReportCount() != null ? post.getReportCount() : 0)
+            .reportReasons(reportReasons)
             .build();
     }
 

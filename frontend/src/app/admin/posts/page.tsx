@@ -800,7 +800,7 @@ export default function AdminPostsPage() {
               </div>
 
               {/* Moderation Info */}
-              {(selectedPost.isReported || selectedPost.violationReason) && (
+              {(selectedPost.isReported || selectedPost.reason) && (
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-3 text-orange-600">Thông tin kiểm duyệt</h3>
                   {selectedPost.isReported && (
@@ -810,10 +810,10 @@ export default function AdminPostsPage() {
                       </Badge>
                     </div>
                   )}
-                  {selectedPost.violationReason && (
+                  {selectedPost.reason && (
                     <div className="bg-orange-50 p-3 rounded-lg">
                       <div className="font-medium text-orange-800">Lý do vi phạm:</div>
-                      <div className="text-orange-700">{selectedPost.violationReason}</div>
+                      <div className="text-orange-700">{selectedPost.reason}</div>
                     </div>
                   )}
                 </div>

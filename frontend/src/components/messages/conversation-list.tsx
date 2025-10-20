@@ -10,12 +10,14 @@ interface ConversationListProps {
   conversations: UserConversation[];
   selectedConversation: UserConversation | null;
   onSelectConversation: (conversation: UserConversation) => void;
+  currentUserId?: number;
 }
 
 export function ConversationList({
   conversations,
   selectedConversation,
   onSelectConversation
+  , currentUserId
 }: ConversationListProps) {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -64,7 +66,7 @@ export function ConversationList({
               Chưa có cuộc trò chuyện nào
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="">
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
@@ -112,7 +114,11 @@ export function ConversationList({
                       
                       {conversation.lastMessage && (
                         <p className="text-sm text-gray-600 truncate">
-                           {conversation.lastMessage.content}
+                          {conversation.lastMessage && (
+                            conversation.lastMessage.senderId === currentUserId
+                              ? `Bạn: ${conversation.lastMessage.content}`
+                              : conversation.lastMessage.content
+                          )}
                         </p>
                       )}
                     </div>

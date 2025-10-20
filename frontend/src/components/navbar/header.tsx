@@ -29,6 +29,12 @@ export function Header() {
               Diễn đàn
             </Link>
             <Link 
+              href="/messages" 
+              className="text-gray-600 hover:text-[#004646] font-medium"
+            >
+              Tin nhắn
+            </Link>
+            <Link 
               href="/chat" 
               className="text-gray-600 hover:text-[#004646] font-medium"
             >

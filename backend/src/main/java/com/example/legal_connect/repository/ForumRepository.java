@@ -218,4 +218,28 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     default List<Post> findTopPostsByViews(LocalDateTime since, int limit) {
         return findTopPostsByViews(since, Pageable.ofSize(limit));
     }
+
+    // ========== VIOLATION POSTS QUERIES ==========
+    
+    /**
+     * Find posts with report count greater than threshold
+     */
+    Page<Post> findByReportCountGreaterThan(int reportCount, Pageable pageable);
+    
+    /**
+     * Find posts with report count greater than threshold and specific status
+     */
+    Page<Post> findByReportCountGreaterThanAndIsActive(int reportCount, Boolean isActive, Pageable pageable);
+    
+    /**
+     * Find reported posts by title or content containing search term
+     */
+    Page<Post> findByReportCountGreaterThanAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+        int reportCount, String title, String content, Pageable pageable);
+    
+    /**
+     * Find reported posts by title or content containing search term and specific status
+     */
+    Page<Post> findByReportCountGreaterThanAndIsActiveAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+        int reportCount, Boolean isActive, String title, String content, Pageable pageable);
 }

@@ -40,10 +40,10 @@ export class HttpAdminRepository implements AdminRepository {
     if (apiResponse.success && apiResponse.data) {
       return {
         content: apiResponse.data.content as AdminUser[],
-        totalPages: apiResponse.data.totalPages,
-        totalElements: apiResponse.data.totalElements,
-        size: apiResponse.data.size,
-        number: apiResponse.data.number,
+        totalPages: apiResponse.data.page.totalPages,
+        totalElements: apiResponse.data.page.totalElements,
+        size: apiResponse.data.page.size,
+        number: apiResponse.data.page.number,
       };
     }
     
@@ -86,10 +86,10 @@ export class HttpAdminRepository implements AdminRepository {
     if (apiResponse.success && apiResponse.data) {
       return {
         content: apiResponse.data.content as AdminPost[],
-        totalPages: apiResponse.data.totalPages,
-        totalElements: apiResponse.data.totalElements,
-        size: apiResponse.data.size,
-        number: apiResponse.data.number,
+        totalPages: apiResponse.data.page.totalPages,
+        totalElements: apiResponse.data.page.totalElements,
+        size: apiResponse.data.page.size,
+        number: apiResponse.data.page.number,
       };
     }
     
@@ -145,8 +145,15 @@ export class HttpAdminRepository implements AdminRepository {
    */
   async getDashboardStats(): Promise<AdminDashboardStats> {
     const response = await apiClient.get('/admin/dashboard/stats');
+    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return response.data as any;
+    const apiResponse = response.data as any;
+    
+    if (apiResponse.success && apiResponse.data) {
+      return apiResponse.data as AdminDashboardStats;
+    }
+    
+    throw new Error(apiResponse.message || 'Failed to fetch dashboard statistics');
   }
 
   /**

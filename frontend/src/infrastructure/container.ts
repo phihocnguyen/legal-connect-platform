@@ -1,14 +1,21 @@
-import { ChatRepository, AuthRepository, PostRepository, PdfRepository, MessagingRepository } from '../domain/interfaces/repositories';
+import { ChatRepository, AuthRepository, PostRepository, PdfRepository, MessagingRepository, ForumRepository, ChatQARepository, AdminRepository, LawyerRepository } from '../domain/interfaces/repositories';
 import { HttpChatRepository } from './repositories/chat.repository';
 import { HttpAuthRepository } from './repositories/auth.repository';
 import { HttpPostRepository } from './repositories/post.repository';
 import { HttpPdfRepository } from './repositories/pdf.repository';
 import { MessagingRepositoryImpl } from './repositories/messaging.repository';
+import { HttpForumRepository } from './repositories/forum.repository';
+import { HttpChatQARepository } from './repositories/chat-qa.repository';
+import { HttpAdminRepository } from './repositories/admin.repository';
+import { HttpLawyerRepository } from './repositories/lawyer.repository';
 
 import {
   SendMessageUseCase,
   GetConversationHistoryUseCase,
+  GetConversationsUseCase as ChatGetConversationsUseCase,
   CreateConversationUseCase,
+  UpdateConversationTitleUseCase,
+  DeleteConversationUseCase as ChatDeleteConversationUseCase,
 } from '../application/use-cases/chat.use-case';
 import {
   LoginUseCase,
@@ -52,9 +59,16 @@ import {
   CreateConversationUseCase as MessagingCreateConversationUseCase,
   GetOrCreateConversationUseCase,
   MarkMessagesAsReadUseCase,
-} from '../application/use-cases/messaging.use-case';class Container {
+} from '../application/use-cases/messaging.use-case';
+import {
+  GetForumStatsUseCase,
+  GetPopularTopicsUseCase,
+  GetCategoryStatsUseCase,
+  GetPopularTagsUseCase,
+} from '../application/use-cases/forum.use-case';
+import { AskQuestionUseCase } from '../application/use-cases/chat-qa.use-case';class Container {
   private static instance: Container;
-  private repositories: Map<string, ChatRepository | AuthRepository | PostRepository | PdfRepository | MessagingRepository> = new Map();
+  private repositories: Map<string, ChatRepository | AuthRepository | PostRepository | PdfRepository | MessagingRepository | ForumRepository | ChatQARepository | AdminRepository | LawyerRepository> = new Map();
   private useCases: Map<string, unknown> = new Map();
 
   private constructor() {
@@ -75,12 +89,20 @@ import {
     const postRepo = new HttpPostRepository();
     const pdfRepo = new HttpPdfRepository();
     const messagingRepo = new MessagingRepositoryImpl();
+    const forumRepo = new HttpForumRepository();
+    const chatQARepo = new HttpChatQARepository();
+    const adminRepo = new HttpAdminRepository();
+    const lawyerRepo = new HttpLawyerRepository();
 
     this.repositories.set('ChatRepository', chatRepo);
     this.repositories.set('AuthRepository', authRepo);
     this.repositories.set('PostRepository', postRepo);
     this.repositories.set('PdfRepository', pdfRepo);
     this.repositories.set('MessagingRepository', messagingRepo);
+    this.repositories.set('ForumRepository', forumRepo);
+    this.repositories.set('ChatQARepository', chatQARepo);
+    this.repositories.set('AdminRepository', adminRepo);
+    this.repositories.set('LawyerRepository', lawyerRepo);
   }
 
   private registerUseCases() {
@@ -89,6 +111,8 @@ import {
     const postRepo = this.repositories.get('PostRepository') as PostRepository;
     const pdfRepo = this.repositories.get('PdfRepository') as PdfRepository;
     const messagingRepo = this.repositories.get('MessagingRepository') as MessagingRepository;
+    const forumRepo = this.repositories.get('ForumRepository') as ForumRepository;
+    const chatQARepo = this.repositories.get('ChatQARepository') as ChatQARepository;
 
     // Chat use cases
     this.useCases.set(
@@ -100,8 +124,20 @@ import {
       new GetConversationHistoryUseCase(chatRepo)
     );
     this.useCases.set(
+      'GetConversationsUseCase',
+      new ChatGetConversationsUseCase(chatRepo)
+    );
+    this.useCases.set(
       'CreateConversationUseCase',
       new CreateConversationUseCase(chatRepo)
+    );
+    this.useCases.set(
+      'UpdateConversationTitleUseCase',
+      new UpdateConversationTitleUseCase(chatRepo)
+    );
+    this.useCases.set(
+      'DeleteConversationUseCase',
+      new ChatDeleteConversationUseCase(chatRepo)
     );
 
     // Auth use cases
@@ -254,6 +290,30 @@ import {
     this.useCases.set(
       'MarkMessagesAsReadUseCase',
       new MarkMessagesAsReadUseCase(messagingRepo)
+    );
+
+    // Forum statistics use cases
+    this.useCases.set(
+      'GetForumStatsUseCase',
+      new GetForumStatsUseCase(forumRepo)
+    );
+    this.useCases.set(
+      'GetPopularTopicsUseCase',
+      new GetPopularTopicsUseCase(forumRepo)
+    );
+    this.useCases.set(
+      'GetCategoryStatsUseCase',
+      new GetCategoryStatsUseCase(forumRepo)
+    );
+    this.useCases.set(
+      'GetPopularTagsUseCase',
+      new GetPopularTagsUseCase(forumRepo)
+    );
+
+    // Chat Q/A use cases
+    this.useCases.set(
+      'AskQuestionUseCase',
+      new AskQuestionUseCase(chatQARepo)
     );
   }
 

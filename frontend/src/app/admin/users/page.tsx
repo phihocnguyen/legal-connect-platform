@@ -22,6 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Search, 
   Users, 
@@ -32,92 +38,50 @@ import {
   User as UserIcon,
   Scale
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-interface User {
-  id: number;
-  email: string;
-  fullName: string;
-  phoneNumber?: string;
-  avatar?: string;
-  role: string;
-  authProvider: string;
-  isEmailVerified: boolean;
-  isEnabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-  postsCount: number;
-  messagesCount: number;
-}
+import { useAdminCases } from '@/hooks/use-admin-cases';
+import { AdminUser } from '@/domain/entities';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
+  const {
+    loading,
+    getUsers,
+    updateUserStatus,
+  } = useAdminCases();
+
   const fetchUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        size: '10',
-        sortBy: 'createdAt',
-        sortDir: 'desc'
-      });
+    const params = {
+      page,
+      size: 10,
+      sortBy: 'createdAt',
+      sortDir: 'desc' as const,
+      ...(search.trim() && { search: search.trim() }),
+      ...(roleFilter && roleFilter !== 'ALL' && { role: roleFilter }),
+    };
 
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
-      if (roleFilter && roleFilter !== 'ALL') {
-        params.append('role', roleFilter);
-      }
-
-      const response = await fetch(`/api/admin/users?${params}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setUsers(result.data.content || []);
-        setTotalPages(result.data.totalPages || 0);
-        setTotalElements(result.data.totalElements || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
+    const result = await getUsers(params);
+    if (result) {
+      setUsers(result.content || []);
+      setTotalPages(result.totalPages || 0);
+      setTotalElements(result.totalElements || 0);
     }
-  }, [page, search, roleFilter]);
+  }, [page, search, roleFilter, getUsers]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   const handleToggleUserStatus = async (userId: number, currentStatus: boolean) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/status?isEnabled=${!currentStatus}`, {
-        method: 'PUT',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        fetchUsers(); // Refresh the list
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
+    const success = await updateUserStatus(userId, !currentStatus);
+    if (success) {
+      fetchUsers(); // Refresh the list
     }
   };
 
@@ -162,7 +126,7 @@ export default function UsersPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalElements}</div>
+              <div className="text-2xl font-bold">{totalElements || 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -172,7 +136,7 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => u.isEnabled).length}
+                {users.filter(u => u.isEnabled).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -183,7 +147,7 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => u.role === 'LAWYER').length}
+                {users.filter(u => u.role === 'LAWYER').length || 0}
               </div>
             </CardContent>
           </Card>
@@ -194,7 +158,7 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => !u.isEnabled).length}
+                {users.filter(u => !u.isEnabled).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -244,8 +208,7 @@ export default function UsersPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Đang tải...</p>
+                <LoadingSpinner size='md'/>
               </div>
             ) : (
               <Table>

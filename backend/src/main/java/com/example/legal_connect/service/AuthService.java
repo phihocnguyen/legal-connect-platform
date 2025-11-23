@@ -12,4 +12,6 @@ public interface AuthService {
     User login(LoginRequest request, HttpServletRequest httpRequest);
     
     void logout(HttpServletRequest request);
+    
+    User handleMobileOAuth(String code, String provider);
 }

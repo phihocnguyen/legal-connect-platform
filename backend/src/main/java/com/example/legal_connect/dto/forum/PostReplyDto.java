@@ -26,6 +26,14 @@ public class PostReplyDto {
     
     private List<PostReplyDto> children;
     
+    private Integer upvoteCount;
+    
+    private Integer downvoteCount;
+    
+    private String userVote; // Current user's vote: UPVOTE, DOWNVOTE, or null
+    
+    private List<Long> mentionedUserIds; // List of mentioned user IDs
+    
     private Boolean isActive;
     
     private Boolean isSolution;

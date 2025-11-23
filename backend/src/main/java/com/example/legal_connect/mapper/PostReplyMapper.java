@@ -6,6 +6,8 @@ import com.example.legal_connect.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,11 +25,25 @@ public class PostReplyMapper {
             return null;
         }
 
+        // Parse mentioned user IDs
+        List<Long> mentionedUserIds = new ArrayList<>();
+        if (reply.getMentionedUserIds() != null && !reply.getMentionedUserIds().trim().isEmpty()) {
+            mentionedUserIds = Arrays.stream(reply.getMentionedUserIds().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+        }
+
         PostReplyDto.PostReplyDtoBuilder builder = PostReplyDto.builder()
                 .id(reply.getId())
                 .content(reply.getContent())
                 .postId(reply.getPost().getId())
                 .parentId(reply.getParent() != null ? reply.getParent().getId() : null)
+                .upvoteCount(reply.getUpvoteCount() != null ? reply.getUpvoteCount() : 0)
+                .downvoteCount(reply.getDownvoteCount() != null ? reply.getDownvoteCount() : 0)
+                .userVote(null) // Will be set by controller if user is authenticated
+                .mentionedUserIds(mentionedUserIds)
                 .isActive(reply.getIsActive())
                 .isSolution(reply.getIsSolution())
                 .createdAt(reply.getCreatedAt())

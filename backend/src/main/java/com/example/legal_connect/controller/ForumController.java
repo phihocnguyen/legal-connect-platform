@@ -8,7 +8,10 @@ import com.example.legal_connect.dto.forum.PostCategoryDto;
 import com.example.legal_connect.dto.forum.PostCreateDto;
 import com.example.legal_connect.dto.forum.PostDto;
 import com.example.legal_connect.dto.forum.PostReplyDto;
+import com.example.legal_connect.dto.forum.VoteDto;
+import com.example.legal_connect.dto.forum.VoteRequestDto;
 import com.example.legal_connect.service.ForumService;
+import com.example.legal_connect.service.VotingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +33,7 @@ import java.util.List;
 public class ForumController {
 
     private final ForumService postService;
+    private final VotingService votingService;
     @GetMapping("/categories")
     public ResponseEntity<List<PostCategoryDto>> getAllCategories() {
         List<PostCategoryDto> categories = postService.getAllCategories();
@@ -92,8 +96,10 @@ public class ForumController {
      * Get post by ID
      */
     @GetMapping("/posts/{id}")
-    public ResponseEntity<PostDto> getPostById(@PathVariable Long id) {
-        PostDto post = postService.getPostById(id);
+    public ResponseEntity<PostDto> getPostById(@PathVariable Long id, Authentication authentication) {
+        Long currentUserId = getUserIdFromAuth(authentication);
+        System.out.println("getPostById - PostId: " + id + ", CurrentUserId: " + currentUserId);
+        PostDto post = postService.getPostById(id, currentUserId);
         return ResponseEntity.ok(post);
     }
 
@@ -129,8 +135,22 @@ public class ForumController {
     }
 
     @GetMapping("/posts/{postId}/replies")
-    public ResponseEntity<List<PostReplyDto>> getRepliesByPost(@PathVariable Long postId) {
-        List<PostReplyDto> replies = postService.getRepliesByPost(postId);
+    public ResponseEntity<List<PostReplyDto>> getRepliesByPost(
+            @PathVariable Long postId,
+            Authentication authentication) {
+        Long currentUserId = getUserIdFromAuth(authentication);
+        System.out.println("==========================================");
+        System.out.println("getRepliesByPost - PostId: " + postId + ", CurrentUserId: " + currentUserId);
+        System.out.println("Authentication object: " + authentication);
+        List<PostReplyDto> replies = postService.getRepliesByPost(postId, currentUserId);
+        System.out.println("Returned " + replies.size() + " replies");
+        for (PostReplyDto reply : replies) {
+            System.out.println("  Reply ID: " + reply.getId() + 
+                             ", upvote: " + reply.getUpvoteCount() + 
+                             ", downvote: " + reply.getDownvoteCount() + 
+                             ", userVote: " + reply.getUserVote());
+        }
+        System.out.println("==========================================");
         return ResponseEntity.ok(replies);
     }
 
@@ -173,6 +193,24 @@ public class ForumController {
         throw new RuntimeException("User not authenticated");
     }
     
+    // Helper method that returns null if user is not authenticated (for optional auth)
+    private Long getUserIdFromAuth(Authentication authentication) {
+        try {
+            if (authentication != null && authentication.isAuthenticated()) {
+                Object principal = authentication.getPrincipal();
+                
+                if (principal instanceof com.example.legal_connect.security.UserPrincipal) {
+                    com.example.legal_connect.security.UserPrincipal userPrincipal = 
+                        (com.example.legal_connect.security.UserPrincipal) principal;
+                    return userPrincipal.getId();
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error getting user ID: " + e.getMessage());
+        }
+        return null; // Allow null for unauthenticated users
+    }
+    
     @GetMapping("/stats")
     public ResponseEntity<ForumStatsDto> getForumStats() {
         ForumStatsDto stats = postService.getForumStats();
@@ -199,5 +237,67 @@ public class ForumController {
             @RequestParam(defaultValue = "10") int limit) {
         List<PopularTagDto> tags = postService.getPopularTags(limit);
         return ResponseEntity.ok(tags);
+    }
+    
+    // ========== VOTING ENDPOINTS ==========
+    
+    /**
+     * Vote on a post
+     */
+    @PostMapping("/posts/{postId}/vote")
+    public ResponseEntity<VoteDto> votePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody VoteRequestDto voteRequest,
+            Authentication authentication) {
+        Long userId = getUserIdFromAuthentication(authentication);
+        VoteDto voteDto = votingService.votePost(postId, userId, voteRequest.getVoteType());
+        return ResponseEntity.ok(voteDto);
+    }
+    
+    /**
+     * Vote on a reply
+     */
+    @PostMapping("/replies/{replyId}/vote")
+    public ResponseEntity<VoteDto> voteReply(
+            @PathVariable Long replyId,
+            @Valid @RequestBody VoteRequestDto voteRequest,
+            Authentication authentication) {
+        Long userId = getUserIdFromAuthentication(authentication);
+        VoteDto voteDto = votingService.voteReply(replyId, userId, voteRequest.getVoteType());
+        return ResponseEntity.ok(voteDto);
+    }
+    
+    /**
+     * Get vote statistics for a post
+     */
+    @GetMapping("/posts/{postId}/votes")
+    public ResponseEntity<VoteDto> getPostVotes(
+            @PathVariable Long postId,
+            Authentication authentication) {
+        Long userId = null;
+        try {
+            userId = getUserIdFromAuthentication(authentication);
+        } catch (Exception e) {
+            // User not authenticated, proceed with null userId
+        }
+        VoteDto voteDto = votingService.getPostVoteStats(postId, userId);
+        return ResponseEntity.ok(voteDto);
+    }
+    
+    /**
+     * Get vote statistics for a reply
+     */
+    @GetMapping("/replies/{replyId}/votes")
+    public ResponseEntity<VoteDto> getReplyVotes(
+            @PathVariable Long replyId,
+            Authentication authentication) {
+        Long userId = null;
+        try {
+            userId = getUserIdFromAuthentication(authentication);
+        } catch (Exception e) {
+            // User not authenticated, proceed with null userId
+        }
+        VoteDto voteDto = votingService.getReplyVoteStats(replyId, userId);
+        return ResponseEntity.ok(voteDto);
     }
 }

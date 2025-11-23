@@ -20,9 +20,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +36,8 @@ public class ForumServiceImpl implements ForumService {
     private final PostCategoryRepository postCategoryRepository;
     private final PostReplyRepository postReplyRepository;
     private final UserRepository userRepository;
+    private final PostVoteRepository postVoteRepository;
+    private final ReplyVoteRepository replyVoteRepository;
     private final PostMapper postMapper;
     private final PostCategoryMapper categoryMapper;
     private final PostReplyMapper replyMapper;
@@ -123,12 +128,85 @@ public class ForumServiceImpl implements ForumService {
 
     @Override
     public PostDto getPostById(Long id) {
+        return getPostById(id, getCurrentUserId());
+    }
+    
+    @Override
+    public PostDto getPostById(Long id, Long currentUserId) {
         Post post = postRepository.findByIdWithCategoryAndAuthor(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
         post.incrementViews();
         postRepository.save(post);
         
-        return postMapper.toDto(post);
+        PostDto dto = postMapper.toDto(post);
+        enrichWithUserVote(dto, currentUserId);
+        return dto;
+    }
+    
+    // Helper method to get current user ID from security context
+    private Long getCurrentUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println("Authentication: " + authentication);
+            if (authentication != null && authentication.isAuthenticated()) {
+                System.out.println("Authentication name: " + authentication.getName());
+                System.out.println("Principal: " + authentication.getPrincipal());
+                Object principal = authentication.getPrincipal();
+                if (principal instanceof com.example.legal_connect.security.UserPrincipal) {
+                    Long userId = ((com.example.legal_connect.security.UserPrincipal) principal).getId();
+                    System.out.println("User ID from security context: " + userId);
+                    return userId;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error getting user ID: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("No authenticated user found");
+        return null;
+    }
+    
+    // Enrich PostDto with user's vote (legacy - uses security context)
+    private void enrichWithUserVote(PostDto dto) {
+        enrichWithUserVote(dto, getCurrentUserId());
+    }
+    
+    // Enrich PostDto with user's vote
+    private void enrichWithUserVote(PostDto dto, Long userId) {
+        System.out.println("Enriching post " + dto.getId() + " with user vote. UserId: " + userId);
+        if (userId != null && dto != null) {
+            Optional<PostVote> vote = postVoteRepository.findByPostIdAndUserId(dto.getId(), userId);
+            System.out.println("Vote found: " + vote.isPresent());
+            if (vote.isPresent()) {
+                String voteType = vote.get().getVoteType().name();
+                System.out.println("Setting userVote to: " + voteType);
+                dto.setUserVote(voteType);
+            }
+            
+            // Also enrich replies if present
+            if (dto.getReplies() != null) {
+                for (PostReplyDto reply : dto.getReplies()) {
+                    enrichReplyWithUserVote(reply, userId);
+                }
+            }
+        }
+    }
+    
+    // Enrich PostReplyDto with user's vote
+    private void enrichReplyWithUserVote(PostReplyDto dto, Long userId) {
+        if (userId != null && dto != null) {
+            Optional<ReplyVote> vote = replyVoteRepository.findByReplyIdAndUserId(dto.getId(), userId);
+            if (vote.isPresent()) {
+                dto.setUserVote(vote.get().getVoteType().name());
+            }
+            
+            // Also enrich children if present
+            if (dto.getChildren() != null) {
+                for (PostReplyDto child : dto.getChildren()) {
+                    enrichReplyWithUserVote(child, userId);
+                }
+            }
+        }
     }
 
     @Override
@@ -179,12 +257,26 @@ public class ForumServiceImpl implements ForumService {
     // Reply
     @Override
     public List<PostReplyDto> getRepliesByPost(Long postId) {
+        return getRepliesByPost(postId, getCurrentUserId());
+    }
+    
+    @Override
+    public List<PostReplyDto> getRepliesByPost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
-        return postReplyRepository.findByPostAndParentIsNullAndIsActiveTrueOrderByCreatedAtAsc(post)
+        List<PostReplyDto> replies = postReplyRepository.findByPostAndParentIsNullAndIsActiveTrueOrderByCreatedAtAsc(post)
                 .stream()
                 .map(replyMapper::toDto)
                 .collect(Collectors.toList());
+        
+        // Enrich with user votes
+        if (currentUserId != null) {
+            for (PostReplyDto reply : replies) {
+                enrichReplyWithUserVote(reply, currentUserId);
+            }
+        }
+        
+        return replies;
     }
 
     @Override

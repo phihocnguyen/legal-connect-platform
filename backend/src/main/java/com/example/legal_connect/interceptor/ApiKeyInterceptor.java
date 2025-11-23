@@ -74,7 +74,6 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
 
         @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        // After request is completed, deduct API key usage
         Boolean shouldDeduct = (Boolean) request.getAttribute("shouldDeductApiKey");
         
         if (shouldDeduct != null && shouldDeduct && response.getStatus() >= 200 && response.getStatus() < 300) {

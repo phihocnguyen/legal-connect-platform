@@ -29,6 +29,12 @@ public class PostDto {
     
     private Integer replyCount;
     
+    private Integer upvoteCount;
+    
+    private Integer downvoteCount;
+    
+    private String userVote; // Current user's vote: UPVOTE, DOWNVOTE, or null
+    
     private Boolean pinned;
     
     private Boolean solved;

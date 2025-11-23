@@ -107,4 +107,35 @@ public class AuthController {
         
         return ResponseEntity.ok(authMapper.toSuccessMessageResponse("User is not authenticated"));
     }
+
+    @GetMapping("/oauth/mobile/google")
+    @Operation(summary = "Get Google OAuth URL for mobile")
+    public ResponseEntity<ApiResponse<String>> getGoogleOAuthUrlForMobile() {
+        String clientId = "915479698970-jdoo03cqqcrnc5c8gmtcb9ei4824prls.apps.googleusercontent.com";
+        String redirectUri = "com.legalconnect://oauth2/callback";
+        String scope = "openid profile email";
+        
+        String authUrl = String.format(
+            "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s",
+            clientId, redirectUri, scope.replace(" ", "%20")
+        );
+        
+        return ResponseEntity.ok(authMapper.toSuccessMessageResponse(authUrl));
+    }
+
+    @PostMapping("/oauth/mobile/callback")
+    @Operation(summary = "Handle OAuth callback from mobile")
+    public ResponseEntity<ApiResponse<AuthResponse>> handleMobileOAuthCallback(
+            @RequestParam String code,
+            @RequestParam(defaultValue = "google") String provider,
+            HttpServletRequest httpRequest) {
+        try {
+            User user = authService.handleMobileOAuth(code, provider);
+            return ResponseEntity.ok(authMapper.toSuccessResponse(user, "OAuth login successful"));
+        } catch (Exception e) {
+            log.error("Mobile OAuth error: ", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(authMapper.toAuthErrorResponse("OAuth authentication failed: " + e.getMessage()));
+        }
+    }
 }

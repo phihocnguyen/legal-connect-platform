@@ -36,6 +36,9 @@ public class PostMapper {
                 .content(post.getContent())
                 .views(post.getViews())
                 .replyCount(post.getReplyCount())
+                .upvoteCount(post.getUpvoteCount() != null ? post.getUpvoteCount() : 0)
+                .downvoteCount(post.getDownvoteCount() != null ? post.getDownvoteCount() : 0)
+                .userVote(null) // Will be set by controller if user is authenticated
                 .pinned(post.getPinned())
                 .solved(post.getSolved())
                 .isHot(post.getIsHot())

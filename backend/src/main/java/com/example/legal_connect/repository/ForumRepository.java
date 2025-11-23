@@ -72,7 +72,7 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     /**
      * Search posts by content using native query (to avoid CLOB/STRING issues)
      */
-    @Query(value = "SELECT p.* FROM posts p WHERE p.is_active = true AND p.content LIKE ?1", 
+    @Query(value = "SELECT p.id, p.title, p.content, p.category_id, p.author_id, p.views, p.reply_count, p.upvote_count, p.downvote_count, p.is_pinned, p.is_solved, p.is_hot, p.is_active, p.report_count, p.is_reported, p.violation_reason, p.tags, p.created_at, p.updated_at, p.last_reply_at FROM posts p WHERE p.is_active = true AND p.content LIKE ?1", 
            nativeQuery = true,
            countQuery = "SELECT COUNT(*) FROM posts p WHERE p.is_active = true AND p.content LIKE ?1")
     Page<Post> findByIsActiveTrueAndContentContaining(String content, Pageable pageable);
@@ -80,7 +80,7 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     /**
      * Find posts by tags containing keyword using native query
      */
-    @Query(value = "SELECT p.* FROM posts p WHERE p.is_active = true AND LOWER(p.tags) LIKE LOWER(?1)", 
+    @Query(value = "SELECT p.id, p.title, p.content, p.category_id, p.author_id, p.views, p.reply_count, p.upvote_count, p.downvote_count, p.is_pinned, p.is_solved, p.is_hot, p.is_active, p.report_count, p.is_reported, p.violation_reason, p.tags, p.created_at, p.updated_at, p.last_reply_at FROM posts p WHERE p.is_active = true AND LOWER(p.tags) LIKE LOWER(?1)", 
            nativeQuery = true,
            countQuery = "SELECT COUNT(*) FROM posts p WHERE p.is_active = true AND LOWER(p.tags) LIKE LOWER(?1)")
     Page<Post> findByIsActiveTrueAndTagsContaining(String tags, Pageable pageable);
@@ -234,12 +234,23 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     /**
      * Find reported posts by title or content containing search term
      */
-    Page<Post> findByReportCountGreaterThanAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
-        int reportCount, String title, String content, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.reportCount > :reportCount AND " +
+           "(LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(p.content) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<Post> findReportedPostsBySearchTerm(
+        @Param("reportCount") int reportCount, 
+        @Param("searchTerm") String searchTerm, 
+        Pageable pageable);
     
     /**
      * Find reported posts by title or content containing search term and specific status
      */
-    Page<Post> findByReportCountGreaterThanAndIsActiveAndTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
-        int reportCount, Boolean isActive, String title, String content, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.reportCount > :reportCount AND p.isActive = :isActive AND " +
+           "(LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(p.content) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<Post> findReportedPostsBySearchTermAndStatus(
+        @Param("reportCount") int reportCount, 
+        @Param("isActive") Boolean isActive,
+        @Param("searchTerm") String searchTerm, 
+        Pageable pageable);
 }

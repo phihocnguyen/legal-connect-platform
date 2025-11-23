@@ -24,12 +24,14 @@ public interface ForumService {
     Page<PostDto> searchPosts(String keyword, Pageable pageable);
     Page<PostDto> searchPostsByCategory(String keyword, String categorySlug, Pageable pageable);
     PostDto getPostById(Long id);
+    PostDto getPostById(Long id, Long currentUserId);
     PostDto createPost(PostCreateDto postCreateDto, Long authorId);
     PostDto updatePost(Long id, PostCreateDto postUpdateDto, Long authorId);
     void deletePost(Long id, Long authorId);
 
     // Reply
     List<PostReplyDto> getRepliesByPost(Long postId);
+    List<PostReplyDto> getRepliesByPost(Long postId, Long currentUserId);
     PostReplyDto addReply(Long postId, String content, Long authorId, Long parentId);
     void deleteReply(Long replyId, Long authorId);
     

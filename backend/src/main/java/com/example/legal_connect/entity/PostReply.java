@@ -18,7 +18,6 @@ public class PostReply {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Lob
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
     
@@ -40,11 +39,28 @@ public class PostReply {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostReply> children;
     
+    // Relationship with ReplyVote
+    @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReplyVote> votes;
+    
+    // Relationship with Mention
+    @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Mention> mentions;
+    
     @Column(name = "is_active")
     private Boolean isActive = true;
     
     @Column(name = "is_solution")
     private Boolean isSolution = false; // Mark reply as solution to the post
+    
+    @Column(name = "upvote_count", columnDefinition = "INTEGER DEFAULT 0")
+    private Integer upvoteCount = 0;
+    
+    @Column(name = "downvote_count", columnDefinition = "INTEGER DEFAULT 0")
+    private Integer downvoteCount = 0;
+    
+    @Column(name = "mentioned_user_ids")
+    private String mentionedUserIds; // Comma-separated user IDs
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;

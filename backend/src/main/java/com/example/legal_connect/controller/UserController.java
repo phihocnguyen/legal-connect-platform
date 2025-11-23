@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "User", description = "User management APIs")
-@CrossOrigin(origins = {"http://localhost:3000"})
 public class UserController {
 
     private final UserService userService;

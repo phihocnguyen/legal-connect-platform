@@ -39,9 +39,9 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     Page<Post> findByCategoryAndIsActiveTrueOrderByCreatedAtDesc(PostCategory category, Pageable pageable);
     
     /**
-     * Find posts by category slug
+     * Find posts by category slug with eager loading
      */
-    @Query("SELECT p FROM Post p JOIN p.category c WHERE c.slug = :categorySlug AND p.isActive = true ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Post p JOIN FETCH p.category c JOIN FETCH p.author WHERE c.slug = :categorySlug AND p.isActive = true ORDER BY p.createdAt DESC")
     Page<Post> findByCategorySlugAndIsActiveTrue(@Param("categorySlug") String categorySlug, Pageable pageable);
     
     /**
@@ -135,18 +135,23 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     /**
      * Find posts with eager loading of category and author
      */
-    @Query("SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.isActive = true ORDER BY p.createdAt DESC")
+    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.isActive = true ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.isActive = true")
     Page<Post> findAllWithCategoryAndAuthor(Pageable pageable);
     
     /**
-     * Find posts by category ID
+     * Find posts by category ID with eager loading
      */
-    Page<Post> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(Long categoryId, Pageable pageable);
+    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.category.id = :categoryId AND p.isActive = true ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true")
+    Page<Post> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(@Param("categoryId") Long categoryId, Pageable pageable);
     
     /**
-     * Find posts created after a certain date
+     * Find posts created after a certain date with eager loading
      */
-    Page<Post> findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime startDate, Pageable pageable);
+    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.isActive = true AND p.createdAt >= :startDate ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.isActive = true AND p.createdAt >= :startDate")
+    Page<Post> findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(@Param("startDate") LocalDateTime startDate, Pageable pageable);
     
     /**
      * Find post by ID with category and author

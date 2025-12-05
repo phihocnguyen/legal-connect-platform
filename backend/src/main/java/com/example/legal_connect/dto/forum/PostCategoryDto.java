@@ -50,6 +50,8 @@ public class PostCategoryDto {
         private String title;
         private String authorName;
         private String authorRole;
+        private String authorAvatar;
+        private Integer views;
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime createdAt;
     }

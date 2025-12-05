@@ -60,15 +60,17 @@ public class ForumServiceImpl implements ForumService {
 
     // Post
     @Override
+    @Transactional(readOnly = true)
     public Page<PostDto> getAllPosts(Pageable pageable) {
-        return postRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable)
+        return postRepository.findAllWithCategoryAndAuthor(pageable)
                 .map(postMapper::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<PostDto> getAllPosts(Pageable pageable, Long categoryId, String timeFilter) {
         if (categoryId != null) {
-            // Filter by category
+            // Filter by category with eager loading
             return postRepository.findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(categoryId, pageable)
                     .map(postMapper::toDto);
         }
@@ -98,7 +100,7 @@ public class ForumServiceImpl implements ForumService {
             }
         }
         
-        // Default: return all posts
+        // Default: return all posts with eager loading
         return getAllPosts(pageable);
     }
 

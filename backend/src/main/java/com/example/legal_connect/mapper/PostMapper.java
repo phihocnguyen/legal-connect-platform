@@ -5,13 +5,9 @@ import com.example.legal_connect.dto.forum.PostDto;
 import com.example.legal_connect.entity.Post;
 import com.example.legal_connect.entity.PostCategory;
 import com.example.legal_connect.entity.User;
-import com.example.legal_connect.entity.PostReply;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class PostMapper {
@@ -52,30 +48,13 @@ public class PostMapper {
         if (post.getAuthor() != null) {
             builder.author(toUserSummaryDto(post.getAuthor()));
         }
-        if (post.getReplies() != null && !post.getReplies().isEmpty()) {
-            PostReply latestReply = post.getReplies().stream()
-                .filter(PostReply::getIsActive)
-                .max((r1, r2) -> r1.getCreatedAt().compareTo(r2.getCreatedAt()))
-                .orElse(null);
-            
-            if (latestReply != null && latestReply.getAuthor() != null) {
-                PostDto.LastReplyDto lastReply = PostDto.LastReplyDto.builder()
-                    .authorName(getAuthorName(latestReply.getAuthor()))
-                    .authorRole(getAuthorRole(latestReply.getAuthor()))
-                    .date(latestReply.getCreatedAt())
-                    .build();
-                builder.lastReply(lastReply);
-            }
-        }
-
-        // Map replies if needed (usually for detailed view)
-        if (post.getReplies() != null) {
-            List<com.example.legal_connect.dto.forum.PostReplyDto> replyDtos = post.getReplies().stream()
-                .filter(PostReply::getIsActive)
-                .filter(reply -> reply.getParent() == null) // Only top-level replies
-                .map(replyMapper::toDto)
-                .collect(Collectors.toList());
-            builder.replies(replyDtos);
+        // Only load reply details if explicitly provided (detail view)
+        // For list views, lastReplyAt is already in the Post entity
+        if (post.getLastReplyAt() != null) {
+            PostDto.LastReplyDto lastReply = PostDto.LastReplyDto.builder()
+                .date(post.getLastReplyAt())
+                .build();
+            builder.lastReply(lastReply);
         }
 
         return builder.build();

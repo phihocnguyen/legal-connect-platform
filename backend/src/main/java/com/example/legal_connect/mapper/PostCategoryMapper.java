@@ -48,6 +48,8 @@ public class PostCategoryMapper {
                     .title(latestPost.getTitle())
                     .authorName(getAuthorName(latestPost))
                     .authorRole(getAuthorRole(latestPost))
+                    .authorAvatar(latestPost.getAuthor() != null ? latestPost.getAuthor().getAvatar() : null)
+                    .views(latestPost.getViews() != null ? latestPost.getViews() : 0)
                     .createdAt(latestPost.getCreatedAt())
                     .build();
                 builder.lastPost(lastPost);

@@ -8,8 +8,7 @@ export interface User {
   lawyerVerified: boolean;
 }
 
-export type UserRole = 'user' | 'lawyer' | 'admin';
-
+export type UserRole = "user" | "lawyer" | "admin";
 
 export interface PostDto {
   id: number;
@@ -33,15 +32,16 @@ export interface PostDto {
       authorName: string;
       authorRole: UserRole;
       createdAt: string;
-    }
-  }
+    };
+  };
   author: {
     id: number;
     name: string;
     email: string;
     role: UserRole;
     avatar?: string;
-  }
+  };
+  labels?: PostLabelDto[];
   views: number;
   replyCount: number;
   pinned: boolean;
@@ -50,7 +50,7 @@ export interface PostDto {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  lastReply?: null 
+  lastReply?: null;
   lastReplyAt?: string;
   replies: PostReplyDto[];
 }
@@ -59,6 +59,18 @@ export interface PostCreateDto {
   title: string;
   content: string;
   categoryId: number;
+  labelIds?: number[];
+}
+
+export interface PostLabelDto {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  color: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PostCategoryDto {
@@ -73,6 +85,15 @@ export interface PostCategoryDto {
   updatedAt: string;
   threadsCount?: number;
   postsCount?: number;
+  lastPost?: {
+    id: number;
+    title: string;
+    authorName: string;
+    authorRole: string;
+    authorAvatar?: string;
+    views?: number;
+    createdAt: string;
+  };
 }
 
 export interface PostReplyDto {
@@ -85,7 +106,7 @@ export interface PostReplyDto {
     email: string;
     role: UserRole;
     avatar: string;
-  }
+  };
   parentId?: number;
   isActive: boolean;
   isSolution: boolean;
@@ -117,7 +138,7 @@ export interface PopularTopicDto {
   categorySlug: string;
   views: number;
   replyCount: number;
-  badge?: 'hot' | 'solved' | 'trending' | null;
+  badge?: "hot" | "solved" | "trending" | null;
 }
 
 export interface CategoryStatsDto {
@@ -168,13 +189,13 @@ export interface Comment {
 export interface Message {
   id: string;
   content: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   createdAt: Date;
 }
 
 export interface ChatConversation {
   id: string;
-  type?: 'PDF_QA' | 'QA';
+  type?: "PDF_QA" | "QA";
   title: string;
   messages: Message[];
   lastMessage: string;
@@ -185,7 +206,7 @@ export interface ChatConversation {
 export interface PdfConversation {
   id: number;
   userId: number;
-  type: 'PDF_QA' | 'QA';
+  type: "PDF_QA" | "QA";
   title: string;
   summary?: string;
   createdAt: Date;
@@ -199,7 +220,7 @@ export interface PdfMessage {
   id: number;
   conversationId: number;
   content: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   createdAt: Date;
 }
 

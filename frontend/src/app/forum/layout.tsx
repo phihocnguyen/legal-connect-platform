@@ -1,5 +1,3 @@
-import { Header } from "@/components/navbar/header";
-
 export default function ForumLayout({
   children,
 }: {
@@ -7,7 +5,6 @@ export default function ForumLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main>{children}</main>
     </div>
   );

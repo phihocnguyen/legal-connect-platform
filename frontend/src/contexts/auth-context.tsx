@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { User } from '@/domain/entities';
-import { useAuthUseCases } from '@/hooks/use-auth-cases';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { User } from "@/domain/entities";
+import { useAuthUseCases } from "@/hooks/use-auth-cases";
 
 interface AuthContextType {
   user: User | null;
@@ -20,22 +20,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { login: loginUseCase, logout: logoutUseCase, getCurrentUser } = useAuthUseCases();
+  const {
+    login: loginUseCase,
+    logout: logoutUseCase,
+    getCurrentUser,
+  } = useAuthUseCases();
 
   const redirectBasedOnRole = (user: User) => {
-    console.log('Redirecting user with role:', user.role);
+    console.log("Redirecting user with role:", user.role);
     setTimeout(() => {
       switch (user.role) {
-        case 'ADMIN':
-          console.log('Redirecting to /admin');
-          router.push('/admin');
+        case "admin":
+          console.log("Redirecting to /admin");
+          router.push("/admin");
           break;
-        case 'LAWYER':
-          router.push('/forum');
+        case "lawyer":
+          router.push("/forum");
           break;
-        case 'USER':
+        case "user":
         default:
-          router.push('/forum');
+          router.push("/forum");
           break;
       }
     }, 50);
@@ -43,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<void> => {
     await loginUseCase(email, password);
-    
+
     // Chỉ gọi getCurrentUser một lần và redirect ngay
     try {
       const currentUser = await getCurrentUser();
@@ -52,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         redirectBasedOnRole(currentUser);
       }
     } catch (error) {
-      console.log('Failed to get user after login:', error);
+      console.log("Failed to get user after login:", error);
     }
   };
 
@@ -66,28 +70,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      console.log('Failed to get current user:', error);
+      console.log("Failed to get current user:", error);
       setUser(null);
     }
   };
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // Check if user already exists
       if (user !== null) {
         setIsLoading(false);
         return;
       }
-      
+
+      // Check if LOGGED_IN cookie exists
+      const hasLoggedInCookie = document.cookie
+        .split("; ")
+        .some((cookie) => cookie.startsWith("LOGGED_IN=true"));
+
+      if (!hasLoggedInCookie) {
+        console.log("No LOGGED_IN cookie found, redirecting to login");
+        setIsLoading(false);
+        router.push("/login");
+        return;
+      }
+
       try {
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch {
+        if (currentUser) {
+          setUser(currentUser);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.log("Failed to fetch current user:", error);
         setUser(null);
-      } finally {
         setIsLoading(false);
+        // Redirect to login when /me API fails
+        router.push("/login");
       }
     };
-    
+
     initializeAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy lần đầu mount
@@ -107,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

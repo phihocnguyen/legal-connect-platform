@@ -8,7 +8,25 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "post_replies")
+@Table(name = "post_replies", indexes = {
+    // Index on post_id for filtering replies by post
+    @Index(name = "idx_post_replies_post_id", columnList = "post_id"),
+    
+    // Index on author_id for filtering replies by author
+    @Index(name = "idx_post_replies_author_id", columnList = "author_id"),
+    
+    // Index on is_active for filtering active replies
+    @Index(name = "idx_post_replies_is_active", columnList = "is_active"),
+    
+    // Index on created_at for sorting by date
+    @Index(name = "idx_post_replies_created_at", columnList = "created_at DESC"),
+    
+    // Composite index for common query pattern (active replies by post)
+    @Index(name = "idx_post_replies_post_active", columnList = "post_id, is_active, created_at DESC"),
+    
+    // Index on parent_id for nested replies
+    @Index(name = "idx_post_replies_parent_id", columnList = "parent_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

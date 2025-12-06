@@ -9,7 +9,16 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
-@Table(name = "post_labels")
+@Table(name = "post_labels", indexes = {
+    // Index on slug for faster slug-based lookups
+    @Index(name = "idx_post_labels_slug", columnList = "slug"),
+    
+    // Index on is_active for filtering active labels
+    @Index(name = "idx_post_labels_is_active", columnList = "is_active"),
+    
+    // Index on name for search
+    @Index(name = "idx_post_labels_name", columnList = "name")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

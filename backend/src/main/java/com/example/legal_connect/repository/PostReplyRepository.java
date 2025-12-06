@@ -52,4 +52,10 @@ public interface PostReplyRepository extends JpaRepository<PostReply, Long> {
     long countByIsActiveTrue();
 
     long countByIsActiveTrueAndCreatedAtAfter(java.time.LocalDateTime since);
+    
+    /**
+     * Count all replies for posts in a specific category
+     */
+    @Query("SELECT COUNT(r) FROM PostReply r WHERE r.post.category.id = :categoryId AND r.isActive = true")
+    long countByCategoryId(@Param("categoryId") Long categoryId);
 }

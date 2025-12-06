@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,11 +46,77 @@ public class ForumServiceImpl implements ForumService {
 
     // Category
     @Override
+    @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
-        return postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
-                .stream()
-                .map(categoryMapper::toDto)
-                .collect(Collectors.toList());
+        List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+        
+        // Get latest posts for all categories in one query
+        List<Post> latestPosts = postRepository.findLatestPostByCategory();
+        
+        // Eagerly initialize authors to avoid lazy loading issues
+        latestPosts.forEach(post -> {
+            if (post.getAuthor() != null) {
+                post.getAuthor().getEmail(); // Touch to initialize
+            }
+            if (post.getCategory() != null) {
+                post.getCategory().getName(); // Touch to initialize
+            }
+        });
+        
+        // Create a map for quick lookup: categoryId -> latest post
+        Map<Long, Post> latestPostMap = latestPosts.stream()
+            .collect(Collectors.toMap(
+                post -> post.getCategory().getId(),
+                post -> post,
+                (existing, replacement) -> existing // Keep first if duplicates
+            ));
+        
+        // Map categories to DTOs and enrich with latest post
+        return categories.stream()
+            .map(category -> {
+                PostCategoryDto dto = categoryMapper.toDto(category);
+                
+                // Add latest post if exists
+                Post latestPost = latestPostMap.get(category.getId());
+                if (latestPost != null && latestPost.getAuthor() != null) {
+                    PostCategoryDto.PostSummaryDto lastPost = PostCategoryDto.PostSummaryDto.builder()
+                        .id(latestPost.getId())
+                        .title(latestPost.getTitle())
+                        .authorName(getDisplayName(latestPost.getAuthor()))
+                        .authorRole(getRoleString(latestPost.getAuthor()))
+                        .authorAvatar(latestPost.getAuthor().getAvatar())
+                        .views(latestPost.getViews() != null ? latestPost.getViews() : 0)
+                        .createdAt(latestPost.getCreatedAt())
+                        .build();
+                    dto.setLastPost(lastPost);
+                }
+                
+                // threadsCount = number of posts/topics in this category
+                long threadsCount = postRepository.countByCategoryIdAndIsActiveTrue(category.getId());
+                dto.setThreadsCount((int) threadsCount);
+                
+                // postsCount = total messages = posts + replies in this category
+                long repliesCount = postReplyRepository.countByCategoryId(category.getId());
+                dto.setPostsCount((int) (threadsCount + repliesCount));
+                
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    // Helper methods for user display
+    private String getDisplayName(User user) {
+        if (user.getFullName() != null && !user.getFullName().isEmpty()) {
+            return user.getFullName();
+        }
+        return user.getEmail(); // Use email as fallback instead of username
+    }
+    
+    private String getRoleString(User user) {
+        if (user.getRole() != null) {
+            return user.getRole().name();
+        }
+        return "USER";
     }
 
     @Override

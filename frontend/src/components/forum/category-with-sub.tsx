@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
@@ -65,11 +66,15 @@ export function CategoryWithSub({
   lastPost,
 }: CategoryWithSubProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="space-y-2">
       {/* Main Category */}
-      <Link href={`/forum/${id}`} className="block">
+      <div
+        className="block cursor-pointer"
+        onClick={() => router.push(`/forum/${id}`)}
+      >
         <div className="relative bg-white hover:bg-slate-50 transition-all duration-300 py-4 border-b border-slate-200 hover:border-slate-300">
           <div className="relative px-6">
             <div className="flex items-center gap-6 justify-between">
@@ -98,23 +103,29 @@ export function CategoryWithSub({
                 <div className="text-base font-bold text-gray-900">
                   {threads}
                 </div>
-                <div className="text-sm text-gray-500">Topics</div>
+                <div className="text-sm text-gray-500">Posts</div>
               </div>
 
               {/* Center: Posts count */}
               <div className="flex-shrink-0 text-center min-w-24">
                 <div className="text-base font-bold text-gray-900">{posts}</div>
-                <div className="text-sm text-gray-500">Posts</div>
+                <div className="text-sm text-gray-500">Messages</div>
               </div>
 
               {/* Right: Last post info */}
-              <div className="flex-shrink-0 w-80 flex gap-3">
+              <div className="flex-shrink-0 w-64 flex gap-2.5">
                 {lastPost ? (
-                  <>
+                  <div
+                    className="flex gap-2.5 items-start cursor-pointer hover:opacity-80 transition-opacity w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/forum/posts/${lastPost.id}`);
+                    }}
+                  >
                     {/* Left: Avatar */}
                     <div className="flex-shrink-0">
                       <div
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold overflow-hidden"
+                        className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold overflow-hidden"
                         style={{
                           backgroundImage: lastPost.authorAvatar
                             ? `url(${lastPost.authorAvatar})`
@@ -130,36 +141,36 @@ export function CategoryWithSub({
                     </div>
 
                     {/* Right: Content */}
-                    <div className="flex-1 min-w-0 text-right overflow-hidden">
-                      {/* Category Badge */}
-                      {lastPost.categoryName && (
-                        <div className="mb-1 flex justify-end">
-                          <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded">
-                            {lastPost.categoryName}
-                          </span>
-                        </div>
-                      )}
-
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       {/* Title */}
-                      <p className="text-sm font-semibold text-gray-900 line-clamp-1 mb-1 overflow-hidden text-ellipsis">
+                      <p
+                        className="text-sm font-semibold text-gray-900 line-clamp-1 mb-1 overflow-hidden text-ellipsis"
+                        title={lastPost.title}
+                      >
                         {lastPost.title}
                       </p>
 
                       {/* Author and Date below title */}
-                      <div className="flex items-center justify-end gap-2 text-xs">
-                        <span className="text-gray-700 font-medium line-clamp-1">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span
+                          className="text-gray-700 font-medium truncate max-w-[100px]"
+                          title={lastPost.authorName}
+                        >
                           {lastPost.authorName}
                         </span>
                         {lastPost.createdAt && (
-                          <span className="text-gray-500">
-                            {formatDate(lastPost.createdAt)}
-                          </span>
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-500 whitespace-nowrap">
+                              {formatDate(lastPost.createdAt)}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No posts yet</p>
+                  <p className="text-xs text-gray-500">No posts yet</p>
                 )}
               </div>
 
@@ -183,7 +194,7 @@ export function CategoryWithSub({
             </div>
           </div>
         </div>
-      </Link>
+      </div>
 
       {/* Sub-Categories */}
       {isExpanded && subCategories.length > 0 && (

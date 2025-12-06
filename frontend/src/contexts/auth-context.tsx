@@ -26,34 +26,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getCurrentUser,
   } = useAuthUseCases();
 
-  const redirectBasedOnRole = (user: User) => {
+  const redirectBasedOnRole = (user: User, currentPath: string = "/") => {
     console.log("Redirecting user with role:", user.role);
-    setTimeout(() => {
-      switch (user.role) {
-        case "admin":
-          console.log("Redirecting to /admin");
-          router.push("/admin");
-          break;
-        case "lawyer":
-          router.push("/forum");
-          break;
-        case "user":
-        default:
-          router.push("/forum");
-          break;
-      }
-    }, 50);
+    // If user is on home page, don't redirect
+    if (currentPath === "/") {
+      return;
+    }
+
+    switch (user.role) {
+      case "admin":
+        console.log("Redirecting to /admin");
+        router.push("/admin");
+        break;
+      case "lawyer":
+      case "user":
+      default:
+        router.push("/forum");
+        break;
+    }
   };
 
   const login = async (email: string, password: string): Promise<void> => {
     await loginUseCase(email, password);
 
-    // Chỉ gọi getCurrentUser một lần và redirect ngay
+    // Get current user and redirect
     try {
       const currentUser = await getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        redirectBasedOnRole(currentUser);
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : "/";
+        redirectBasedOnRole(currentUser, currentPath);
       }
     } catch (error) {
       console.log("Failed to get user after login:", error);
@@ -61,8 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async (): Promise<void> => {
-    await logoutUseCase();
-    setUser(null);
+    try {
+      await logoutUseCase();
+      setUser(null);
+      // Redirect to homepage after logout
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still clear user state even if API fails
+      setUser(null);
+      router.push("/");
+    }
   };
 
   const refreshUser = async (): Promise<void> => {
@@ -76,41 +88,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const initializeAuth = async () => {
-      // Check if user already exists
-      if (user !== null) {
-        setIsLoading(false);
-        return;
-      }
+      // Check if there's a LOGGED_IN cookie
+      const hasLoggedInCookie =
+        typeof window !== "undefined" &&
+        document.cookie
+          .split("; ")
+          .some((cookie) => cookie.startsWith("LOGGED_IN=true"));
 
-      // Check if LOGGED_IN cookie exists
-      const hasLoggedInCookie = document.cookie
-        .split("; ")
-        .some((cookie) => cookie.startsWith("LOGGED_IN=true"));
-
+      // If no cookie, skip API call (visitor/logged out)
       if (!hasLoggedInCookie) {
-        console.log("No LOGGED_IN cookie found, redirecting to login");
-        setIsLoading(false);
-        router.push("/login");
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
         return;
       }
 
+      // Has cookie - try to fetch user data
       try {
         const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-          setIsLoading(false);
+        if (isMounted) {
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
         console.log("Failed to fetch current user:", error);
-        setUser(null);
-        setIsLoading(false);
-        // Redirect to login when /me API fails
-        router.push("/login");
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy lần đầu mount
 

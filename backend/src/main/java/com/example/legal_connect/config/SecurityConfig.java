@@ -1,6 +1,7 @@
 package com.example.legal_connect.config;
 
 import com.example.legal_connect.security.OAuth2AuthenticationSuccessHandler;
+import com.example.legal_connect.security.RestAuthenticationEntryPoint;
 import com.example.legal_connect.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -67,6 +69,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/chat/online-users").permitAll()
                 .requestMatchers("/api/chat/**").authenticated()
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
             )
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2AuthenticationSuccessHandler)

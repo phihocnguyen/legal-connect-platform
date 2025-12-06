@@ -38,6 +38,7 @@ public class ForumServiceImpl implements ForumService {
     private final UserRepository userRepository;
     private final PostVoteRepository postVoteRepository;
     private final ReplyVoteRepository replyVoteRepository;
+    private final PostLabelRepository postLabelRepository;
     private final PostMapper postMapper;
     private final PostCategoryMapper categoryMapper;
     private final PostReplyMapper replyMapper;
@@ -219,6 +220,16 @@ public class ForumServiceImpl implements ForumService {
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         
         Post post = postMapper.toEntity(postCreateDto, category, author);
+        
+        // Handle labels
+        if (postCreateDto.getLabelIds() != null && !postCreateDto.getLabelIds().isEmpty()) {
+            List<PostLabel> labels = postLabelRepository.findAllById(postCreateDto.getLabelIds());
+            if (labels.size() != postCreateDto.getLabelIds().size()) {
+                throw new RuntimeException("One or more labels not found");
+            }
+            post.setLabels(new java.util.HashSet<>(labels));
+        }
+        
         post = postRepository.save(post);
         return postMapper.toDto(post);
     }
@@ -239,6 +250,20 @@ public class ForumServiceImpl implements ForumService {
         }
         
         postMapper.updateEntity(post, postUpdateDto, category);
+        
+        // Handle labels update
+        if (postUpdateDto.getLabelIds() != null) {
+            if (postUpdateDto.getLabelIds().isEmpty()) {
+                post.getLabels().clear();
+            } else {
+                List<PostLabel> labels = postLabelRepository.findAllById(postUpdateDto.getLabelIds());
+                if (labels.size() != postUpdateDto.getLabelIds().size()) {
+                    throw new RuntimeException("One or more labels not found");
+                }
+                post.setLabels(new java.util.HashSet<>(labels));
+            }
+        }
+        
         post = postRepository.save(post);
         return postMapper.toDto(post);
     }

@@ -21,6 +21,9 @@ public class PostMapper {
     
     @Autowired
     private UserMapper userMapper;
+    
+    @Autowired
+    private PostLabelMapper labelMapper;
     public PostDto toDto(Post post) {
         if (post == null) {
             return null;
@@ -48,6 +51,14 @@ public class PostMapper {
         if (post.getAuthor() != null) {
             builder.author(toUserSummaryDto(post.getAuthor()));
         }
+        
+        // Map labels
+        if (post.getLabels() != null && !post.getLabels().isEmpty()) {
+            builder.labels(post.getLabels().stream()
+                    .map(labelMapper::toDto)
+                    .collect(java.util.stream.Collectors.toList()));
+        }
+        
         // Only load reply details if explicitly provided (detail view)
         // For list views, lastReplyAt is already in the Post entity
         if (post.getLastReplyAt() != null) {

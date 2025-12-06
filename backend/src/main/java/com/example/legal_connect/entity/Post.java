@@ -91,6 +91,15 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostVote> votes;
     
+    // Relationship with PostLabel (Many-to-Many)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "post_label_mapping",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    private Set<PostLabel> labels = new HashSet<>();
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

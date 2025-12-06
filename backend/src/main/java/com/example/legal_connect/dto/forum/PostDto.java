@@ -43,6 +43,8 @@ public class PostDto {
     
     private Set<String> tags;
     
+    private List<PostLabelDto> labels;
+    
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     

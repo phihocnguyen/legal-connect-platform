@@ -26,6 +26,9 @@ public class PostCreateDto {
     @NotNull(message = "Danh mục không được để trống")
     private Long categoryId;
     
+    @Size(max = 5, message = "Không được vượt quá 5 nhãn")
+    private Set<Long> labelIds;
+    
     @Size(max = 5, message = "Không được vượt quá 5 thẻ")
     private Set<String> tags;
     

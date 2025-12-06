@@ -1,0 +1,43 @@
+package com.example.legal_connect.mapper;
+
+import com.example.legal_connect.entity.PostLabel;
+import com.example.legal_connect.dto.forum.PostLabelDto;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PostLabelMapper {
+
+    public PostLabelDto toDto(PostLabel label) {
+        if (label == null) {
+            return null;
+        }
+
+        return PostLabelDto.builder()
+                .id(label.getId())
+                .name(label.getName())
+                .slug(label.getSlug())
+                .description(label.getDescription())
+                .color(label.getColor())
+                .isActive(label.getIsActive())
+                .createdAt(label.getCreatedAt())
+                .updatedAt(label.getUpdatedAt())
+                .build();
+    }
+
+    public PostLabel toEntity(PostLabelDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return PostLabel.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .slug(dto.getSlug())
+                .description(dto.getDescription())
+                .color(dto.getColor())
+                .isActive(dto.getIsActive())
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
+                .build();
+    }
+}

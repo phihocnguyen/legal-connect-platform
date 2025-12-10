@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Các đường dẫn public không cần authentication
-const PUBLIC_PATHS = ["/login", "/register", "/auth", "/oauth-callback"];
+const PUBLIC_PATHS = ["/login", "/register", "/auth"];
 
 // Các đường dẫn protected - cần authentication
 const PROTECTED_PATHS = [
@@ -19,9 +19,11 @@ const PROTECTED_PATHS = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log("[MIDDLEWARE] Processing:", pathname);
 
   // Cho phép truy cập tất cả public paths
   if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    console.log("[MIDDLEWARE] Public path, allowing access");
     return NextResponse.next();
   }
 
@@ -40,14 +42,23 @@ export function middleware(request: NextRequest) {
   );
 
   if (isProtectedPath) {
-    // Kiểm tra cookie đăng nhập
-    const isLoggedIn = request.cookies.get("LOGGED_IN")?.value === "true";
+    // Check SESSIONID cookie from backend (Spring sets this automatically)
+    // Note: SESSIONID is HttpOnly so it's not accessible from JavaScript,
+    // but middleware runs on server so it can check it
+    const sessionId = request.cookies.get("SESSIONID")?.value;
 
-    if (!isLoggedIn) {
+    if (!sessionId) {
+      // No session - redirect to login
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
+      console.log(
+        "[MIDDLEWARE] No SESSIONID for protected path:",
+        pathname,
+        "- redirecting to login"
+      );
       return NextResponse.redirect(loginUrl);
     }
+    console.log("[MIDDLEWARE] SESSIONID found for protected path:", pathname);
   }
 
   return NextResponse.next();

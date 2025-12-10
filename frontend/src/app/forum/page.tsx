@@ -17,6 +17,7 @@ export default function ForumPage() {
   const [recentPosts, setRecentPosts] = useState<PostDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(
     parseInt(searchParams.get("page") || "0")
@@ -142,27 +143,27 @@ export default function ForumPage() {
       setError(null);
       setPostsLoading(true);
 
-      // Load posts with current URL params
-      await loadPosts(currentPage, false);
+      // Load categories and posts in parallel to avoid layout shift
+      const [categoriesData] = await Promise.all([
+        getAllCategories().catch((err) => {
+          console.error("Error loading categories:", err);
+          return [];
+        }),
+        loadPosts(currentPage, false),
+      ]);
+
+      setCategories(categoriesData);
+      setCategoriesLoading(false);
       setPostsLoading(false);
     } catch (err) {
       console.error("Error loading forum data:", err);
       setError("Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.");
       setPostsLoading(false);
+      setCategoriesLoading(false);
     }
-  }, [loadPosts, currentPage]);
+  }, [loadPosts, currentPage, getAllCategories]);
 
-  // Load categories only once
-  useEffect(() => {
-    getAllCategories()
-      .then((data) => {
-        setCategories(data);
-      })
-      .catch((err) => {
-        console.error("Error loading categories:", err);
-      });
-  }, [getAllCategories]);
-
+  // Single useEffect to load all data
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -284,9 +285,30 @@ export default function ForumPage() {
               Danh mục Diễn đàn
             </h2>
             <div className="grid grid-cols-1 gap-6">
-              {categories
-                .filter((cat) => !cat.parentCategoryId) // Only show parent categories
-                .map((category) => (
+              {categoriesLoading ? (
+                // Skeleton loading for categories
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="bg-white rounded-lg shadow p-6 animate-pulse"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded"></div>
+                        <div className="flex-1 space-y-3">
+                          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                          <div className="flex gap-4">
+                            <div className="h-4 bg-gray-200 rounded w-20"></div>
+                            <div className="h-4 bg-gray-200 rounded w-20"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : categories.length > 0 ? (
+                categories.map((category) => (
                   <CategoryWithSub
                     key={category.id}
                     id={category.slug}
@@ -295,27 +317,23 @@ export default function ForumPage() {
                     icon={category.icon || "⚖️"}
                     threads={category.threadsCount || 0}
                     posts={category.postsCount || 0}
-                    subCategories={
-                      category.subCategories?.map((sub) => ({
-                        id: sub.id,
-                        name: sub.name,
-                        slug: sub.slug,
-                        description: sub.description,
-                        threadsCount: sub.threadsCount,
-                        postsCount: sub.postsCount,
-                      })) || []
-                    }
+                    subCategories={[]}
                     lastPost={
                       category.lastPost
                         ? {
                             ...category.lastPost,
-                            categoryName:
-                              category.lastPost.categoryName ?? category.name,
+                            categoryName: category.name,
+                            categorySlug: category.slug,
                           }
                         : undefined
                     }
                   />
-                ))}
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Chưa có danh mục nào
+                </div>
+              )}
             </div>
           </div>
           <ForumStats />

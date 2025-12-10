@@ -32,6 +32,7 @@ public class PostMapper {
         PostDto.PostDtoBuilder builder = PostDto.builder()
                 .id(post.getId())
                 .title(post.getTitle())
+                .slug(post.getSlug())
                 .content(post.getContent())
                 .views(post.getViews())
                 .replyCount(post.getReplyCount())

@@ -16,6 +16,7 @@ public class PopularTopicDto {
     
     private Long id;
     private String title;
+    private String slug;
     private String categoryName;
     private String categorySlug;
     private Integer views;

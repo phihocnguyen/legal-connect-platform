@@ -178,6 +178,16 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
            "WHERE p.id = :id AND p.isActive = true")
     Optional<Post> findByIdWithCategoryAndAuthor(@Param("id") Long id);
     
+    /**
+     * Find post by slug (for SEO-friendly URLs)
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.category c " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE c.slug = :categorySlug AND p.slug = :postSlug AND p.isActive = true")
+    Optional<Post> findByCategorySlugAndPostSlug(@Param("categorySlug") String categorySlug, @Param("postSlug") String postSlug);
+    
     // === STATISTICS QUERIES ===
     
     /**
@@ -286,7 +296,7 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
      * Uses DISTINCT ON to get only one post per category (the most recent one)
      * Join with author to avoid N+1 lazy loading
      */
-    @Query(value = "SELECT DISTINCT ON (p.category_id) p.id, p.title, p.content, p.category_id, " +
+    @Query(value = "SELECT DISTINCT ON (p.category_id) p.id, p.title, p.slug, p.content, p.category_id, " +
            "p.author_id, p.views, p.reply_count, p.upvote_count, p.downvote_count, " +
            "p.is_pinned, p.is_solved, p.is_hot, p.is_active, p.report_count, p.is_reported, " +
            "p.violation_reason, p.tags, p.created_at, p.updated_at, p.last_reply_at " +

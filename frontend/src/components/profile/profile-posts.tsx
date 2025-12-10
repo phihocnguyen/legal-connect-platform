@@ -1,9 +1,10 @@
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Eye, Calendar } from 'lucide-react';
-import { User, PostDto, UserPost } from '@/domain/entities';
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Eye, Calendar } from "lucide-react";
+import { User, PostDto } from "@/domain/entities";
+import { UserPost } from "@/domain/entities/user";
 
 interface ProfilePostsProps {
   posts: PostDto[] | UserPost[];
@@ -14,20 +15,22 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Vừa xong';
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
+
+    if (diffInHours < 1) return "Vừa xong";
     if (diffInHours < 24) return `${diffInHours} giờ trước`;
     if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} ngày trước`;
-    return date.toLocaleDateString('vi-VN');
+    return date.toLocaleDateString("vi-VN");
   };
 
   // Mock posts if empty
   const mockPosts = posts.length === 0 ? [] : posts;
-  
+
   // Helper function to check if post is UserPost
   const isUserPost = (post: PostDto | UserPost): post is UserPost => {
-    return 'categoryName' in post;
+    return "categoryName" in post;
   };
 
   return (
@@ -47,32 +50,50 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
         ) : (
           <div className="space-y-4">
             {mockPosts.map((post) => {
-              const categoryName = isUserPost(post) ? post.categoryName : post.category?.name;
-              const categorySlug = isUserPost(post) ? post.categorySlug : post.category?.slug;
-              
+              const categoryName = isUserPost(post)
+                ? post.categoryName
+                : post.category?.name;
+              const categorySlug = isUserPost(post)
+                ? post.categorySlug
+                : post.category?.slug;
+
               return (
-                <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div
+                  key={post.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={user.avatar} alt={user.fullName} />
                       <AvatarFallback>
-                        {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                        {user.fullName?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <Link
-                          href={`/forum/${categorySlug}/${post.id}`}
-                          className="text-lg font-semibold text-gray-900 hover:text-[#004646] line-clamp-1"
-                        >
-                          {post.title}
-                        </Link>
+                        {(() => {
+                          const postSlug =
+                            "slug" in post ? (post as PostDto).slug : undefined;
+                          return (
+                            <Link
+                              href={`/forum/${categorySlug}/${
+                                postSlug || post.id
+                              }`}
+                              className="text-lg font-semibold text-gray-900 hover:text-[#004646] line-clamp-1"
+                            >
+                              {post.title}
+                            </Link>
+                          );
+                        })()}
                       </div>
-                      
+
                       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                         {categoryName && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800"
+                          >
                             {categoryName}
                           </Badge>
                         )}
@@ -81,7 +102,7 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
                           <span>{formatDate(post.createdAt)}</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <MessageSquare className="w-4 h-4" />

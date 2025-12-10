@@ -47,16 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string): Promise<void> => {
+    console.log("[AUTH CONTEXT] Login started");
     await loginUseCase(email, password);
+    console.log("[AUTH CONTEXT] Login use case completed");
 
     // Get current user and redirect
     try {
       const currentUser = await getCurrentUser();
+      console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
       if (currentUser) {
+        console.log("[AUTH CONTEXT] Setting user:", currentUser);
         setUser(currentUser);
         const currentPath =
           typeof window !== "undefined" ? window.location.pathname : "/";
         redirectBasedOnRole(currentUser, currentPath);
+      } else {
+        console.log("[AUTH CONTEXT] getCurrentUser returned null");
       }
     } catch (error) {
       console.log("Failed to get user after login:", error);
@@ -66,14 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       await logoutUseCase();
-      setUser(null);
-      // Redirect to homepage after logout
-      router.push("/");
     } catch (error) {
-      console.error("Logout failed:", error);
-      // Still clear user state even if API fails
+      console.log("Logout error:", error);
+    } finally {
       setUser(null);
-      router.push("/");
+      // Backend will clear SESSIONID cookie via logout endpoint
+      router.push("/login");
     }
   };
 
@@ -91,15 +95,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      // Check if there's a LOGGED_IN cookie
-      const hasLoggedInCookie =
-        typeof window !== "undefined" &&
-        document.cookie
-          .split("; ")
-          .some((cookie) => cookie.startsWith("LOGGED_IN=true"));
+      // Don't fetch user data on public paths (login, register, auth)
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      const publicPaths = ["/login", "/register", "/auth"];
+      const isPublicPath = publicPaths.some((path) =>
+        currentPath.startsWith(path)
+      );
 
-      // If no cookie, skip API call (visitor/logged out)
-      if (!hasLoggedInCookie) {
+      if (isPublicPath) {
+        console.log(
+          "[AUTH CONTEXT] On public path:",
+          currentPath,
+          "- skipping auth initialization"
+        );
         if (isMounted) {
           setUser(null);
           setIsLoading(false);
@@ -107,23 +116,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Has cookie - try to fetch user data
+      // SESSIONID is HttpOnly so we can't check via document.cookie
+      // Instead, we try to fetch current user - if it works, user is authenticated
+      console.log(
+        "[AUTH CONTEXT] Initializing auth by fetching current user..."
+      );
+
+      // Safety timeout to ensure isLoading is always set to false
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.log(
+            "[AUTH CONTEXT] Auth initialization timeout - setting isLoading to false"
+          );
+          setIsLoading(false);
+        }
+      }, 5000);
+
       try {
         const currentUser = await getCurrentUser();
+        console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
+        clearTimeout(timeoutId);
         if (isMounted) {
           if (currentUser) {
+            console.log(
+              "[AUTH CONTEXT] User authenticated, setting user:",
+              currentUser
+            );
             setUser(currentUser);
           } else {
+            console.log(
+              "[AUTH CONTEXT] getCurrentUser returned null - user not authenticated"
+            );
             setUser(null);
           }
         }
       } catch (error) {
-        console.log("Failed to fetch current user:", error);
+        console.log("[AUTH CONTEXT] Failed to fetch current user:", error);
+        clearTimeout(timeoutId);
         if (isMounted) {
           setUser(null);
         }
       } finally {
+        clearTimeout(timeoutId);
         if (isMounted) {
+          console.log("[AUTH CONTEXT] Auth initialization complete");
           setIsLoading(false);
         }
       }

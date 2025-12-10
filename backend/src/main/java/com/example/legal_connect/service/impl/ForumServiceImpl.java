@@ -82,6 +82,7 @@ public class ForumServiceImpl implements ForumService {
                     PostCategoryDto.PostSummaryDto lastPost = PostCategoryDto.PostSummaryDto.builder()
                         .id(latestPost.getId())
                         .title(latestPost.getTitle())
+                        .slug(latestPost.getSlug())
                         .authorName(getDisplayName(latestPost.getAuthor()))
                         .authorRole(getRoleString(latestPost.getAuthor()))
                         .authorAvatar(latestPost.getAuthor().getAvatar())
@@ -205,6 +206,18 @@ public class ForumServiceImpl implements ForumService {
     public PostDto getPostById(Long id, Long currentUserId) {
         Post post = postRepository.findByIdWithCategoryAndAuthor(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.incrementViews();
+        postRepository.save(post);
+        
+        PostDto dto = postMapper.toDto(post);
+        enrichWithUserVote(dto, currentUserId);
+        return dto;
+    }
+    
+    @Override
+    public PostDto getPostBySlug(String categorySlug, String postSlug, Long currentUserId) {
+        Post post = postRepository.findByCategorySlugAndPostSlug(categorySlug, postSlug)
+                .orElseThrow(() -> new RuntimeException("Post not found with slug: " + postSlug + " in category: " + categorySlug));
         post.incrementViews();
         postRepository.save(post);
         
@@ -458,6 +471,7 @@ public class ForumServiceImpl implements ForumService {
                     return PopularTopicDto.builder()
                             .id(post.getId())
                             .title(post.getTitle())
+                            .slug(post.getSlug())
                             .categoryName(post.getCategory().getName())
                             .categorySlug(post.getCategory().getSlug())
                             .views(post.getViews())

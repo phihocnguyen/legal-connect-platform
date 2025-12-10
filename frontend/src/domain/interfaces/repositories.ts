@@ -1,16 +1,16 @@
-import { 
-  User, 
+import {
+  User,
   AdminUser,
-  ChatConversation, 
-  Message, 
-  Post, 
+  ChatConversation,
+  Message,
+  Post,
   PostDto,
   PostCreateDto,
   PostCategoryDto,
   PostReplyDto,
   AddReplyDto,
-  PdfConversation, 
-  PdfMessage, 
+  PdfConversation,
+  PdfMessage,
   PdfUploadResult,
   PythonPdfUploadResult,
   PdfSummaryResult,
@@ -24,8 +24,8 @@ import {
   ChatQAResponse,
   LawyerApplication,
   AdminDashboardStats,
-  AdminPost
-} from '../entities';
+  AdminPost,
+} from "../entities";
 
 export interface ChatRepository {
   getConversations(): Promise<ChatConversation[]>;
@@ -34,7 +34,11 @@ export interface ChatRepository {
   createConversation(title: string): Promise<ChatConversation>;
   updateConversationTitle(id: string, title: string): Promise<ChatConversation>;
   deleteConversation(id: string): Promise<void>;
-  sendMessage(conversationId: string, content: string, role: 'USER' | 'ASSISTANT'): Promise<Message>;
+  sendMessage(
+    conversationId: string,
+    content: string,
+    role: "USER" | "ASSISTANT"
+  ): Promise<Message>;
 }
 
 export interface AuthRepository {
@@ -73,17 +77,21 @@ export interface PostRepository {
   // New Forum API methods matching backend
   getAllCategories(): Promise<PostCategoryDto[]>;
   getCategoryBySlug(slug: string): Promise<PostCategoryDto>;
-  
-  getAllPosts(params: { page?: number; size?: number; sort?: string }): Promise<{
+
+  getAllPosts(params: {
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<{
     content: PostDto[];
     totalElements: number;
     totalPages: number;
     size: number;
     number: number;
   }>;
-  
+
   getPostsByCategory(
-    categorySlug: string, 
+    categorySlug: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -92,9 +100,9 @@ export interface PostRepository {
     size: number;
     number: number;
   }>;
-  
+
   searchPosts(
-    keyword: string, 
+    keyword: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -103,10 +111,10 @@ export interface PostRepository {
     size: number;
     number: number;
   }>;
-  
+
   searchPostsByCategory(
     keyword: string,
-    categorySlug: string, 
+    categorySlug: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -115,8 +123,9 @@ export interface PostRepository {
     size: number;
     number: number;
   }>;
-  
+
   getPostById(id: number): Promise<PostDto>;
+  getPostBySlug(categorySlug: string, postSlug: string): Promise<PostDto>;
   createPostNew(data: PostCreateDto): Promise<PostDto>;
   updatePostNew(id: number, data: PostCreateDto): Promise<PostDto>;
   deletePostNew(id: number): Promise<void>;
@@ -128,7 +137,11 @@ export interface PostRepository {
 }
 
 export interface PdfRepository {
-  uploadPdf(file: File, title: string, summary?: string): Promise<PdfUploadResult>;
+  uploadPdf(
+    file: File,
+    title: string,
+    summary?: string
+  ): Promise<PdfUploadResult>;
   getConversations(): Promise<PdfConversation[]>;
   getConversation(id: number): Promise<PdfConversation>;
   getConversationWithDetails(id: number): Promise<PdfConversation>;
@@ -138,7 +151,7 @@ export interface PdfRepository {
   deleteConversation(id: number): Promise<void>;
   getPdfViewUrl(conversationId: number): string;
   getPdfDownloadUrl(conversationId: number): string;
-  
+
   // Python API methods
   uploadPdfToPython(file: File): Promise<PythonPdfUploadResult>;
   getPdfSummary(fileId: string, maxLength?: number): Promise<PdfSummaryResult>;
@@ -147,9 +160,19 @@ export interface PdfRepository {
 export interface MessagingRepository {
   getConversations(userId: number): Promise<UserConversation[]>;
   getConversationMessages(conversationId: string): Promise<UserMessage[]>;
-  sendMessage(conversationId: string, content: string, senderId: number): Promise<UserMessage>;
-  createConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
-  getOrCreateConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
+  sendMessage(
+    conversationId: string,
+    content: string,
+    senderId: number
+  ): Promise<UserMessage>;
+  createConversation(
+    user1Id: number,
+    user2Id: number
+  ): Promise<UserConversation>;
+  getOrCreateConversation(
+    user1Id: number,
+    user2Id: number
+  ): Promise<UserConversation>;
   markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
 }
 
@@ -180,7 +203,7 @@ export interface AdminRepository {
     size: number;
     number: number;
   }>;
-  
+
   updateUserStatus(userId: number, isEnabled: boolean): Promise<void>;
 
   // Post moderation
@@ -198,7 +221,7 @@ export interface AdminRepository {
     size: number;
     number: number;
   }>;
-  
+
   updatePostStatus(postId: number, isActive: boolean): Promise<void>;
 
   // Lawyer applications
@@ -216,9 +239,15 @@ export interface AdminRepository {
     size: number;
     number: number;
   }>;
-  
-  approveLawyerApplication(applicationId: number, adminNotes?: string): Promise<void>;
-  rejectLawyerApplication(applicationId: number, adminNotes?: string): Promise<void>;
+
+  approveLawyerApplication(
+    applicationId: number,
+    adminNotes?: string
+  ): Promise<void>;
+  rejectLawyerApplication(
+    applicationId: number,
+    adminNotes?: string
+  ): Promise<void>;
 
   // Dashboard stats
   getDashboardStats(): Promise<AdminDashboardStats>;
@@ -241,6 +270,9 @@ export interface LawyerRepository {
   getUserApplication(): Promise<LawyerApplication | null>;
   canUserApply(): Promise<boolean>;
   hasUserApplied(): Promise<boolean>;
-  updateApplicationDocuments(applicationId: number, documentUrls: string[]): Promise<LawyerApplication>;
+  updateApplicationDocuments(
+    applicationId: number,
+    documentUrls: string[]
+  ): Promise<LawyerApplication>;
   deleteApplication(applicationId: number): Promise<void>;
 }

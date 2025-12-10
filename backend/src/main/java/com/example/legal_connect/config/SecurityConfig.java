@@ -80,8 +80,7 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
                 .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .deleteCookies("LOGGED_IN")
+                .deleteCookies("SESSIONID")
             );
 
         return http.build();

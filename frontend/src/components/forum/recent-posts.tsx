@@ -162,7 +162,7 @@ export function RecentPosts({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Link
-                      href={`/forum/${post.category.slug}/${post.id}`}
+                      href={`/forum/${post.category.slug}/${post.slug}`}
                       className="text-lg font-semibold text-gray-900 hover:text-[#004646] line-clamp-2"
                     >
                       {post.title}

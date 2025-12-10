@@ -52,11 +52,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         try {
             User user = authService.login(request, httpRequest);
-            Cookie loginCookie = new Cookie("LOGGED_IN", "true");
-            loginCookie.setPath("/");
-            loginCookie.setHttpOnly(false); // Allow frontend JS to read if needed
-            loginCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-            httpResponse.addCookie(loginCookie);
+            // SESSIONID cookie is automatically set by Spring Security
             return ResponseEntity.ok(authMapper.toSuccessResponse(user, "Login successful"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -68,11 +64,7 @@ public class AuthController {
     @Operation(summary = "User logout")
     public ResponseEntity<ApiResponse<String>> logout(HttpServletRequest request, HttpServletResponse httpResponse) {
         log.info("Logging out user");
-        Cookie loginCookie = new Cookie("LOGGED_IN", "");
-        loginCookie.setPath("/");
-        loginCookie.setHttpOnly(false);
-        loginCookie.setMaxAge(0);
-        httpResponse.addCookie(loginCookie);
+        // SESSIONID cookie is automatically cleared by Spring Security
         authService.logout(request);
         return ResponseEntity.ok(authMapper.toSuccessMessageResponse("Logout successful"));
     }

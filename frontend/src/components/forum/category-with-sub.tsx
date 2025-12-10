@@ -15,7 +15,7 @@ interface SubCategoryItem {
 }
 
 interface CategoryWithSubProps {
-  id: string;
+  id: string; // This is the category slug
   name: string;
   description: string;
   icon: string;
@@ -25,10 +25,12 @@ interface CategoryWithSubProps {
   lastPost?: {
     id: number;
     title: string;
+    slug: string; // Add slug for SEO-friendly URLs
     authorName: string;
     authorRole: string;
     authorAvatar?: string;
     categoryName: string;
+    categorySlug?: string; // Add categorySlug to know which category the post belongs to
     views?: number;
     createdAt: string;
   };
@@ -103,13 +105,13 @@ export function CategoryWithSub({
                 <div className="text-base font-bold text-gray-900">
                   {threads}
                 </div>
-                <div className="text-sm text-gray-500">Posts</div>
+                <div className="text-sm text-gray-500">Chủ đề</div>
               </div>
 
               {/* Center: Posts count */}
               <div className="flex-shrink-0 text-center min-w-24">
                 <div className="text-base font-bold text-gray-900">{posts}</div>
-                <div className="text-sm text-gray-500">Messages</div>
+                <div className="text-sm text-gray-500">Trả lời</div>
               </div>
 
               {/* Right: Last post info */}
@@ -119,7 +121,9 @@ export function CategoryWithSub({
                     className="flex gap-2.5 items-start cursor-pointer hover:opacity-80 transition-opacity w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/forum/posts/${lastPost.id}`);
+                      // Use the category slug from lastPost if available, otherwise use the main category id
+                      const categorySlug = lastPost.categorySlug || id;
+                      router.push(`/forum/${categorySlug}/${lastPost.slug}`);
                     }}
                   >
                     {/* Left: Avatar */}

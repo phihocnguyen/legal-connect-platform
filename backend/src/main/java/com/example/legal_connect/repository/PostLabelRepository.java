@@ -14,5 +14,11 @@ public interface PostLabelRepository extends JpaRepository<PostLabel, Long> {
     
     List<PostLabel> findByIsActiveTrue();
     
+    List<PostLabel> findByCategoryIdAndIsActiveTrue(Long categoryId);
+    
+    List<PostLabel> findByCategoryId(Long categoryId);
+    
+    List<PostLabel> findByCategoryIdIsNullAndIsActiveTrue(); // Global labels
+    
     boolean existsBySlug(String slug);
 }

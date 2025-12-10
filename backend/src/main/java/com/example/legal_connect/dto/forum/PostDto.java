@@ -19,6 +19,8 @@ public class PostDto {
     
     private String title;
     
+    private String slug;
+    
     private String content;
     
     private PostCategoryDto category;

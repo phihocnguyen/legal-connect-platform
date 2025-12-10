@@ -1,17 +1,17 @@
-import { PostRepository } from '../../domain/interfaces/repositories';
-import { 
-  Post, 
-  PostDto, 
-  PostCreateDto, 
-  PostCategoryDto, 
-  PostReplyDto, 
+import { PostRepository } from "../../domain/interfaces/repositories";
+import {
+  Post,
+  PostDto,
+  PostCreateDto,
+  PostCategoryDto,
+  PostReplyDto,
   AddReplyDto,
   ForumStatsDto,
   PopularTopicDto,
   CategoryStatsDto,
-  PopularTagDto
-} from '../../domain/entities';
-import { apiClient } from '../../lib/axiosInstance';
+  PopularTagDto,
+} from "../../domain/entities";
+import { apiClient } from "../../lib/axiosInstance";
 
 export class HttpPostRepository implements PostRepository {
   private apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -20,14 +20,14 @@ export class HttpPostRepository implements PostRepository {
     const response = await fetch(`${this.apiUrl}${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options?.headers,
       },
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Request failed');
+      throw new Error(error.message || "Request failed");
     }
 
     return response.json();
@@ -57,44 +57,54 @@ export class HttpPostRepository implements PostRepository {
     categoryId: number;
     tags: string[];
   }): Promise<Post> {
-    return this.request('/posts', {
-      method: 'POST',
+    return this.request("/posts", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async updatePost(id: string, data: Partial<Post>): Promise<Post> {
     return this.request(`/posts/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
   async deletePost(id: string): Promise<void> {
     await this.request(`/posts/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   async votePost(id: string, voteType: 1 | -1): Promise<Post> {
     return this.request(`/posts/${id}/vote`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ voteType }),
     });
   }
 
   // New Forum API methods
   async getAllCategories(): Promise<PostCategoryDto[]> {
-    const response = await apiClient.get<PostCategoryDto[]>('/forum/categories');
+    const response = await apiClient.get<PostCategoryDto[]>(
+      "/forum/categories"
+    );
     return response.data;
   }
 
   async getCategoryBySlug(slug: string): Promise<PostCategoryDto> {
-    const response = await apiClient.get<PostCategoryDto>(`/forum/categories/${slug}`);
+    const response = await apiClient.get<PostCategoryDto>(
+      `/forum/categories/${slug}`
+    );
     return response.data;
   }
 
-  async getAllPosts(params: { page?: number; size?: number; sort?: string; categoryId?: number; timeFilter?: string }): Promise<{
+  async getAllPosts(params: {
+    page?: number;
+    size?: number;
+    sort?: string;
+    categoryId?: number;
+    timeFilter?: string;
+  }): Promise<{
     content: PostDto[];
     totalElements: number;
     totalPages: number;
@@ -102,11 +112,15 @@ export class HttpPostRepository implements PostRepository {
     number: number;
   }> {
     const queryParams = new URLSearchParams();
-    if (params.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params.size !== undefined) queryParams.append('size', params.size.toString());
-    if (params.sort) queryParams.append('sort', params.sort);
-    if (params.categoryId !== undefined) queryParams.append('categoryId', params.categoryId.toString());
-    if (params.timeFilter && params.timeFilter !== 'all') queryParams.append('timeFilter', params.timeFilter);
+    if (params.page !== undefined)
+      queryParams.append("page", params.page.toString());
+    if (params.size !== undefined)
+      queryParams.append("size", params.size.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
+    if (params.categoryId !== undefined)
+      queryParams.append("categoryId", params.categoryId.toString());
+    if (params.timeFilter && params.timeFilter !== "all")
+      queryParams.append("timeFilter", params.timeFilter);
 
     const response = await apiClient.get<{
       content: PostDto[];
@@ -117,7 +131,7 @@ export class HttpPostRepository implements PostRepository {
         totalPages: number;
       };
     }>(`/forum/posts?${queryParams.toString()}`);
-    
+
     // Transform response to expected format
     return {
       content: response.data.content,
@@ -129,7 +143,7 @@ export class HttpPostRepository implements PostRepository {
   }
 
   async getPostsByCategory(
-    categorySlug: string, 
+    categorySlug: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -139,9 +153,11 @@ export class HttpPostRepository implements PostRepository {
     number: number;
   }> {
     const queryParams = new URLSearchParams();
-    if (params.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params.size !== undefined) queryParams.append('size', params.size.toString());
-    if (params.sort) queryParams.append('sort', params.sort);
+    if (params.page !== undefined)
+      queryParams.append("page", params.page.toString());
+    if (params.size !== undefined)
+      queryParams.append("size", params.size.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
 
     const response = await apiClient.get<{
       content: PostDto[];
@@ -151,10 +167,8 @@ export class HttpPostRepository implements PostRepository {
         totalElements: number;
         totalPages: number;
       };
-    }>(
-      `/forum/categories/${categorySlug}/posts?${queryParams.toString()}`
-    );
-    
+    }>(`/forum/categories/${categorySlug}/posts?${queryParams.toString()}`);
+
     // Transform response to expected format
     return {
       content: response.data.content,
@@ -166,7 +180,7 @@ export class HttpPostRepository implements PostRepository {
   }
 
   async searchPosts(
-    keyword: string, 
+    keyword: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -176,10 +190,12 @@ export class HttpPostRepository implements PostRepository {
     number: number;
   }> {
     const queryParams = new URLSearchParams();
-    queryParams.append('keyword', keyword);
-    if (params.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params.size !== undefined) queryParams.append('size', params.size.toString());
-    if (params.sort) queryParams.append('sort', params.sort);
+    queryParams.append("keyword", keyword);
+    if (params.page !== undefined)
+      queryParams.append("page", params.page.toString());
+    if (params.size !== undefined)
+      queryParams.append("size", params.size.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
 
     const response = await apiClient.get<{
       content: PostDto[];
@@ -190,7 +206,7 @@ export class HttpPostRepository implements PostRepository {
         totalPages: number;
       };
     }>(`/forum/posts/search?${queryParams.toString()}`);
-    
+
     // Transform response to expected format
     return {
       content: response.data.content,
@@ -203,7 +219,7 @@ export class HttpPostRepository implements PostRepository {
 
   async searchPostsByCategory(
     keyword: string,
-    categorySlug: string, 
+    categorySlug: string,
     params: { page?: number; size?: number; sort?: string }
   ): Promise<{
     content: PostDto[];
@@ -213,10 +229,12 @@ export class HttpPostRepository implements PostRepository {
     number: number;
   }> {
     const queryParams = new URLSearchParams();
-    queryParams.append('keyword', keyword);
-    if (params.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params.size !== undefined) queryParams.append('size', params.size.toString());
-    if (params.sort) queryParams.append('sort', params.sort);
+    queryParams.append("keyword", keyword);
+    if (params.page !== undefined)
+      queryParams.append("page", params.page.toString());
+    if (params.size !== undefined)
+      queryParams.append("size", params.size.toString());
+    if (params.sort) queryParams.append("sort", params.sort);
 
     const response = await apiClient.get<{
       content: PostDto[];
@@ -229,7 +247,7 @@ export class HttpPostRepository implements PostRepository {
     }>(
       `/forum/categories/${categorySlug}/posts/search?${queryParams.toString()}`
     );
-    
+
     // Transform response to expected format
     return {
       content: response.data.content,
@@ -245,8 +263,18 @@ export class HttpPostRepository implements PostRepository {
     return response.data;
   }
 
+  async getPostBySlug(
+    categorySlug: string,
+    postSlug: string
+  ): Promise<PostDto> {
+    const response = await apiClient.get<PostDto>(
+      `/forum/categories/${categorySlug}/posts/${postSlug}`
+    );
+    return response.data;
+  }
+
   async createPostNew(data: PostCreateDto): Promise<PostDto> {
-    const response = await apiClient.post<PostDto>('/forum/posts', data);
+    const response = await apiClient.post<PostDto>("/forum/posts", data);
     return response.data;
   }
 
@@ -260,12 +288,17 @@ export class HttpPostRepository implements PostRepository {
   }
 
   async getRepliesByPost(postId: number): Promise<PostReplyDto[]> {
-    const response = await apiClient.get<PostReplyDto[]>(`/forum/posts/${postId}/replies`);
+    const response = await apiClient.get<PostReplyDto[]>(
+      `/forum/posts/${postId}/replies`
+    );
     return response.data;
   }
 
   async addReply(postId: number, data: AddReplyDto): Promise<PostReplyDto> {
-    const response = await apiClient.post<PostReplyDto>(`/forum/posts/${postId}/replies`, data);
+    const response = await apiClient.post<PostReplyDto>(
+      `/forum/posts/${postId}/replies`,
+      data
+    );
     return response.data;
   }
 
@@ -275,22 +308,28 @@ export class HttpPostRepository implements PostRepository {
 
   // Statistics API methods
   async getForumStats(): Promise<ForumStatsDto> {
-    const response = await apiClient.get<ForumStatsDto>('/forum/stats');
+    const response = await apiClient.get<ForumStatsDto>("/forum/stats");
     return response.data;
   }
 
   async getPopularTopics(limit: number = 5): Promise<PopularTopicDto[]> {
-    const response = await apiClient.get<PopularTopicDto[]>(`/forum/popular-topics?limit=${limit}`);
+    const response = await apiClient.get<PopularTopicDto[]>(
+      `/forum/popular-topics?limit=${limit}`
+    );
     return response.data;
   }
 
   async getCategoryStats(): Promise<CategoryStatsDto[]> {
-    const response = await apiClient.get<CategoryStatsDto[]>('/forum/category-stats');
+    const response = await apiClient.get<CategoryStatsDto[]>(
+      "/forum/category-stats"
+    );
     return response.data;
   }
 
   async getPopularTags(limit: number = 10): Promise<PopularTagDto[]> {
-    const response = await apiClient.get<PopularTagDto[]>(`/forum/popular-tags?limit=${limit}`);
+    const response = await apiClient.get<PopularTagDto[]>(
+      `/forum/popular-tags?limit=${limit}`
+    );
     return response.data;
   }
 }

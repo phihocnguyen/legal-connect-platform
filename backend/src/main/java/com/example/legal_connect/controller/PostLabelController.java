@@ -24,6 +24,16 @@ public class PostLabelController {
     public ResponseEntity<List<PostLabelDto>> getActiveLabels() {
         return ResponseEntity.ok(postLabelService.getActiveLabels());
     }
+    
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<PostLabelDto>> getLabelsByCategory(@PathVariable Long categoryId) {
+        return ResponseEntity.ok(postLabelService.getLabelsByCategory(categoryId));
+    }
+    
+    @GetMapping("/global")
+    public ResponseEntity<List<PostLabelDto>> getGlobalLabels() {
+        return ResponseEntity.ok(postLabelService.getGlobalLabels());
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostLabelDto> getLabelById(@PathVariable Long id) {

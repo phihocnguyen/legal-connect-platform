@@ -40,6 +40,9 @@ public class PostCategoryDto {
     
     private Integer postsCount;
     
+    // Labels associated with this category
+    private List<PostLabelDto> labels;
+    
     // Last post information
     private PostSummaryDto lastPost;
     
@@ -50,6 +53,7 @@ public class PostCategoryDto {
     public static class PostSummaryDto {
         private Long id;
         private String title;
+        private String slug;
         private String authorName;
         private String authorRole;
         private String authorAvatar;

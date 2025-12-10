@@ -25,11 +25,37 @@ axiosInstance.interceptors.request.use(
 );
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    console.log(
+      `[AXIOS] ${response.config.method?.toUpperCase()} ${
+        response.config.url
+      }:`,
+      response.status,
+      response.data
+    );
     return response;
   },
   (error: AxiosError) => {
+    console.error(
+      `[AXIOS ERROR] ${error.config?.method?.toUpperCase()} ${
+        error.config?.url
+      }:`,
+      error.response?.status,
+      error.response?.data
+    );
     if (error.response?.status === 401) {
-      window.location.href = "/login";
+      console.log("[AXIOS] 401 Unauthorized");
+      // Don't redirect for auth check endpoints - let the component handle 401
+      const url = error.config?.url || "";
+      const isAuthCheckEndpoint =
+        url.includes("/auth/me") || url.includes("/auth/status");
+
+      if (!isAuthCheckEndpoint) {
+        console.log("[AXIOS] 401 on non-auth endpoint - redirecting to /login");
+        // Use setTimeout to avoid redirect during component init
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 500);
+      }
     }
     if (error.response?.status === 403) {
       console.error("Access denied");

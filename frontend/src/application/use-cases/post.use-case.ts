@@ -1,5 +1,12 @@
-import { Post, PostDto, PostCreateDto, PostCategoryDto, PostReplyDto, AddReplyDto } from '../../domain/entities';
-import { PostRepository } from '../../domain/interfaces/repositories';
+import {
+  Post,
+  PostDto,
+  PostCreateDto,
+  PostCategoryDto,
+  PostReplyDto,
+  AddReplyDto,
+} from "../../domain/entities";
+import { PostRepository } from "../../domain/interfaces/repositories";
 
 export class CreatePostUseCase {
   constructor(private postRepository: PostRepository) {}
@@ -55,7 +62,13 @@ export class GetCategoryBySlugUseCase {
 export class GetAllPostsUseCase {
   constructor(private postRepository: PostRepository) {}
 
-  async execute(params: { page?: number; size?: number; sort?: string; categoryId?: number; timeFilter?: string }) {
+  async execute(params: {
+    page?: number;
+    size?: number;
+    sort?: string;
+    categoryId?: number;
+    timeFilter?: string;
+  }) {
     return this.postRepository.getAllPosts(params);
   }
 }
@@ -63,7 +76,10 @@ export class GetAllPostsUseCase {
 export class GetPostsByCategoryUseCase {
   constructor(private postRepository: PostRepository) {}
 
-  async execute(categorySlug: string, params: { page?: number; size?: number; sort?: string }) {
+  async execute(
+    categorySlug: string,
+    params: { page?: number; size?: number; sort?: string }
+  ) {
     return this.postRepository.getPostsByCategory(categorySlug, params);
   }
 }
@@ -71,7 +87,10 @@ export class GetPostsByCategoryUseCase {
 export class SearchPostsUseCase {
   constructor(private postRepository: PostRepository) {}
 
-  async execute(keyword: string, params: { page?: number; size?: number; sort?: string }) {
+  async execute(
+    keyword: string,
+    params: { page?: number; size?: number; sort?: string }
+  ) {
     return this.postRepository.searchPosts(keyword, params);
   }
 }
@@ -79,8 +98,16 @@ export class SearchPostsUseCase {
 export class SearchPostsByCategoryUseCase {
   constructor(private postRepository: PostRepository) {}
 
-  async execute(keyword: string, categorySlug: string, params: { page?: number; size?: number; sort?: string }) {
-    return this.postRepository.searchPostsByCategory(keyword, categorySlug, params);
+  async execute(
+    keyword: string,
+    categorySlug: string,
+    params: { page?: number; size?: number; sort?: string }
+  ) {
+    return this.postRepository.searchPostsByCategory(
+      keyword,
+      categorySlug,
+      params
+    );
   }
 }
 
@@ -89,6 +116,14 @@ export class GetPostByIdUseCase {
 
   async execute(id: number): Promise<PostDto> {
     return this.postRepository.getPostById(id);
+  }
+}
+
+export class GetPostBySlugUseCase {
+  constructor(private postRepository: PostRepository) {}
+
+  async execute(categorySlug: string, postSlug: string): Promise<PostDto> {
+    return this.postRepository.getPostBySlug(categorySlug, postSlug);
   }
 }
 

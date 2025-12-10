@@ -19,6 +19,7 @@ public class PostLabelMapper {
                 .description(label.getDescription())
                 .color(label.getColor())
                 .isActive(label.getIsActive())
+                .categoryId(label.getCategory() != null ? label.getCategory().getId() : null)
                 .createdAt(label.getCreatedAt())
                 .updatedAt(label.getUpdatedAt())
                 .build();

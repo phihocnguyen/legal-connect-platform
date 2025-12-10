@@ -19,6 +19,7 @@ public class PostLabelDto {
     private String description;
     private String color;
     private Boolean isActive;
+    private Long categoryId; // Add categoryId to support category-specific labels
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

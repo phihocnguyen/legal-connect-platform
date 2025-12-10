@@ -48,6 +48,9 @@ public class Post {
     @Column(nullable = false)
     private String title;
     
+    @Column(length = 255)
+    private String slug;
+    
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
     
@@ -130,11 +133,54 @@ public class Post {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (slug == null || slug.isEmpty()) {
+            slug = generateSlug(title);
+        }
     }
     
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    // Generate URL-friendly slug from Vietnamese title
+    private String generateSlug(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        
+        // Normalize Vietnamese characters to ASCII
+        String slug = text.toLowerCase();
+        
+        // Vietnamese character mapping
+        slug = slug.replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a");
+        slug = slug.replaceAll("[èéẹẻẽêềếệểễ]", "e");
+        slug = slug.replaceAll("[ìíịỉĩ]", "i");
+        slug = slug.replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o");
+        slug = slug.replaceAll("[ùúụủũưừứựửữ]", "u");
+        slug = slug.replaceAll("[ỳýỵỷỹ]", "y");
+        slug = slug.replaceAll("đ", "d");
+        
+        // Remove special characters, keep only alphanumeric and spaces
+        slug = slug.replaceAll("[^a-z0-9\\s-]", "");
+        
+        // Replace multiple spaces/hyphens with single hyphen
+        slug = slug.trim().replaceAll("[\\s-]+", "-");
+        
+        // Remove leading/trailing hyphens
+        slug = slug.replaceAll("^-+|-+$", "");
+        
+        // Limit length to 200 characters
+        if (slug.length() > 200) {
+            slug = slug.substring(0, 200);
+            // Remove trailing incomplete word
+            int lastHyphen = slug.lastIndexOf('-');
+            if (lastHyphen > 0) {
+                slug = slug.substring(0, lastHyphen);
+            }
+        }
+        
+        return slug;
     }
     
     // Utility methods for tags

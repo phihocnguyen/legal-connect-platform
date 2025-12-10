@@ -51,6 +51,11 @@ public class PostLabel {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    // Many-to-One relationship with Category (nullable for global labels)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private PostCategory category;
+    
     // Many-to-many relationship with Posts
     @ManyToMany(mappedBy = "labels")
     private Set<Post> posts;

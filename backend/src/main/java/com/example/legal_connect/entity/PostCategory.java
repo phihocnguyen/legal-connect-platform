@@ -57,6 +57,10 @@ public class PostCategory {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> posts;
     
+    // Relationship with Labels
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PostLabel> labels;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

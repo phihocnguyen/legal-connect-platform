@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { User } from '@/domain/entities';
-import { useAuthUseCases } from '@/hooks/use-auth-cases';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { User } from "@/domain/entities";
+import { useAuthUseCases } from "@/hooks/use-auth-cases";
 
 interface AuthContextType {
   user: User | null;
@@ -20,45 +20,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { login: loginUseCase, logout: logoutUseCase, getCurrentUser } = useAuthUseCases();
+  const {
+    login: loginUseCase,
+    logout: logoutUseCase,
+    getCurrentUser,
+  } = useAuthUseCases();
 
-  const redirectBasedOnRole = (user: User) => {
-    console.log('Redirecting user with role:', user.role);
-    setTimeout(() => {
-      switch (user.role) {
-        case 'ADMIN':
-          console.log('Redirecting to /admin');
-          router.push('/admin');
-          break;
-        case 'LAWYER':
-          router.push('/forum');
-          break;
-        case 'USER':
-        default:
-          router.push('/forum');
-          break;
-      }
-    }, 50);
+  const redirectBasedOnRole = (user: User, currentPath: string = "/") => {
+    console.log("Redirecting user with role:", user.role);
+    // If user is on home page, don't redirect
+    if (currentPath === "/") {
+      return;
+    }
+
+    switch (user.role) {
+      case "admin":
+        console.log("Redirecting to /admin");
+        router.push("/admin");
+        break;
+      case "lawyer":
+      case "user":
+      default:
+        router.push("/forum");
+        break;
+    }
   };
 
   const login = async (email: string, password: string): Promise<void> => {
+    console.log("[AUTH CONTEXT] Login started");
     await loginUseCase(email, password);
-    
-    // Chỉ gọi getCurrentUser một lần và redirect ngay
+    console.log("[AUTH CONTEXT] Login use case completed");
+
+    // Get current user and redirect
     try {
       const currentUser = await getCurrentUser();
+      console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
       if (currentUser) {
+        console.log("[AUTH CONTEXT] Setting user:", currentUser);
         setUser(currentUser);
-        redirectBasedOnRole(currentUser);
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : "/";
+        redirectBasedOnRole(currentUser, currentPath);
+      } else {
+        console.log("[AUTH CONTEXT] getCurrentUser returned null");
       }
     } catch (error) {
-      console.log('Failed to get user after login:', error);
+      console.log("Failed to get user after login:", error);
     }
   };
 
   const logout = async (): Promise<void> => {
-    await logoutUseCase();
-    setUser(null);
+    try {
+      await logoutUseCase();
+    } catch (error) {
+      console.log("Logout error:", error);
+    } finally {
+      setUser(null);
+      // Backend will clear SESSIONID cookie via logout endpoint
+      router.push("/login");
+    }
   };
 
   const refreshUser = async (): Promise<void> => {
@@ -66,29 +86,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      console.log('Failed to get current user:', error);
+      console.log("Failed to get current user:", error);
       setUser(null);
     }
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const initializeAuth = async () => {
-      if (user !== null) {
-        setIsLoading(false);
+      // Don't fetch user data on public paths (login, register, auth)
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      const publicPaths = ["/login", "/register", "/auth"];
+      const isPublicPath = publicPaths.some((path) =>
+        currentPath.startsWith(path)
+      );
+
+      if (isPublicPath) {
+        console.log(
+          "[AUTH CONTEXT] On public path:",
+          currentPath,
+          "- skipping auth initialization"
+        );
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
         return;
       }
-      
+
+      // SESSIONID is HttpOnly so we can't check via document.cookie
+      // Instead, we try to fetch current user - if it works, user is authenticated
+      console.log(
+        "[AUTH CONTEXT] Initializing auth by fetching current user..."
+      );
+
+      // Safety timeout to ensure isLoading is always set to false
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.log(
+            "[AUTH CONTEXT] Auth initialization timeout - setting isLoading to false"
+          );
+          setIsLoading(false);
+        }
+      }, 5000);
+
       try {
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch {
-        setUser(null);
+        console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
+        clearTimeout(timeoutId);
+        if (isMounted) {
+          if (currentUser) {
+            console.log(
+              "[AUTH CONTEXT] User authenticated, setting user:",
+              currentUser
+            );
+            setUser(currentUser);
+          } else {
+            console.log(
+              "[AUTH CONTEXT] getCurrentUser returned null - user not authenticated"
+            );
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.log("[AUTH CONTEXT] Failed to fetch current user:", error);
+        clearTimeout(timeoutId);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setIsLoading(false);
+        clearTimeout(timeoutId);
+        if (isMounted) {
+          console.log("[AUTH CONTEXT] Auth initialization complete");
+          setIsLoading(false);
+        }
       }
     };
-    
+
     initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy lần đầu mount
 
@@ -107,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

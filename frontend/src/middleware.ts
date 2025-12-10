@@ -1,30 +1,69 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // Các đường dẫn public không cần authentication
-const PUBLIC_PATHS = ['/', '/login', '/register', '/50_dataset_van_ban_phap_luat.csv'];
+const PUBLIC_PATHS = ["/login", "/register", "/auth"];
+
+// Các đường dẫn protected - cần authentication
+const PROTECTED_PATHS = [
+  "/forum",
+  "/admin",
+  "/chat",
+  "/messages",
+  "/notifications",
+  "/profile",
+  "/pdf-qa",
+  "/search",
+  "/lawyer",
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log("[MIDDLEWARE] Processing:", pathname);
 
-  // Cho phép truy cập các đường dẫn public
-  if (PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))) {
+  // Cho phép truy cập tất cả public paths
+  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    console.log("[MIDDLEWARE] Public path, allowing access");
     return NextResponse.next();
   }
 
-  // Kiểm tra cookie đăng nhập
-  const isLoggedIn = request.cookies.get('LOGGED_IN')?.value === 'true';
+  // Cho phép homepage và static files
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next")
+  ) {
+    return NextResponse.next();
+  }
 
-  if (!isLoggedIn) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
-    return NextResponse.redirect(loginUrl);
+  // Kiểm tra protected paths
+  const isProtectedPath = PROTECTED_PATHS.some((path) =>
+    pathname.startsWith(path)
+  );
+
+  if (isProtectedPath) {
+    // Check SESSIONID cookie from backend (Spring sets this automatically)
+    // Note: SESSIONID is HttpOnly so it's not accessible from JavaScript,
+    // but middleware runs on server so it can check it
+    const sessionId = request.cookies.get("SESSIONID")?.value;
+
+    if (!sessionId) {
+      // No session - redirect to login
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      console.log(
+        "[MIDDLEWARE] No SESSIONID for protected path:",
+        pathname,
+        "- redirecting to login"
+      );
+      return NextResponse.redirect(loginUrl);
+    }
+    console.log("[MIDDLEWARE] SESSIONID found for protected path:", pathname);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'], 
-  // matcher này sẽ áp middleware cho tất cả route ngoại trừ các route Next.js mặc định và api
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

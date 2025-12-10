@@ -133,31 +133,60 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     void updateLastReplyTime(@Param("postId") Long postId, @Param("lastReplyAt") LocalDateTime lastReplyAt);
     
     /**
-     * Find posts with eager loading of category and author
+     * Find posts with eager loading of category, author and labels
      */
-    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.isActive = true ORDER BY p.createdAt DESC",
-           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.isActive = true")
+    @Query(value = "SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE p.isActive = true " +
+           "ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true")
     Page<Post> findAllWithCategoryAndAuthor(Pageable pageable);
     
     /**
-     * Find posts by category ID with eager loading
+     * Find posts by category ID with eager loading of category, author and labels
      */
-    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.category.id = :categoryId AND p.isActive = true ORDER BY p.createdAt DESC",
-           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true")
+    @Query(value = "SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE p.category.id = :categoryId AND p.isActive = true " +
+           "ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true")
     Page<Post> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(@Param("categoryId") Long categoryId, Pageable pageable);
     
     /**
-     * Find posts created after a certain date with eager loading
+     * Find posts created after a certain date with eager loading of category, author and labels
      */
-    @Query(value = "SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.isActive = true AND p.createdAt >= :startDate ORDER BY p.createdAt DESC",
-           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.isActive = true AND p.createdAt >= :startDate")
+    @Query(value = "SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE p.isActive = true AND p.createdAt >= :startDate " +
+           "ORDER BY p.createdAt DESC",
+           countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true AND p.createdAt >= :startDate")
     Page<Post> findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(@Param("startDate") LocalDateTime startDate, Pageable pageable);
     
     /**
-     * Find post by ID with category and author
+     * Find post by ID with category, author and labels
      */
-    @Query("SELECT p FROM Post p JOIN FETCH p.category JOIN FETCH p.author WHERE p.id = :id AND p.isActive = true")
+    @Query("SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE p.id = :id AND p.isActive = true")
     Optional<Post> findByIdWithCategoryAndAuthor(@Param("id") Long id);
+    
+    /**
+     * Find post by slug (for SEO-friendly URLs)
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.category c " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE c.slug = :categorySlug AND p.slug = :postSlug AND p.isActive = true")
+    Optional<Post> findByCategorySlugAndPostSlug(@Param("categorySlug") String categorySlug, @Param("postSlug") String postSlug);
     
     // === STATISTICS QUERIES ===
     
@@ -250,6 +279,9 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     /**
      * Find reported posts by title or content containing search term and specific status
      */
+    /**
+     * Find reported posts by title or content containing search term and specific status
+     */
     @Query("SELECT p FROM Post p WHERE p.reportCount > :reportCount AND p.isActive = :isActive AND " +
            "(LOWER(p.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(p.content) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
@@ -258,4 +290,26 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
         @Param("isActive") Boolean isActive,
         @Param("searchTerm") String searchTerm, 
         Pageable pageable);
+    
+    /**
+     * Find latest post for each category with author
+     * Uses DISTINCT ON to get only one post per category (the most recent one)
+     * Join with author to avoid N+1 lazy loading
+     */
+    @Query(value = "SELECT DISTINCT ON (p.category_id) p.id, p.title, p.slug, p.content, p.category_id, " +
+           "p.author_id, p.views, p.reply_count, p.upvote_count, p.downvote_count, " +
+           "p.is_pinned, p.is_solved, p.is_hot, p.is_active, p.report_count, p.is_reported, " +
+           "p.violation_reason, p.tags, p.created_at, p.updated_at, p.last_reply_at " +
+           "FROM posts p " +
+           "WHERE p.is_active = true " +
+           "ORDER BY p.category_id, p.created_at DESC",
+           nativeQuery = true)
+    List<Post> findLatestPostByCategory();
+    
+    /**
+     * Find latest post for a specific category
+     */
+    @Query("SELECT p FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true " +
+           "ORDER BY p.createdAt DESC")
+    Optional<Post> findLatestPostByCategoryId(@Param("categoryId") Long categoryId);
 }

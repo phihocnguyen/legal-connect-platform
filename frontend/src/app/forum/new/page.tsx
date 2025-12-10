@@ -1,33 +1,41 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Editor } from '@tinymce/tinymce-react';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Editor } from "@tinymce/tinymce-react";
 
-import { usePostUseCases } from '@/hooks/use-post-cases';
-import { PostCategoryDto, PostCreateDto } from '@/domain/entities';
+import { usePostUseCases } from "@/hooks/use-post-cases";
+import {
+  PostCategoryDto,
+  PostCreateDto,
+  PostLabelDto,
+} from "@/domain/entities";
 
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key';
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || "no-api-key";
 
 export default function NewThreadPage() {
   const router = useRouter();
   const { getAllCategories, createPostNew } = usePostUseCases();
   const searchParams = useSearchParams();
-  console.log(searchParams)
+  console.log(searchParams);
   // Form states
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [selectedLabelId, setSelectedLabelId] = useState<string>("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
 
   // UI states
   const [categories, setCategories] = useState<PostCategoryDto[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<PostLabelDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,17 +46,21 @@ export default function NewThreadPage() {
         setLoadingCategories(true);
         const categoriesData = await getAllCategories();
         setCategories(categoriesData);
-        
-        const categorySlug = searchParams.get('category');
+
+        const categorySlug = searchParams.get("category");
         if (categorySlug) {
-          const foundCategory = categoriesData.find(cat => cat.slug === categorySlug);
+          const foundCategory = categoriesData.find(
+            (cat) => cat.slug === categorySlug
+          );
           if (foundCategory) {
             setSelectedCategoryId(foundCategory.id);
+            // Set available labels from the selected category
+            setAvailableLabels(foundCategory.labels || []);
           }
         }
       } catch (err) {
-        console.error('Error loading categories:', err);
-        setError('Không thể tải danh sách chuyên mục');
+        console.error("Error loading categories:", err);
+        setError("Không thể tải danh sách chuyên mục");
       } finally {
         setLoadingCategories(false);
       }
@@ -57,43 +69,57 @@ export default function NewThreadPage() {
     loadCategories();
   }, [getAllCategories, searchParams]);
 
+  // Update available labels when category changes
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const selectedCategory = categories.find(
+        (cat) => cat.id === selectedCategoryId
+      );
+      setAvailableLabels(selectedCategory?.labels || []);
+      setSelectedLabelId(""); // Reset selected label when category changes
+    } else {
+      setAvailableLabels([]);
+      setSelectedLabelId("");
+    }
+  }, [selectedCategoryId, categories]);
+
   const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
+    if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault();
       if (tags.length < 5 && !tags.includes(tagInput.trim())) {
         setTags([...tags, tagInput.trim()]);
-        setTagInput('');
+        setTagInput("");
       }
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const stripHtmlTags = (html: string): string => {
-    const temp = document.createElement('div');
+    const temp = document.createElement("div");
     temp.innerHTML = html;
-    return temp.textContent || temp.innerText || '';
+    return temp.textContent || temp.innerText || "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedCategoryId) {
-      setError('Vui lòng chọn chuyên mục');
+      setError("Vui lòng chọn chuyên mục");
       return;
     }
 
     if (title.trim().length < 10) {
-      setError('Tiêu đề phải có ít nhất 10 ký tự');
+      setError("Tiêu đề phải có ít nhất 10 ký tự");
       return;
     }
 
     // Validate content length (strip HTML tags for validation)
     const plainTextContent = stripHtmlTags(content);
     if (plainTextContent.trim().length < 30) {
-      setError('Nội dung phải có ít nhất 30 ký tự');
+      setError("Nội dung phải có ít nhất 30 ký tự");
       return;
     }
 
@@ -105,20 +131,21 @@ export default function NewThreadPage() {
         title: title.trim(),
         content: content.trim(),
         categoryId: selectedCategoryId,
+        labelIds: selectedLabelId ? [selectedLabelId] : undefined,
       };
 
       const newPost = await createPostNew(postData);
-      
+
       // Navigate to the new post
-      const category = categories.find(c => c.id === selectedCategoryId);
+      const category = categories.find((c) => c.id === selectedCategoryId);
       if (category && newPost) {
-        router.push(`/forum/${category.slug}/${newPost.id}`);
+        router.push(`/forum/${category.slug}/${newPost.slug}`);
       } else {
-        router.push('/forum');
+        router.push("/forum");
       }
     } catch (err) {
-      console.error('Error creating post:', err);
-      setError('Không thể tạo bài viết. Vui lòng thử lại sau.');
+      console.error("Error creating post:", err);
+      setError("Không thể tạo bài viết. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -158,29 +185,59 @@ export default function NewThreadPage() {
             {/* Category Selection */}
             <div className="space-y-2">
               <Label htmlFor="category">Chuyên mục</Label>
-              {searchParams.get('category') ? (
+              {searchParams.get("category") ? (
                 // Read-only display when category is pre-selected from URL
                 <div className="w-full rounded-md border border-gray-300 bg-gray-50 p-2 text-gray-700">
-                  {categories.find(cat => cat.id === selectedCategoryId)?.name || 'Đang tải...'}
-                  <input type="hidden" value={selectedCategoryId || ''} />
+                  {categories.find((cat) => cat.id === selectedCategoryId)
+                    ?.name || "Đang tải..."}
+                  <input type="hidden" value={selectedCategoryId || ""} />
                 </div>
               ) : (
                 // Normal dropdown when no category specified
                 <select
                   id="category"
-                  value={selectedCategoryId || ''}
-                  onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                  value={selectedCategoryId || ""}
+                  onChange={(e) =>
+                    setSelectedCategoryId(
+                      e.target.value ? parseInt(e.target.value) : null
+                    )
+                  }
                   className="w-full rounded-md border border-gray-300 p-2"
                   required
                   disabled={loading}
                 >
                   <option value="">Chọn chuyên mục</option>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </select>
+              )}
+            </div>
+
+            {/* Labels */}
+            <div className="space-y-2">
+              <Label htmlFor="label">Nhãn (Label)</Label>
+              {availableLabels.length > 0 ? (
+                <select
+                  id="label"
+                  value={selectedLabelId}
+                  onChange={(e) => setSelectedLabelId(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 p-2"
+                  disabled={loading}
+                >
+                  <option value="">Chọn nhãn (tùy chọn)</option>
+                  {availableLabels.map((label) => (
+                    <option key={label.id} value={label.id}>
+                      {label.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Vui lòng chọn chuyên mục để hiển thị các nhãn
+                </p>
               )}
             </div>
 
@@ -197,7 +254,8 @@ export default function NewThreadPage() {
                 minLength={10}
               />
               <p className="text-sm text-gray-500">
-                Tiêu đề ngắn gọn, súc tích và mô tả chính xác vấn đề (tối thiểu 10 ký tự)
+                Tiêu đề ngắn gọn, súc tích và mô tả chính xác vấn đề (tối thiểu
+                10 ký tự)
               </p>
             </div>
 
@@ -205,7 +263,7 @@ export default function NewThreadPage() {
             <div className="space-y-2">
               <Label htmlFor="tags">Thẻ</Label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {tags.map(tag => (
+                {tags.map((tag) => (
                   <span
                     key={tag}
                     className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
@@ -245,17 +303,30 @@ export default function NewThreadPage() {
                   menubar: false,
                   height: 400,
                   plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview', 'anchor',
-                    'searchreplace', 'visualblocks', 'code', 'insertdatetime', 'table', 'help', 'wordcount'
+                    "advlist",
+                    "autolink",
+                    "lists",
+                    "link",
+                    "charmap",
+                    "preview",
+                    "anchor",
+                    "searchreplace",
+                    "visualblocks",
+                    "code",
+                    "insertdatetime",
+                    "table",
+                    "help",
+                    "wordcount",
                   ],
-                  toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code | help',
-                  placeholder: 'Nhập nội dung chi tiết của chủ đề...',
-                  content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
+                  toolbar:
+                    "undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code | help",
+                  placeholder: "Nhập nội dung chi tiết của chủ đề...",
+                  content_style:
+                    "body { font-family: Arial, sans-serif; font-size: 14px; }",
                 }}
                 disabled={loading}
               />
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>Hỗ trợ định dạng văn bản phong phú</span>
+              <div className="text-right text-sm text-gray-500">
                 <span>Tối thiểu 30 ký tự</span>
               </div>
             </div>
@@ -265,7 +336,10 @@ export default function NewThreadPage() {
               <h3 className="font-semibold mb-2">Hướng dẫn đăng bài</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li>Viết tiếng Việt có dấu, rõ ràng, dễ hiểu</li>
-                <li>Không đăng nội dung vi phạm pháp luật, đạo đức, thuần phong mỹ tục</li>
+                <li>
+                  Không đăng nội dung vi phạm pháp luật, đạo đức, thuần phong mỹ
+                  tục
+                </li>
                 <li>Không spam, quảng cáo</li>
                 <li>Tôn trọng các thành viên khác</li>
               </ul>
@@ -273,7 +347,12 @@ export default function NewThreadPage() {
 
             {/* Submit Buttons */}
             <div className="flex justify-end gap-4">
-              <Button variant="outline" type="button" asChild disabled={loading}>
+              <Button
+                variant="outline"
+                type="button"
+                asChild
+                disabled={loading}
+              >
                 <Link href="/forum">Hủy</Link>
               </Button>
               <Button type="submit" disabled={loading}>
@@ -283,7 +362,7 @@ export default function NewThreadPage() {
                     Đang đăng...
                   </div>
                 ) : (
-                  'Đăng bài'
+                  "Đăng bài"
                 )}
               </Button>
             </div>

@@ -8,12 +8,12 @@ export interface User {
   lawyerVerified: boolean;
 }
 
-export type UserRole = 'user' | 'lawyer' | 'admin';
-
+export type UserRole = "user" | "lawyer" | "admin";
 
 export interface PostDto {
   id: number;
   title: string;
+  slug: string;
   content: string;
   category: {
     id: number;
@@ -33,15 +33,16 @@ export interface PostDto {
       authorName: string;
       authorRole: UserRole;
       createdAt: string;
-    }
-  }
+    };
+  };
   author: {
     id: number;
     name: string;
     email: string;
     role: UserRole;
     avatar?: string;
-  }
+  };
+  labels?: PostLabelDto[];
   views: number;
   replyCount: number;
   pinned: boolean;
@@ -50,7 +51,7 @@ export interface PostDto {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  lastReply?: null 
+  lastReply?: null;
   lastReplyAt?: string;
   replies: PostReplyDto[];
 }
@@ -59,6 +60,19 @@ export interface PostCreateDto {
   title: string;
   content: string;
   categoryId: number;
+  labelIds?: string[]; // Changed to string[]
+}
+
+export interface PostLabelDto {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  color: string;
+  isActive: boolean;
+  categoryId?: string; // Category ID as string
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PostCategoryDto {
@@ -69,10 +83,21 @@ export interface PostCategoryDto {
   icon?: string;
   displayOrder: number;
   isActive: boolean;
+  labels?: PostLabelDto[]; // Include labels in category
   createdAt: string;
   updatedAt: string;
   threadsCount?: number;
   postsCount?: number;
+  lastPost?: {
+    id: number;
+    title: string;
+    slug: string;
+    authorName: string;
+    authorRole: string;
+    authorAvatar?: string;
+    views?: number;
+    createdAt: string;
+  };
 }
 
 export interface PostReplyDto {
@@ -85,7 +110,7 @@ export interface PostReplyDto {
     email: string;
     role: UserRole;
     avatar: string;
-  }
+  };
   parentId?: number;
   isActive: boolean;
   isSolution: boolean;
@@ -113,11 +138,12 @@ export interface ForumStatsDto {
 export interface PopularTopicDto {
   id: number;
   title: string;
+  slug: string;
   categoryName: string;
   categorySlug: string;
   views: number;
   replyCount: number;
-  badge?: 'hot' | 'solved' | 'trending' | null;
+  badge?: "hot" | "solved" | "trending" | null;
 }
 
 export interface CategoryStatsDto {
@@ -168,13 +194,13 @@ export interface Comment {
 export interface Message {
   id: string;
   content: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   createdAt: Date;
 }
 
 export interface ChatConversation {
   id: string;
-  type?: 'PDF_QA' | 'QA';
+  type?: "PDF_QA" | "QA";
   title: string;
   messages: Message[];
   lastMessage: string;
@@ -185,7 +211,7 @@ export interface ChatConversation {
 export interface PdfConversation {
   id: number;
   userId: number;
-  type: 'PDF_QA' | 'QA';
+  type: "PDF_QA" | "QA";
   title: string;
   summary?: string;
   createdAt: Date;
@@ -199,7 +225,7 @@ export interface PdfMessage {
   id: number;
   conversationId: number;
   content: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   createdAt: Date;
 }
 
@@ -280,6 +306,69 @@ export interface UserConversation {
     senderId: number;
   };
   unreadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Admin entities
+export interface AdminUser {
+  id: number;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  isEnabled: boolean;
+  avatar?: string;
+  lawyerLicenseNumber?: string;
+  lawyerVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPost {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  category: PostCategoryDto;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  isActive: boolean;
+  views: number;
+  replyCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminDashboardStats {
+  totalUsers: number;
+  totalLawyers: number;
+  totalPosts: number;
+  pendingLawyerApplications: number;
+  usersToday: number;
+  lawyerApplicationsToday: number;
+  postsToday: number;
+  activeConversations: number;
+}
+
+// Lawyer Application entities
+export interface LawyerApplication {
+  id: number;
+  userId: number;
+  licenseNumber: string;
+  lawSchool: string;
+  graduationYear: number;
+  specializations: string[];
+  yearsOfExperience: number;
+  currentFirm: string;
+  bio: string;
+  phoneNumber: string;
+  officeAddress: string;
+  documentUrls: string[];
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  adminNotes?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePostUseCases } from '@/hooks/use-post-cases';
-import { useLoadingState } from '@/hooks/use-loading-state';
-import { PostDto, PostCategoryDto } from '@/domain/entities';
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePostUseCases } from "@/hooks/use-post-cases";
+import { useLoadingState } from "@/hooks/use-loading-state";
+import { PostDto, PostCategoryDto } from "@/domain/entities";
 
 export default function CategoryPage() {
   const params = useParams();
@@ -22,28 +22,34 @@ export default function CategoryPage() {
 
   const loadData = useCallback(async () => {
     try {
-      startLoading('Đang tải...');
+      startLoading("Đang tải...");
       setError(null);
-      
+
       const categoryData = await getCategoryBySlug(categorySlug);
       setCategory(categoryData);
 
       const postsData = await getPostsByCategory(categorySlug, {
         page: 0,
         size: 20,
-        sort: 'createdAt,desc'
+        sort: "createdAt,desc",
       });
-      
+
       setPosts(postsData.content || []);
-      
     } catch (err: unknown) {
-      console.error('Error loading category data:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Không thể tải dữ liệu';
+      console.error("Error loading category data:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Không thể tải dữ liệu";
       setError(`Lỗi tải dữ liệu: ${errorMessage}`);
     } finally {
       stopLoading();
     }
-  }, [categorySlug, getCategoryBySlug, getPostsByCategory, startLoading, stopLoading]);
+  }, [
+    categorySlug,
+    getCategoryBySlug,
+    getPostsByCategory,
+    startLoading,
+    stopLoading,
+  ]);
 
   useEffect(() => {
     if (categorySlug) {
@@ -76,14 +82,16 @@ export default function CategoryPage() {
               <span>→</span>
               <span>{category.name}</span>
             </div>
-            
+
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
                 {category.icon && (
                   <div className="text-4xl">{category.icon}</div>
                 )}
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{category.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {category.name}
+                  </h1>
                   {category.description && (
                     <p className="text-gray-600">{category.description}</p>
                   )}
@@ -101,22 +109,36 @@ export default function CategoryPage() {
                 <div key={post.id} className="p-6 hover:bg-gray-50">
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={post.author.avatar} alt={post.author.name} />
-                      <AvatarFallback>{post.author?.name?.[0] || 'U'}</AvatarFallback>
+                      <AvatarImage
+                        src={post.author.avatar}
+                        alt={post.author.name}
+                      />
+                      <AvatarFallback>
+                        {post.author?.name?.[0] || "U"}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Link 
-                          href={`/forum/${categorySlug}/${post.id}`}
+                        <Link
+                          href={`/forum/${categorySlug}/${
+                            post.slug || post.id
+                          }`}
                           className="text-lg font-semibold text-gray-900 hover:text-[#004646]"
                         >
                           {post.title}
                         </Link>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                        <span>Đăng bởi <span className="text-[#004646]">{post.author?.name}</span></span>
+                        <span>
+                          Đăng bởi{" "}
+                          <span className="text-[#004646]">
+                            {post.author?.name}
+                          </span>
+                        </span>
                         <span>•</span>
-                        <span>{new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
+                        <span>
+                          {new Date(post.createdAt).toLocaleDateString("vi-VN")}
+                        </span>
                       </div>
                     </div>
                     <div className="text-sm text-gray-500 text-right">

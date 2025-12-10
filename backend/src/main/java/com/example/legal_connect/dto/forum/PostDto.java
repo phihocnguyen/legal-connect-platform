@@ -19,6 +19,8 @@ public class PostDto {
     
     private String title;
     
+    private String slug;
+    
     private String content;
     
     private PostCategoryDto category;
@@ -42,6 +44,8 @@ public class PostDto {
     private Boolean isHot;
     
     private Set<String> tags;
+    
+    private List<PostLabelDto> labels;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

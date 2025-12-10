@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SocialLogin } from "@/components/auth/social-login";
 import { useAuth } from "@/contexts/auth-context";
-import { useLoadingState } from '@/hooks/use-loading-state';
+import { useLoadingState } from "@/hooks/use-loading-state";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from "lucide-react";
 
 interface LoginFormData {
   email: string;
@@ -27,8 +27,19 @@ export default function LoginPage() {
   const { startLoading, stopLoading, isLoading } = useLoadingState();
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.push('/');
+    // Only redirect if authLoading is complete and user is authenticated
+    // This prevents redirect loop during auth initialization
+    console.log(
+      "[LOGIN PAGE] authLoading:",
+      authLoading,
+      "isAuthenticated:",
+      isAuthenticated
+    );
+    if (authLoading === false && isAuthenticated === true) {
+      console.log(
+        "[LOGIN PAGE] Redirecting to / because user is authenticated"
+      );
+      router.push("/");
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -41,26 +52,30 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      startLoading('Đang tải...');
-      
+      startLoading("Đang tải...");
+
       await login(data.email, data.password);
-      
-      toast.success('Đăng nhập thành công!');
-      const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
-      router.push(returnUrl || '/');
+
+      toast.success("Đăng nhập thành công!");
+      const returnUrl = new URLSearchParams(window.location.search).get(
+        "returnUrl"
+      );
+      router.push(returnUrl || "/");
     } catch (error) {
-      console.error('Login error:', error);
-      
-      const axiosError = error as { response?: { status: number; data?: unknown } };
-      
+      console.error("Login error:", error);
+
+      const axiosError = error as {
+        response?: { status: number; data?: unknown };
+      };
+
       if (axiosError.response?.status === 401) {
-        setError('email', { message: 'Email hoặc mật khẩu không đúng' });
-        setError('password', { message: 'Email hoặc mật khẩu không đúng' });
-        toast.error('Email hoặc mật khẩu không đúng');
+        setError("email", { message: "Email hoặc mật khẩu không đúng" });
+        setError("password", { message: "Email hoặc mật khẩu không đúng" });
+        toast.error("Email hoặc mật khẩu không đúng");
       } else if (axiosError.response?.status === 400) {
-        toast.error('Thông tin đăng nhập không hợp lệ');
+        toast.error("Thông tin đăng nhập không hợp lệ");
       } else {
-        toast.error('Có lỗi xảy ra. Vui lòng thử lại!');
+        toast.error("Có lỗi xảy ra. Vui lòng thử lại!");
       }
     } finally {
       stopLoading();
@@ -83,7 +98,10 @@ export default function LoginPage() {
     <div className="w-full h-full flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '700ms' }}></div>
+        <div
+          className="absolute bottom-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "700ms" }}
+        ></div>
       </div>
 
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-md overflow-hidden relative z-10 animate-fade-in">
@@ -100,9 +118,9 @@ export default function LoginPage() {
                   Chào mừng trở lại
                 </h1>
                 <p className="text-base text-gray-600">
-                  Chưa có tài khoản?{' '}
-                  <Link 
-                    href="/register" 
+                  Chưa có tài khoản?{" "}
+                  <Link
+                    href="/register"
                     className="text-[#004646] hover:text-[#006666] font-semibold transition-colors inline-flex items-center gap-1 group"
                   >
                     Đăng ký ngay
@@ -114,7 +132,10 @@ export default function LoginPage() {
               {/* Form */}
               <div onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Email
                   </Label>
                   <div className="relative group">
@@ -127,17 +148,17 @@ export default function LoginPage() {
                       autoComplete="email"
                       autoCorrect="off"
                       disabled={isLoading}
-                      {...register('email', {
-                        required: 'Email là bắt buộc',
+                      {...register("email", {
+                        required: "Email là bắt buộc",
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Email không hợp lệ',
+                          message: "Email không hợp lệ",
                         },
                       })}
                       className={`pl-10 h-12 transition-all duration-200 ${
-                        errors.email 
-                          ? 'border-red-500 focus:ring-red-500' 
-                          : 'focus:ring-2 focus:ring-[#004646]/20 focus:border-[#004646]'
+                        errors.email
+                          ? "border-red-500 focus:ring-red-500"
+                          : "focus:ring-2 focus:ring-[#004646]/20 focus:border-[#004646]"
                       }`}
                     />
                   </div>
@@ -147,9 +168,12 @@ export default function LoginPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Mật khẩu
                   </Label>
                   <div className="relative group">
@@ -159,17 +183,17 @@ export default function LoginPage() {
                       type="password"
                       autoComplete="current-password"
                       disabled={isLoading}
-                      {...register('password', {
-                        required: 'Mật khẩu là bắt buộc',
+                      {...register("password", {
+                        required: "Mật khẩu là bắt buộc",
                         minLength: {
                           value: 6,
-                          message: 'Mật khẩu phải có ít nhất 6 ký tự',
+                          message: "Mật khẩu phải có ít nhất 6 ký tự",
                         },
                       })}
                       className={`pl-10 h-12 transition-all duration-200 ${
-                        errors.password 
-                          ? 'border-red-500 focus:ring-red-500' 
-                          : 'focus:ring-2 focus:ring-[#004646]/20 focus:border-[#004646]'
+                        errors.password
+                          ? "border-red-500 focus:ring-red-500"
+                          : "focus:ring-2 focus:ring-[#004646]/20 focus:border-[#004646]"
                       }`}
                     />
                   </div>
@@ -179,31 +203,31 @@ export default function LoginPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="flex items-center justify-between pt-1">
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 rounded border-gray-300 text-[#004646] focus:ring-[#004646] focus:ring-2 cursor-pointer transition-all"
-                      {...register('remember')}
+                      {...register("remember")}
                       disabled={isLoading}
                     />
                     <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
                       Ghi nhớ đăng nhập
                     </span>
                   </label>
-                  <Link 
-                    href="/forgot-password" 
+                  <Link
+                    href="/forgot-password"
                     className="text-sm text-[#004646] hover:text-[#006666] font-medium transition-colors"
                   >
                     Quên mật khẩu?
                   </Link>
                 </div>
-                
-                <Button 
+
+                <Button
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  className="w-full h-12 bg-gradient-to-r from-[#004646] to-[#006666] hover:from-[#005555] hover:to-[#007777] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group" 
+                  className="w-full h-12 bg-gradient-to-r from-[#004646] to-[#006666] hover:from-[#005555] hover:to-[#007777] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -219,13 +243,15 @@ export default function LoginPage() {
                   )}
                 </Button>
               </div>
-              
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">Hoặc tiếp tục với</span>
+                  <span className="px-4 bg-white text-gray-500">
+                    Hoặc tiếp tục với
+                  </span>
                 </div>
               </div>
 
@@ -241,7 +267,8 @@ export default function LoginPage() {
             <div className="relative h-full w-full flex items-center justify-center p-12">
               <div className="space-y-6 text-white z-10">
                 <h2 className="text-4xl font-bold leading-tight">
-                  Kết nối pháp lý<br />
+                  Kết nối pháp lý
+                  <br />
                   <span className="text-white/90">dễ dàng hơn</span>
                 </h2>
                 <p className="text-lg text-white/80 leading-relaxed">

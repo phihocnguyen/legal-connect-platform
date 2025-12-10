@@ -4,13 +4,38 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
 @Entity
-@Table(name = "posts")
+@Table(name = "posts", indexes = {
+    // Index on category_id for filtering posts by category
+    @Index(name = "idx_posts_category_id", columnList = "category_id"),
+    
+    // Index on author_id for filtering posts by author
+    @Index(name = "idx_posts_author_id", columnList = "author_id"),
+    
+    // Index on is_active for filtering active posts
+    @Index(name = "idx_posts_is_active", columnList = "is_active"),
+    
+    // Index on created_at for sorting by date (DESC)
+    @Index(name = "idx_posts_created_at", columnList = "created_at DESC"),
+    
+    // Composite index for common query pattern (active posts sorted by date)
+    @Index(name = "idx_posts_active_created", columnList = "is_active, created_at DESC"),
+    
+    // Composite index for category filtering with active status
+    @Index(name = "idx_posts_category_active_created", columnList = "category_id, is_active, created_at DESC"),
+    
+    // Index for views sorting
+    @Index(name = "idx_posts_views", columnList = "views DESC"),
+    
+    // Index for reply count sorting
+    @Index(name = "idx_posts_reply_count", columnList = "reply_count DESC")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +47,9 @@ public class Post {
     
     @Column(nullable = false)
     private String title;
+    
+    @Column(length = 255)
+    private String slug;
     
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
@@ -91,15 +119,68 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostVote> votes;
     
+    // Relationship with PostLabel (Many-to-Many)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "post_label_mapping",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    @BatchSize(size = 25)
+    private Set<PostLabel> labels = new HashSet<>();
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (slug == null || slug.isEmpty()) {
+            slug = generateSlug(title);
+        }
     }
     
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    // Generate URL-friendly slug from Vietnamese title
+    private String generateSlug(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        
+        // Normalize Vietnamese characters to ASCII
+        String slug = text.toLowerCase();
+        
+        // Vietnamese character mapping
+        slug = slug.replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a");
+        slug = slug.replaceAll("[èéẹẻẽêềếệểễ]", "e");
+        slug = slug.replaceAll("[ìíịỉĩ]", "i");
+        slug = slug.replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o");
+        slug = slug.replaceAll("[ùúụủũưừứựửữ]", "u");
+        slug = slug.replaceAll("[ỳýỵỷỹ]", "y");
+        slug = slug.replaceAll("đ", "d");
+        
+        // Remove special characters, keep only alphanumeric and spaces
+        slug = slug.replaceAll("[^a-z0-9\\s-]", "");
+        
+        // Replace multiple spaces/hyphens with single hyphen
+        slug = slug.trim().replaceAll("[\\s-]+", "-");
+        
+        // Remove leading/trailing hyphens
+        slug = slug.replaceAll("^-+|-+$", "");
+        
+        // Limit length to 200 characters
+        if (slug.length() > 200) {
+            slug = slug.substring(0, 200);
+            // Remove trailing incomplete word
+            int lastHyphen = slug.lastIndexOf('-');
+            if (lastHyphen > 0) {
+                slug = slug.substring(0, lastHyphen);
+            }
+        }
+        
+        return slug;
     }
     
     // Utility methods for tags

@@ -102,6 +102,20 @@ public class ForumController {
         PostDto post = postService.getPostById(id, currentUserId);
         return ResponseEntity.ok(post);
     }
+    
+    /**
+     * Get post by category slug and post slug (SEO-friendly URL)
+     */
+    @GetMapping("/categories/{categorySlug}/posts/{postSlug}")
+    public ResponseEntity<PostDto> getPostBySlug(
+            @PathVariable String categorySlug,
+            @PathVariable String postSlug,
+            Authentication authentication) {
+        Long currentUserId = getUserIdFromAuth(authentication);
+        System.out.println("getPostBySlug - Category: " + categorySlug + ", Slug: " + postSlug + ", CurrentUserId: " + currentUserId);
+        PostDto post = postService.getPostBySlug(categorySlug, postSlug, currentUserId);
+        return ResponseEntity.ok(post);
+    }
 
     /**
      * Create new post

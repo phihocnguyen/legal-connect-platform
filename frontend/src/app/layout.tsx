@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css"; 
-import "@fontsource/alexandria"; 
+import "./globals.css";
+import "@fontsource/alexandria";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LoadingProvider } from "@/contexts/loading-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
@@ -11,7 +11,8 @@ import ConditionalHeader from "@/components/shared/conditional-header";
 
 export const metadata: Metadata = {
   title: "Legal Connect - Nền tảng tư vấn pháp lý",
-  description: "Kết nối bạn với cộng đồng pháp lý và công cụ thông minh để giải đáp mọi thắc mắc",
+  description:
+    "Kết nối bạn với cộng đồng pháp lý và công cụ thông minh để giải đáp mọi thắc mắc",
 };
 
 export default function RootLayout({
@@ -21,17 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="font-alex antialiased">
+      <body className="font-alex antialiased" suppressHydrationWarning>
         <LoadingProvider>
           <AuthProvider>
             <AuthGuard>
               <WebSocketProvider>
                 <div className="flex min-h-screen flex-col">
-                <ConditionalHeader />
-                <main className="flex-1">
-                  {children}
-                </main>
-              </div>
+                  <ConditionalHeader />
+                  <main className="flex-1">{children}</main>
+                </div>
               </WebSocketProvider>
             </AuthGuard>
             <GlobalLoadingIndicator />

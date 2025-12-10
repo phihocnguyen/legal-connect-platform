@@ -1,32 +1,39 @@
-'use client';
+"use client";
 import { Card } from "@/components/ui/card";
 import { OnlineUserList } from "./online-users";
 import useOnlineUserStore from "@/stores/online-user-store";
 import { useState, useEffect } from "react";
 import { useWebSocketStore } from "@/stores/web-socket-store";
 import { useForumUseCases } from "@/hooks/use-forum-cases";
-import { 
-  ForumStatsDto, 
-  PopularTopicDto, 
-  CategoryStatsDto, 
-  PopularTagDto 
+import {
+  ForumStatsDto,
+  PopularTopicDto,
+  CategoryStatsDto,
+  PopularTagDto,
 } from "@/domain/entities";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function ForumSidebar() {
   const { fetchOnlineUsers, onlineUsers } = useOnlineUserStore();
   const { connected } = useWebSocketStore();
   const getOnlineUsers = useWebSocketStore((s) => s.getOnlineUsers);
-  
+  const router = useRouter();
+
   // Forum statistics hooks
-  const { getForumStats, getPopularTopics, getCategoryStats, getPopularTags } = useForumUseCases();
-  
+  const { getForumStats, getPopularTopics, getCategoryStats, getPopularTags } =
+    useForumUseCases();
+
   // State for forum data
   const [stats, setStats] = useState<ForumStatsDto | null>(null);
   const [popularTopics, setPopularTopics] = useState<PopularTopicDto[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStatsDto[]>([]);
   const [popularTags, setPopularTags] = useState<PopularTagDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (connected) fetchOnlineUsers(getOnlineUsers);
@@ -37,19 +44,20 @@ export function ForumSidebar() {
     const loadForumData = async () => {
       try {
         setLoading(true);
-        const [statsData, topicsData, categoriesData, tagsData] = await Promise.all([
-          getForumStats(),
-          getPopularTopics(5),
-          getCategoryStats(),
-          getPopularTags(10)
-        ]);
-        
+        const [statsData, topicsData, categoriesData, tagsData] =
+          await Promise.all([
+            getForumStats(),
+            getPopularTopics(5),
+            getCategoryStats(),
+            getPopularTags(10),
+          ]);
+
         setStats(statsData);
         setPopularTopics(topicsData);
         setCategoryStats(categoriesData.slice(0, 5)); // Top 5 categories
         setPopularTags(tagsData.slice(0, 6)); // Top 6 tags
       } catch (error) {
-        console.error('Error loading forum statistics:', error);
+        console.error("Error loading forum statistics:", error);
       } finally {
         setLoading(false);
       }
@@ -58,10 +66,45 @@ export function ForumSidebar() {
     loadForumData();
   }, [getForumStats, getPopularTopics, getCategoryStats, getPopularTags]);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleCreateTopic = () => {
+    router.push("/forum/new");
+  };
+
   return (
     <div className="space-y-6">
+      {/* Search and Create Topic Box */}
+      <Card className="p-4">
+        <form onSubmit={handleSearch} className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Tìm kiếm chủ đề..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={handleCreateTopic}
+            className="w-full bg-[#004646] hover:bg-[#003333] text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Tạo chủ đề mới
+          </Button>
+        </form>
+      </Card>
+
       <OnlineUserList userList={onlineUsers} />
-      
+
       {/* Chủ đề phổ biến */}
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Chủ đề phổ biến</h3>
@@ -71,19 +114,26 @@ export function ForumSidebar() {
           <ul className="space-y-2">
             {popularTopics.map((topic) => (
               <li key={topic.id} className="text-sm">
-                <Link 
-                  href={`/forum/${topic.categorySlug}/${topic.id}`} 
+                <Link
+                  href={`/forum/${topic.categorySlug}/${topic.slug}`}
                   className="text-[#004646] hover:underline flex items-center gap-2"
                 >
-                  <span className="flex-1">{topic.title}</span>
+                  <span className="flex-1 truncate">{topic.title}</span>
                   {topic.badge && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      topic.badge === 'hot' ? 'bg-red-100 text-red-600' :
-                      topic.badge === 'solved' ? 'bg-green-100 text-green-600' :
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      {topic.badge === 'hot' ? '🔥' : 
-                       topic.badge === 'solved' ? '✓' : '📈'}
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
+                        topic.badge === "hot"
+                          ? "bg-red-100 text-red-600"
+                          : topic.badge === "solved"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-blue-100 text-blue-600"
+                      }`}
+                    >
+                      {topic.badge === "hot"
+                        ? "🔥"
+                        : topic.badge === "solved"
+                        ? "✓"
+                        : "📈"}
                     </span>
                   )}
                 </Link>
@@ -104,9 +154,12 @@ export function ForumSidebar() {
         ) : (
           <ul className="space-y-2">
             {categoryStats.map((category) => (
-              <li key={category.id} className="flex justify-between items-center text-sm">
-                <Link 
-                  href={`/forum/${category.slug}`} 
+              <li
+                key={category.id}
+                className="flex justify-between items-center text-sm"
+              >
+                <Link
+                  href={`/forum/${category.slug}`}
                   className="text-[#004646] hover:underline flex items-center gap-1"
                 >
                   {category.icon && <span>{category.icon}</span>}

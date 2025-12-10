@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -38,17 +39,85 @@ public class ForumServiceImpl implements ForumService {
     private final UserRepository userRepository;
     private final PostVoteRepository postVoteRepository;
     private final ReplyVoteRepository replyVoteRepository;
+    private final PostLabelRepository postLabelRepository;
     private final PostMapper postMapper;
     private final PostCategoryMapper categoryMapper;
     private final PostReplyMapper replyMapper;
 
     // Category
     @Override
+    @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
-        return postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
-                .stream()
-                .map(categoryMapper::toDto)
-                .collect(Collectors.toList());
+        List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
+        
+        // Get latest posts for all categories in one query
+        List<Post> latestPosts = postRepository.findLatestPostByCategory();
+        
+        // Eagerly initialize authors to avoid lazy loading issues
+        latestPosts.forEach(post -> {
+            if (post.getAuthor() != null) {
+                post.getAuthor().getEmail(); // Touch to initialize
+            }
+            if (post.getCategory() != null) {
+                post.getCategory().getName(); // Touch to initialize
+            }
+        });
+        
+        // Create a map for quick lookup: categoryId -> latest post
+        Map<Long, Post> latestPostMap = latestPosts.stream()
+            .collect(Collectors.toMap(
+                post -> post.getCategory().getId(),
+                post -> post,
+                (existing, replacement) -> existing // Keep first if duplicates
+            ));
+        
+        // Map categories to DTOs and enrich with latest post
+        return categories.stream()
+            .map(category -> {
+                PostCategoryDto dto = categoryMapper.toDto(category);
+                
+                // Add latest post if exists
+                Post latestPost = latestPostMap.get(category.getId());
+                if (latestPost != null && latestPost.getAuthor() != null) {
+                    PostCategoryDto.PostSummaryDto lastPost = PostCategoryDto.PostSummaryDto.builder()
+                        .id(latestPost.getId())
+                        .title(latestPost.getTitle())
+                        .slug(latestPost.getSlug())
+                        .authorName(getDisplayName(latestPost.getAuthor()))
+                        .authorRole(getRoleString(latestPost.getAuthor()))
+                        .authorAvatar(latestPost.getAuthor().getAvatar())
+                        .views(latestPost.getViews() != null ? latestPost.getViews() : 0)
+                        .createdAt(latestPost.getCreatedAt())
+                        .build();
+                    dto.setLastPost(lastPost);
+                }
+                
+                // threadsCount = number of posts/topics in this category
+                long threadsCount = postRepository.countByCategoryIdAndIsActiveTrue(category.getId());
+                dto.setThreadsCount((int) threadsCount);
+                
+                // postsCount = total messages = posts + replies in this category
+                long repliesCount = postReplyRepository.countByCategoryId(category.getId());
+                dto.setPostsCount((int) (threadsCount + repliesCount));
+                
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    // Helper methods for user display
+    private String getDisplayName(User user) {
+        if (user.getFullName() != null && !user.getFullName().isEmpty()) {
+            return user.getFullName();
+        }
+        return user.getEmail(); // Use email as fallback instead of username
+    }
+    
+    private String getRoleString(User user) {
+        if (user.getRole() != null) {
+            return user.getRole().name();
+        }
+        return "USER";
     }
 
     @Override
@@ -145,6 +214,18 @@ public class ForumServiceImpl implements ForumService {
         return dto;
     }
     
+    @Override
+    public PostDto getPostBySlug(String categorySlug, String postSlug, Long currentUserId) {
+        Post post = postRepository.findByCategorySlugAndPostSlug(categorySlug, postSlug)
+                .orElseThrow(() -> new RuntimeException("Post not found with slug: " + postSlug + " in category: " + categorySlug));
+        post.incrementViews();
+        postRepository.save(post);
+        
+        PostDto dto = postMapper.toDto(post);
+        enrichWithUserVote(dto, currentUserId);
+        return dto;
+    }
+    
     // Helper method to get current user ID from security context
     private Long getCurrentUserId() {
         try {
@@ -219,6 +300,16 @@ public class ForumServiceImpl implements ForumService {
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         
         Post post = postMapper.toEntity(postCreateDto, category, author);
+        
+        // Handle labels
+        if (postCreateDto.getLabelIds() != null && !postCreateDto.getLabelIds().isEmpty()) {
+            List<PostLabel> labels = postLabelRepository.findAllById(postCreateDto.getLabelIds());
+            if (labels.size() != postCreateDto.getLabelIds().size()) {
+                throw new RuntimeException("One or more labels not found");
+            }
+            post.setLabels(new java.util.HashSet<>(labels));
+        }
+        
         post = postRepository.save(post);
         return postMapper.toDto(post);
     }
@@ -239,6 +330,20 @@ public class ForumServiceImpl implements ForumService {
         }
         
         postMapper.updateEntity(post, postUpdateDto, category);
+        
+        // Handle labels update
+        if (postUpdateDto.getLabelIds() != null) {
+            if (postUpdateDto.getLabelIds().isEmpty()) {
+                post.getLabels().clear();
+            } else {
+                List<PostLabel> labels = postLabelRepository.findAllById(postUpdateDto.getLabelIds());
+                if (labels.size() != postUpdateDto.getLabelIds().size()) {
+                    throw new RuntimeException("One or more labels not found");
+                }
+                post.setLabels(new java.util.HashSet<>(labels));
+            }
+        }
+        
         post = postRepository.save(post);
         return postMapper.toDto(post);
     }
@@ -366,6 +471,7 @@ public class ForumServiceImpl implements ForumService {
                     return PopularTopicDto.builder()
                             .id(post.getId())
                             .title(post.getTitle())
+                            .slug(post.getSlug())
                             .categoryName(post.getCategory().getName())
                             .categorySlug(post.getCategory().getSlug())
                             .views(post.getViews())

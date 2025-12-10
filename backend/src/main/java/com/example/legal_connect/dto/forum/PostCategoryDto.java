@@ -5,7 +5,9 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -38,6 +40,9 @@ public class PostCategoryDto {
     
     private Integer postsCount;
     
+    // Labels associated with this category
+    private List<PostLabelDto> labels;
+    
     // Last post information
     private PostSummaryDto lastPost;
     
@@ -48,6 +53,7 @@ public class PostCategoryDto {
     public static class PostSummaryDto {
         private Long id;
         private String title;
+        private String slug;
         private String authorName;
         private String authorRole;
         private String authorAvatar;

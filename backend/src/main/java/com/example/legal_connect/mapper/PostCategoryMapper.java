@@ -2,15 +2,15 @@ package com.example.legal_connect.mapper;
 
 import com.example.legal_connect.entity.PostCategory;
 import com.example.legal_connect.dto.forum.PostCategoryDto;
-import com.example.legal_connect.entity.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class PostCategoryMapper {
 
-    private final UserMapper userMapper;
+    private final PostLabelMapper postLabelMapper;
 
     /**
      * Convert PostCategory entity to PostCategoryDto
@@ -31,33 +31,16 @@ public class PostCategoryMapper {
                 .createdAt(category.getCreatedAt())
                 .updatedAt(category.getUpdatedAt());
 
-        // Calculate statistics if posts are loaded
-        if (category.getPosts() != null) {
-            builder.threadsCount(category.getThreadsCount())
-                   .postsCount(category.getTotalPostsCount());
-            
-            // Find latest post for lastPost information
-            Post latestPost = category.getPosts().stream()
-                .filter(Post::getIsActive)
-                .max((p1, p2) -> p1.getCreatedAt().compareTo(p2.getCreatedAt()))
-                .orElse(null);
-            
-            if (latestPost != null) {
-                PostCategoryDto.PostSummaryDto lastPost = PostCategoryDto.PostSummaryDto.builder()
-                    .id(latestPost.getId())
-                    .title(latestPost.getTitle())
-                    .authorName(getAuthorName(latestPost))
-                    .authorRole(getAuthorRole(latestPost))
-                    .authorAvatar(latestPost.getAuthor() != null ? latestPost.getAuthor().getAvatar() : null)
-                    .views(latestPost.getViews() != null ? latestPost.getViews() : 0)
-                    .createdAt(latestPost.getCreatedAt())
-                    .build();
-                builder.lastPost(lastPost);
-            }
-        } else {
-            // If posts are not loaded, set default values
-            builder.threadsCount(0).postsCount(0);
+        // Include labels if available
+        if (category.getLabels() != null && !category.getLabels().isEmpty()) {
+            builder.labels(category.getLabels().stream()
+                    .map(postLabelMapper::toDto)
+                    .collect(Collectors.toList()));
         }
+
+        // Don't load posts collection here to avoid N+1 queries
+        // Statistics should be calculated separately if needed
+        builder.threadsCount(0).postsCount(0);
 
         return builder.build();
     }
@@ -82,19 +65,5 @@ public class PostCategoryMapper {
         category.setUpdatedAt(dto.getUpdatedAt());
 
         return category;
-    }
-
-    /**
-     * Helper method to get author name from post
-     */
-    private String getAuthorName(Post post) {
-        return userMapper.getDisplayName(post.getAuthor());
-    }
-
-    /**
-     * Helper method to get author role from post
-     */
-    private String getAuthorRole(Post post) {
-        return userMapper.getRoleString(post.getAuthor());
     }
 }

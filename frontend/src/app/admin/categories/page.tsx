@@ -449,18 +449,6 @@ export default function AdminCategoriesPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="slug">Slug</Label>
-                    <Input
-                      id="slug"
-                      value={formData.slug}
-                      onChange={(e) => handleFormChange("slug", e.target.value)}
-                      placeholder="auto-generated-slug"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Slug sẽ được tạo tự động từ tên danh mục
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
                     <Label htmlFor="description">Mô tả</Label>
                     <Textarea
                       id="description"

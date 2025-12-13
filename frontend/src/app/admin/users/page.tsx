@@ -1,12 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import { AdminLayout } from '@/components/admin/admin-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,56 +13,49 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  Users, 
-  UserCheck, 
-  UserX, 
+} from "@/components/ui/dropdown-menu";
+import { Pagination } from "@/components/ui/pagination";
+import {
+  Users,
+  UserCheck,
+  UserX,
   MoreHorizontal,
   Shield,
   User as UserIcon,
-  Scale
-} from 'lucide-react';
-import { useAdminCases } from '@/hooks/use-admin-cases';
-import { AdminUser } from '@/domain/entities';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+  Scale,
+} from "lucide-react";
+import { useAdminCases } from "@/hooks/use-admin-cases";
+import { AdminUser } from "@/domain/entities";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AdminTableFilters } from "@/components/admin/admin-table-filters";
+
+const PAGE_SIZE = 10;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const {
-    loading,
-    getUsers,
-    updateUserStatus,
-  } = useAdminCases();
+  const { loading, getUsers, updateUserStatus } = useAdminCases();
 
   const fetchUsers = useCallback(async () => {
     const params = {
       page,
-      size: 10,
-      sortBy: 'createdAt',
-      sortDir: 'desc' as const,
+      size: PAGE_SIZE,
+      sortBy: "createdAt",
+      sortDir: "desc" as const,
       ...(search.trim() && { search: search.trim() }),
-      ...(roleFilter && roleFilter !== 'ALL' && { role: roleFilter }),
+      ...(roleFilter && roleFilter !== "ALL" && { role: roleFilter }),
     };
 
     const result = await getUsers(params);
@@ -78,7 +70,10 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleToggleUserStatus = async (userId: number, currentStatus: boolean) => {
+  const handleToggleUserStatus = async (
+    userId: number,
+    currentStatus: boolean
+  ) => {
     const success = await updateUserStatus(userId, !currentStatus);
     if (success) {
       fetchUsers(); // Refresh the list
@@ -87,9 +82,9 @@ export default function UsersPage() {
 
   const getRoleIcon = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'admin':
+      case "admin":
         return <Shield className="h-4 w-4 text-red-600" />;
-      case 'lawyer':
+      case "lawyer":
         return <Scale className="h-4 w-4 text-blue-600" />;
       default:
         return <UserIcon className="h-4 w-4 text-gray-600" />;
@@ -98,9 +93,9 @@ export default function UsersPage() {
 
   const getRoleBadge = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'admin':
+      case "admin":
         return <Badge variant="destructive">Admin</Badge>;
-      case 'lawyer':
+      case "lawyer":
         return <Badge variant="default">Luật sư</Badge>;
       default:
         return <Badge variant="secondary">Người dùng</Badge>;
@@ -112,7 +107,9 @@ export default function UsersPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý người dùng</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Quản lý người dùng
+          </h1>
           <p className="text-gray-600 mt-2">
             Quản lý tất cả người dùng trong hệ thống
           </p>
@@ -122,7 +119,9 @@ export default function UsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng người dùng</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Tổng người dùng
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -131,12 +130,14 @@ export default function UsersPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Người dùng hoạt động</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Người dùng hoạt động
+              </CardTitle>
               <UserCheck className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => u.isEnabled).length || 0}
+                {users.filter((u) => u.isEnabled).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -147,58 +148,56 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => u.role === 'LAWYER').length || 0}
+                {users.filter((u) => u.role === "lawyer").length || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bị vô hiệu hóa</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Bị vô hiệu hóa
+              </CardTitle>
               <UserX className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {users.filter(u => !u.isEnabled).length || 0}
+                {users.filter((u) => !u.isEnabled).length || 0}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Bộ lọc</CardTitle>
-            <CardDescription>
-              Tìm kiếm và lọc người dùng theo các tiêu chí
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Tìm kiếm theo tên hoặc email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Lọc theo vai trò" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả vai trò</SelectItem>
-                  <SelectItem value="USER">Người dùng</SelectItem>
-                  <SelectItem value="LAWYER">Luật sư</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminTableFilters
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Tìm kiếm theo tên hoặc email..."
+          filterRows={[
+            {
+              fields: [
+                {
+                  id: "role",
+                  label: "Vai trò",
+                  value: roleFilter,
+                  onChange: setRoleFilter,
+                  options: [
+                    { value: "ALL", label: "Tất cả vai trò" },
+                    { value: "USER", label: "Người dùng" },
+                    { value: "LAWYER", label: "Luật sư" },
+                    { value: "ADMIN", label: "Admin" },
+                  ],
+                },
+              ],
+            },
+          ]}
+          onApplyFilters={fetchUsers}
+          isLoading={loading}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          activeFilterCount={
+            (search.trim() ? 1 : 0) + (roleFilter !== "ALL" ? 1 : 0)
+          }
+        />
 
         {/* Users Table */}
         <Card>
@@ -208,7 +207,7 @@ export default function UsersPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <LoadingSpinner size='md'/>
+                <LoadingSpinner size="md" />
               </div>
             ) : (
               <Table>
@@ -217,7 +216,6 @@ export default function UsersPage() {
                     <TableHead>Người dùng</TableHead>
                     <TableHead>Vai trò</TableHead>
                     <TableHead>Trạng thái</TableHead>
-                    <TableHead>Số bài viết</TableHead>
                     <TableHead>Ngày tham gia</TableHead>
                     <TableHead>Thao tác</TableHead>
                   </TableRow>
@@ -259,13 +257,14 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.isEnabled ? "default" : "secondary"}>
+                        <Badge
+                          variant={user.isEnabled ? "default" : "secondary"}
+                        >
                           {user.isEnabled ? "Hoạt động" : "Vô hiệu hóa"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{user.postsCount}</TableCell>
                       <TableCell>
-                        {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -276,9 +275,11 @@ export default function UsersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => handleToggleUserStatus(user.id, user.isEnabled)}
+                              onClick={() =>
+                                handleToggleUserStatus(user.id, user.isEnabled)
+                              }
                             >
-                              {user.isEnabled ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                              {user.isEnabled ? "Vô hiệu hóa" : "Kích hoạt"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -290,27 +291,15 @@ export default function UsersPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 0}
-                >
-                  Trước
-                </Button>
-                <div className="text-sm text-gray-500">
-                  Trang {page + 1} / {totalPages}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Sau
-                </Button>
+            {totalPages > 0 && (
+              <div className="border-t">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  totalElements={totalElements}
+                  pageSize={PAGE_SIZE}
+                />
               </div>
             )}
           </CardContent>

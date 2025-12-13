@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { AdminSidebar } from '@/components/admin/admin-sidebar';
-import { useAuth } from '@/contexts/auth-context';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import React from "react";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -15,9 +15,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
+  const isAdmin = (role: string): boolean => {
+    return role?.toLowerCase() === "admin";
+  };
+
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'ADMIN')) {
-      router.push('/');
+    if (!isLoading) {
+      console.log(
+        "[AdminLayout] Checking access - User:",
+        user?.email,
+        "Role:",
+        user?.role,
+        "IsAdmin:",
+        user ? isAdmin(user.role) : false
+      );
+      if (!user || !isAdmin(user.role)) {
+        console.log("[AdminLayout] Access denied, redirecting to home");
+        router.push("/");
+      }
     }
   }, [user, isLoading, router]);
 
@@ -32,24 +47,26 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !isAdmin(user.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Truy cập bị từ chối</h1>
-          <p className="text-gray-600">Bạn không có quyền truy cập vào trang này.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Truy cập bị từ chối
+          </h1>
+          <p className="text-gray-600">
+            Bạn không có quyền truy cập vào trang này.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <AdminSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          {children}
-        </div>
+      <main className="ml-64 min-h-screen overflow-auto">
+        <div className="p-6">{children}</div>
       </main>
     </div>
   );

@@ -135,6 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const currentUser = await getCurrentUser();
         console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
+        console.log(
+          "[AUTH CONTEXT] User role from backend:",
+          currentUser?.role
+        );
         clearTimeout(timeoutId);
         if (isMounted) {
           if (currentUser) {

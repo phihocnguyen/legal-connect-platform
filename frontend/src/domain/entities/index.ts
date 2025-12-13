@@ -356,7 +356,12 @@ export interface AdminDashboardStats {
 // Lawyer Application entities
 export interface LawyerApplication {
   id: number;
-  userId: number;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+    avatar?: string;
+  };
   licenseNumber: string;
   lawSchool: string;
   graduationYear: number;
@@ -369,6 +374,17 @@ export interface LawyerApplication {
   documentUrls: string[];
   status: "PENDING" | "APPROVED" | "REJECTED";
   adminNotes?: string;
+  reviewedBy?: number;
+  reviewedAt?: string;
   createdAt: string;
-  updatedAt: string;
+}
+
+export interface NotificationDto {
+  id: number;
+  userId: number;
+  message: string;
+  type: "INFO" | "WARNING" | "ERROR" | "SUCCESS";
+  isRead: boolean;
+  createdAt: string;
+  updatedAt?: string;
 }

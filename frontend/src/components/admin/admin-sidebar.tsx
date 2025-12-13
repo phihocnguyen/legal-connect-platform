@@ -1,20 +1,22 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 import {
   Users,
   Scale,
   BarChart3,
-  Settings,
-  Shield,
   AlertTriangle,
-  LogOut
-} from 'lucide-react';
+  LogOut,
+  FolderOpen,
+  Flag,
+  Shield,
+  LineChart,
+} from "lucide-react";
 
 interface AdminSidebarProps {
   className?: string;
@@ -30,29 +32,47 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   {
-    title: 'Tổng quan',
-    href: '/admin',
+    title: "Tổng quan",
+    href: "/admin",
     icon: BarChart3,
-    description: 'Dashboard và thống kê tổng quan'
+    description: "Dashboard và thống kê tổng quan",
   },
   {
-    title: 'Quản lý người dùng',
-    href: '/admin/users',
+    title: "Quản lý người dùng",
+    href: "/admin/users",
     icon: Users,
-    description: 'Danh sách và quản lý tất cả người dùng'
+    description: "Danh sách và quản lý tất cả người dùng",
   },
   {
-    title: 'Bài viết vi phạm',
-    href: '/admin/posts',
-    icon: AlertTriangle,
-    description: 'Kiểm duyệt và xử lý bài viết vi phạm'
-  },
-  {
-    title: 'Quản lý luật sư',
-    href: '/admin/lawyers',
+    title: "Quản lý luật sư",
+    href: "/admin/lawyers",
     icon: Scale,
-    description: 'Duyệt đơn đăng ký và quản lý luật sư'
-  }
+    description: "Duyệt đơn đăng ký và quản lý luật sư",
+  },
+  {
+    title: "Quản lý bài viết",
+    href: "/admin/posts",
+    icon: Flag,
+    description: "Xem và xử lý báo cáo bài viết từ người dùng",
+  },
+  {
+    title: "Báo cáo vi phạm",
+    href: "/admin/violations",
+    icon: AlertTriangle,
+    description: "Kiểm duyệt và xử lý báo cáo vi phạm",
+  },
+  {
+    title: "Danh mục pháp luật",
+    href: "/admin/categories",
+    icon: FolderOpen,
+    description: "Quản lý danh mục pháp luật",
+  },
+  {
+    title: "Báo cáo & Phân tích",
+    href: "/admin/analytics",
+    icon: LineChart,
+    description: "Xem báo cáo và insights chi tiết",
+  },
 ];
 
 export function AdminSidebar({ className }: AdminSidebarProps) {
@@ -62,19 +82,24 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    router.push("/");
   };
 
   const isItemActive = (href: string) => {
-    if (href === '/admin') {
-      return pathname === '/admin';
+    if (href === "/admin") {
+      return pathname === "/admin";
     }
     return pathname.startsWith(href);
   };
 
   return (
-    <aside className={cn("w-64 bg-white border-r border-gray-200 h-full", className)}>
-      <div className="p-6 border-b border-gray-200">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 w-64 bg-white border-r border-gray-200 h-screen flex flex-col",
+        className
+      )}
+    >
+      <div className="p-6 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Shield className="h-8 w-8 text-blue-600" />
           <div>
@@ -84,7 +109,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         </div>
       </div>
 
-      <nav className="p-4 space-y-2">
+      <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
         {sidebarItems.map((item) => (
           <div key={item.href}>
             <Link
@@ -96,10 +121,12 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
-              <item.icon className={cn(
-                "h-5 w-5",
-                isItemActive(item.href) ? "text-blue-600" : "text-gray-400"
-              )} />
+              <item.icon
+                className={cn(
+                  "h-5 w-5",
+                  isItemActive(item.href) ? "text-blue-600" : "text-gray-400"
+                )}
+              />
               <span>{item.title}</span>
               {item.badge && (
                 <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
@@ -107,18 +134,20 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 </span>
               )}
             </Link>
-
           </div>
         ))}
-        <Button 
+      </nav>
+
+      <div className="p-4 border-t border-gray-200 flex-shrink-0">
+        <Button
           onClick={handleLogout}
-          variant="outline" 
-          className="w-full mb-3 flex items-center justify-center space-x-2 text-red-600 border-red-200 hover:bg-red-50"
+          variant="outline"
+          className="w-full flex items-center justify-center space-x-2 text-red-600 border-red-200 hover:bg-red-50"
         >
           <LogOut className="h-4 w-4" />
           <span>Đăng xuất</span>
         </Button>
-      </nav>
+      </div>
     </aside>
   );
 }

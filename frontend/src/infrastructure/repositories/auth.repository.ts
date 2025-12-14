@@ -14,8 +14,15 @@ export class HttpAuthRepository implements AuthRepository {
       password,
     });
     console.log("[AUTH REPO] Login response:", response.data);
-    console.log("[AUTH REPO] Extracted user:", response.data.data);
-    return { user: response.data.data };
+
+    const user = response.data.data;
+    if (user) {
+      // Normalize role to lowercase (backend returns UPPERCASE enum values)
+      user.role = (user.role as string).toLowerCase() as typeof user.role;
+    }
+
+    console.log("[AUTH REPO] Extracted user:", user);
+    return { user };
   }
 
   async register(userData: {
@@ -30,8 +37,15 @@ export class HttpAuthRepository implements AuthRepository {
       data: User;
     }>("/auth/register", userData);
     console.log("[AUTH REPO] Register response:", response.data);
-    console.log("[AUTH REPO] Extracted user:", response.data.data);
-    return { user: response.data.data };
+
+    const user = response.data.data;
+    if (user) {
+      // Normalize role to lowercase (backend returns UPPERCASE enum values)
+      user.role = (user.role as string).toLowerCase() as typeof user.role;
+    }
+
+    console.log("[AUTH REPO] Extracted user:", user);
+    return { user };
   }
 
   async logout(): Promise<void> {
@@ -52,11 +66,16 @@ export class HttpAuthRepository implements AuthRepository {
         data: User;
       }>("/auth/me");
       console.log("[AUTH REPO] getCurrentUser response:", response.data);
-      console.log(
-        "[AUTH REPO] Extracted user from getCurrentUser:",
-        response.data.data
-      );
-      return response.data.data;
+
+      const user = response.data.data;
+      if (user) {
+        // Normalize role to lowercase (backend returns UPPERCASE enum values)
+        user.role = (user.role as string).toLowerCase() as typeof user.role;
+        console.log("[AUTH REPO] Normalized user role to lowercase:", user);
+      }
+
+      console.log("[AUTH REPO] Extracted user from getCurrentUser:", user);
+      return user;
     } catch (error) {
       console.error("[AUTH REPO] getCurrentUser error:", error);
       // Session expired or user not authenticated

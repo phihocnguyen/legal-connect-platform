@@ -23,7 +23,7 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { startLoading, stopLoading, isLoading } = useLoadingState();
 
   useEffect(() => {
@@ -33,15 +33,24 @@ export default function LoginPage() {
       "[LOGIN PAGE] authLoading:",
       authLoading,
       "isAuthenticated:",
-      isAuthenticated
+      isAuthenticated,
+      "user role:",
+      user?.role
     );
-    if (authLoading === false && isAuthenticated === true) {
+    if (authLoading === false && isAuthenticated === true && user) {
       console.log(
-        "[LOGIN PAGE] Redirecting to / because user is authenticated"
+        "[LOGIN PAGE] User already authenticated, redirecting based on role"
       );
-      router.push("/");
+      const role = user.role?.toLowerCase();
+      switch (role) {
+        case "admin":
+          router.push("/admin");
+          break;
+        default:
+          router.push("/forum");
+      }
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, user, router]);
 
   const {
     register,
@@ -54,13 +63,29 @@ export default function LoginPage() {
     try {
       startLoading("Đang tải...");
 
-      await login(data.email, data.password);
+      const user = await login(data.email, data.password);
 
       toast.success("Đăng nhập thành công!");
+
+      // Check for returnUrl first
       const returnUrl = new URLSearchParams(window.location.search).get(
         "returnUrl"
       );
-      router.push(returnUrl || "/");
+
+      if (returnUrl) {
+        router.push(returnUrl);
+      } else if (user) {
+        // Redirect based on role directly - no need to go through homepage
+        const role = user.role?.toLowerCase();
+        if (role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/forum");
+        }
+      } else {
+        // No user returned - go to homepage
+        router.push("/");
+      }
     } catch (error) {
       console.error("Login error:", error);
 
@@ -95,7 +120,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="w-full min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
         <div
@@ -243,18 +268,6 @@ export default function LoginPage() {
                   )}
                 </Button>
               </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">
-                    Hoặc tiếp tục với
-                  </span>
-                </div>
-              </div>
-
               <div className="mt-6">
                 <SocialLogin />
               </div>

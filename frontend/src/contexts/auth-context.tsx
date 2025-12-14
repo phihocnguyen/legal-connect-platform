@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User | null>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -27,13 +27,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   } = useAuthUseCases();
 
   const redirectBasedOnRole = (user: User, currentPath: string = "/") => {
-    console.log("Redirecting user with role:", user.role);
+    const role = user.role?.toLowerCase();
+    console.log(
+      "Redirecting user with role:",
+      user.role,
+      "normalized to:",
+      role
+    );
     // If user is on home page, don't redirect
     if (currentPath === "/") {
       return;
     }
 
-    switch (user.role) {
+    switch (role) {
       case "admin":
         console.log("Redirecting to /admin");
         router.push("/admin");
@@ -46,26 +52,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<User | null> => {
     console.log("[AUTH CONTEXT] Login started");
     await loginUseCase(email, password);
     console.log("[AUTH CONTEXT] Login use case completed");
 
-    // Get current user and redirect
+    // Get current user and return it (don't redirect here - let caller handle it)
     try {
       const currentUser = await getCurrentUser();
       console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
       if (currentUser) {
         console.log("[AUTH CONTEXT] Setting user:", currentUser);
         setUser(currentUser);
-        const currentPath =
-          typeof window !== "undefined" ? window.location.pathname : "/";
-        redirectBasedOnRole(currentUser, currentPath);
+        return currentUser;
       } else {
         console.log("[AUTH CONTEXT] getCurrentUser returned null");
+        return null;
       }
     } catch (error) {
       console.log("Failed to get user after login:", error);
+      return null;
     }
   };
 
@@ -135,6 +144,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const currentUser = await getCurrentUser();
         console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
+        console.log(
+          "[AUTH CONTEXT] User role from backend:",
+          currentUser?.role
+        );
         clearTimeout(timeoutId);
         if (isMounted) {
           if (currentUser) {

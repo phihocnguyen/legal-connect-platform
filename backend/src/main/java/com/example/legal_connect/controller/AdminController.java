@@ -8,7 +8,9 @@ import com.example.legal_connect.dto.admin.CategoryCreateDto;
 import com.example.legal_connect.dto.admin.CategoryUpdateDto;
 import com.example.legal_connect.dto.forum.PostCategoryDto;
 import com.example.legal_connect.dto.common.ApiResponse;
+import com.example.legal_connect.dto.analytics.*;
 import com.example.legal_connect.service.AdminService;
+import com.example.legal_connect.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +19,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -31,6 +37,7 @@ import jakarta.validation.Valid;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AnalyticsService analyticsService;
 
     // ========== DASHBOARD STATISTICS ==========
     
@@ -355,5 +362,231 @@ public class AdminController {
             .message("Category status updated successfully")
             .data("Category " + (isActive ? "activated" : "deactivated"))
             .build());
+    }
+
+    // ========== ANALYTICS & REPORTS ==========
+
+    @GetMapping("/analytics/user-growth")
+    @Operation(summary = "Get user growth analytics")
+    public ResponseEntity<ApiResponse<List<UserGrowthData>>> getUserGrowthReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting user growth report for timeRange: {}", timeRange);
+        
+        try {
+            List<UserGrowthData> data = analyticsService.getUserGrowthData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<UserGrowthData>>builder()
+                .success(true)
+                .message("User growth report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating user growth report", e);
+            return ResponseEntity.ok(ApiResponse.<List<UserGrowthData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/user-retention")
+    @Operation(summary = "Get user retention analytics")
+    public ResponseEntity<ApiResponse<List<UserRetentionData>>> getUserRetentionReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting user retention report for timeRange: {}", timeRange);
+        
+        try {
+            List<UserRetentionData> data = analyticsService.getUserRetentionData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<UserRetentionData>>builder()
+                .success(true)
+                .message("User retention report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating user retention report", e);
+            return ResponseEntity.ok(ApiResponse.<List<UserRetentionData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/content-stats")
+    @Operation(summary = "Get content statistics")
+    public ResponseEntity<ApiResponse<ContentStatsData>> getContentStatsReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting content stats report for timeRange: {}", timeRange);
+        
+        try {
+            ContentStatsData data = analyticsService.getContentStatsData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<ContentStatsData>builder()
+                .success(true)
+                .message("Content stats report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating content stats report", e);
+            return ResponseEntity.ok(ApiResponse.<ContentStatsData>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/engagement")
+    @Operation(summary = "Get engagement analytics")
+    public ResponseEntity<ApiResponse<List<EngagementData>>> getEngagementReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting engagement report for timeRange: {}", timeRange);
+        
+        try {
+            List<EngagementData> data = analyticsService.getEngagementData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<EngagementData>>builder()
+                .success(true)
+                .message("Engagement report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating engagement report", e);
+            return ResponseEntity.ok(ApiResponse.<List<EngagementData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/lawyer-performance")
+    @Operation(summary = "Get lawyer performance metrics")
+    public ResponseEntity<ApiResponse<List<LawyerPerformanceData>>> getLawyerPerformanceReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting lawyer performance report for timeRange: {}", timeRange);
+        
+        try {
+            List<LawyerPerformanceData> data = analyticsService.getLawyerPerformanceData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<LawyerPerformanceData>>builder()
+                .success(true)
+                .message("Lawyer performance report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating lawyer performance report", e);
+            return ResponseEntity.ok(ApiResponse.<List<LawyerPerformanceData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/category-distribution")
+    @Operation(summary = "Get category distribution analytics")
+    public ResponseEntity<ApiResponse<List<CategoryDistributionData>>> getCategoryDistributionReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting category distribution report for timeRange: {}", timeRange);
+        
+        try {
+            List<CategoryDistributionData> data = analyticsService.getCategoryDistributionData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<CategoryDistributionData>>builder()
+                .success(true)
+                .message("Category distribution report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating category distribution report", e);
+            return ResponseEntity.ok(ApiResponse.<List<CategoryDistributionData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/hourly-activity")
+    @Operation(summary = "Get hourly activity patterns")
+    public ResponseEntity<ApiResponse<List<HourlyActivityData>>> getHourlyActivityReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting hourly activity report for timeRange: {}", timeRange);
+        
+        try {
+            List<HourlyActivityData> data = analyticsService.getHourlyActivityData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<HourlyActivityData>>builder()
+                .success(true)
+                .message("Hourly activity report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating hourly activity report", e);
+            return ResponseEntity.ok(ApiResponse.<List<HourlyActivityData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/quality-metrics")
+    @Operation(summary = "Get quality metrics")
+    public ResponseEntity<ApiResponse<List<QualityMetricData>>> getQualityMetricsReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting quality metrics report for timeRange: {}", timeRange);
+        
+        try {
+            List<QualityMetricData> data = analyticsService.getQualityMetricsData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<List<QualityMetricData>>builder()
+                .success(true)
+                .message("Quality metrics report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating quality metrics report", e);
+            return ResponseEntity.ok(ApiResponse.<List<QualityMetricData>>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/{reportType}/export")
+    @Operation(summary = "Export analytics report")
+    public ResponseEntity<?> exportReport(
+            @PathVariable String reportType,
+            @RequestParam(defaultValue = "30days") String timeRange,
+            @RequestParam(defaultValue = "pdf") String format) {
+        log.info("Exporting {} report as {} for timeRange: {}", reportType, format, timeRange);
+        
+        try {
+            byte[] reportBytes = analyticsService.exportReport(reportType, timeRange, format);
+            
+            String filename = String.format("%s-report-%s.%s", reportType, timeRange, format);
+            String contentType = switch (format.toLowerCase()) {
+                case "pdf" -> "application/pdf";
+                case "excel" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                case "csv" -> "text/csv";
+                default -> "application/octet-stream";
+            };
+            
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(reportBytes);
+        } catch (UnsupportedOperationException e) {
+            log.warn("Export functionality not yet implemented");
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                .success(false)
+                .message("Export functionality is not yet implemented")
+                .data(null)
+                .build());
+        } catch (Exception e) {
+            log.error("Error exporting report", e);
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                .success(false)
+                .message("An error occurred while exporting the report")
+                .data(null)
+                .build());
+        }
     }
 }

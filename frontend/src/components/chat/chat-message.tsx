@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Avatar } from "../ui/avatar";
 import { Card } from "../ui/card";
-import { Bot, User } from "lucide-react";
+import { Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/auth-context";
 import { AvatarImage } from "@radix-ui/react-avatar";
@@ -13,16 +13,15 @@ interface ChatMessageProps {
 
 export function ChatMessage({ role, content }: ChatMessageProps) {
   const isUser = role === "USER";
-  const {user} = useAuth();
+  const { user } = useAuth();
   return (
-    <div className={cn(
-      "flex items-start gap-4 py-6",
-      isUser ? "flex-row-reverse" : ""
-    )}>
-      <Avatar className={cn(
-        "h-8 w-8",
-        isUser ? "bg-teal-600" : "bg-zinc-800"
-      )}>
+    <div
+      className={cn(
+        "flex items-start gap-4 py-6",
+        isUser ? "flex-row-reverse" : ""
+      )}
+    >
+      <Avatar className={cn("h-8 w-8", isUser ? "bg-teal-600" : "bg-zinc-800")}>
         <div className="flex h-full w-full items-center justify-center">
           {isUser ? (
             <AvatarImage src={user?.avatar} alt={user?.fullName} />
@@ -32,10 +31,12 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
         </div>
       </Avatar>
 
-      <Card className={cn(
-        "p-4 max-w-[70%]",  // cho phép tối đa 70% chiều rộng cha
-        isUser ? "ml-auto bg-teal-600 text-white" : "mr-auto bg-white"
-      )}>
+      <Card
+        className={cn(
+          "p-4 max-w-[70%]", // cho phép tối đa 70% chiều rộng cha
+          isUser ? "ml-auto bg-teal-600 text-white" : "mr-auto bg-white"
+        )}
+      >
         <div className="prose prose-sm max-w-none">
           {isUser ? (
             <div className="whitespace-pre-wrap">{content}</div>
@@ -62,7 +63,6 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
   );
 }
 
-
 export function LoadingMessage() {
   return (
     <div className="flex items-start gap-4 py-6">
@@ -73,9 +73,18 @@ export function LoadingMessage() {
       </Avatar>
       <Card className="px-6 py-4 bg-gray-100">
         <div className="flex space-x-2">
-          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div
+            className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "0ms" }}
+          ></div>
+          <div
+            className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "150ms" }}
+          ></div>
+          <div
+            className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "300ms" }}
+          ></div>
         </div>
       </Card>
     </div>

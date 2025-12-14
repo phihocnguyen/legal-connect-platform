@@ -1,14 +1,12 @@
-FROM maven:3.8-openjdk-17 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
 COPY pom.xml .
-RUN mvn dependency:go-offline
-
 COPY src ./src
 RUN mvn package -DskipTests
 
-FROM openjdk:17-slim
+FROM alpine/java:21-jdk
 
 WORKDIR /app
 

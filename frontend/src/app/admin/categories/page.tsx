@@ -73,10 +73,12 @@ export default function AdminCategoriesPage() {
 
   // State
   const [categories, setCategories] = useState<PostCategoryDto[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalElements, setTotalElements] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");

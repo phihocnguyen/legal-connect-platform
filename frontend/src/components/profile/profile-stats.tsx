@@ -1,19 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, MessageSquare, Eye, Trophy } from 'lucide-react';
-import { User } from '@/domain/entities';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, MessageSquare, Eye, Trophy } from "lucide-react";
+import { UserProfile } from "@/domain/entities";
 
 interface ProfileStatsProps {
-  user: User;
+  user?: UserProfile;
 }
 
-export function ProfileStats({ user }: ProfileStatsProps) {
+export function ProfileStats({ user: _user }: ProfileStatsProps) {
+  // eslint-disable-line @typescript-eslint/no-unused-vars
   // Mock stats - in real app, these would come from API
   const stats = {
     posts: 295,
     replies: 1250,
     views: 25000,
     likes: 850,
-    reputation: 1850
+    reputation: 1850,
   };
 
   return (
@@ -26,9 +27,7 @@ export function ProfileStats({ user }: ProfileStatsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-[#004646]">
-            {stats.posts}
-          </div>
+          <div className="text-2xl font-bold text-[#004646]">{stats.posts}</div>
         </CardContent>
       </Card>
 
@@ -68,9 +67,7 @@ export function ProfileStats({ user }: ProfileStatsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-[#004646]">
-            {stats.likes}
-          </div>
+          <div className="text-2xl font-bold text-[#004646]">{stats.likes}</div>
         </CardContent>
       </Card>
 

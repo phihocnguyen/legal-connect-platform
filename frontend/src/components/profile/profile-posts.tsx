@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Eye, Calendar } from "lucide-react";
-import { User, PostDto } from "@/domain/entities";
+import { UserProfile, PostDto } from "@/domain/entities";
 import { UserPost } from "@/domain/entities/user";
 
 interface ProfilePostsProps {
   posts: PostDto[] | UserPost[];
-  user: User;
+  user: UserProfile;
 }
 
 export function ProfilePosts({ posts, user }: ProfilePostsProps) {
@@ -64,7 +64,10 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
                 >
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={user.avatar} alt={user.fullName} />
+                      <AvatarImage
+                        src={user.avatar || undefined}
+                        alt={user.fullName}
+                      />
                       <AvatarFallback>
                         {user.fullName?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>

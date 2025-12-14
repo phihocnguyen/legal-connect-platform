@@ -14,6 +14,8 @@ import com.example.legal_connect.mapper.PostMapper;
 import com.example.legal_connect.mapper.PostCategoryMapper;
 import com.example.legal_connect.mapper.PostReplyMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,7 @@ public class ForumServiceImpl implements ForumService {
 
     // Category
     @Override
+    @Cacheable(value = "categories")
     @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
         List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
@@ -174,12 +177,16 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @Cacheable(value = "posts_by_category", key = "#categorySlug + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    @Transactional(readOnly = true)
     public Page<PostDto> getPostsByCategory(String categorySlug, Pageable pageable) {
         return postRepository.findByCategorySlugAndIsActiveTrue(categorySlug, pageable)
                 .map(postMapper::toDto);
     }
 
         @Override
+    @Cacheable(value = "search_posts", key = "#keyword + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    @Transactional(readOnly = true)
     public Page<PostDto> searchPosts(String keyword, Pageable pageable) {
         Page<Post> titleResults = postRepository.findByIsActiveTrueAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(keyword, pageable);
         if (titleResults.hasContent()) {
@@ -192,17 +199,22 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @Cacheable(value = "search_posts_by_category", key = "#keyword + ':' + #categorySlug + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    @Transactional(readOnly = true)
     public Page<PostDto> searchPostsByCategory(String keyword, String categorySlug, Pageable pageable) {
         return postRepository.findByCategorySlugAndIsActiveTrue(categorySlug, pageable)
                 .map(postMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "post_by_id", key = "#id")
+    @Transactional(readOnly = true)
     public PostDto getPostById(Long id) {
         return getPostById(id, getCurrentUserId());
     }
     
     @Override
+    @Transactional(readOnly = true)
     public PostDto getPostById(Long id, Long currentUserId) {
         Post post = postRepository.findByIdWithCategoryAndAuthor(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -293,6 +305,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
     public PostDto createPost(PostCreateDto postCreateDto, Long authorId) {
         User author = userRepository.findById(authorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -315,6 +328,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
     public PostDto updatePost(Long id, PostCreateDto postUpdateDto, Long authorId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -349,6 +363,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
     public void deletePost(Long id, Long authorId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));

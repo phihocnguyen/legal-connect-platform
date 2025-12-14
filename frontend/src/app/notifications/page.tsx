@@ -1,33 +1,35 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useNotificationUseCases } from '@/application/use-cases/notification.use-case';
-import { NotificationDto } from '@/domain/entities';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNotificationUseCases } from "@/application/use-cases/notification.use-case";
+import { NotificationDto } from "@/domain/entities";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Bell, Check, CheckCheck } from "lucide-react";
 
 export default function NotificationsPage() {
-  const router = useRouter();
-  const { notifications, loading, fetchNotifications, markAsRead, markAllAsRead } = useNotificationUseCases();
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const {
+    notifications,
+    loading,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotificationUseCases();
+  const [filter, setFilter] = useState<"all" | "unread">("all");
 
   useEffect(() => {
-    fetchNotifications(0, 50, filter === 'unread' ? true : undefined);
+    fetchNotifications(0, 50, filter === "unread" ? true : undefined);
   }, [filter, fetchNotifications]);
 
   const handleNotificationClick = async (notification: NotificationDto) => {
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
-    
-    // Navigate to the related post/reply
-    if (notification.relatedEntityType === 'POST') {
-      router.push(`/forum/post/${notification.relatedEntityId}`);
-    } else if (notification.relatedEntityType === 'REPLY') {
-      router.push(`/forum/reply/${notification.relatedEntityId}`);
-    }
+
+    // For now, just mark as read - can extend later with related entity navigation
+    // if (notification.relatedEntityType === 'POST') {
+    //   router.push(`/forum/post/${notification.relatedEntityId}`);
+    // }
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -35,23 +37,24 @@ export default function NotificationsPage() {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInMinutes = Math.floor(diffInMs / 60000);
-    
-    if (diffInMinutes < 1) return 'Vừa xong';
+
+    if (diffInMinutes < 1) return "Vừa xong";
     if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
+    if (diffInMinutes < 1440)
+      return `${Math.floor(diffInMinutes / 60)} giờ trước`;
     return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'MENTION':
-        return '👤';
-      case 'REPLY':
-        return '💬';
-      case 'UPVOTE':
-        return '👍';
+      case "MENTION":
+        return "👤";
+      case "REPLY":
+        return "💬";
+      case "UPVOTE":
+        return "👍";
       default:
-        return '🔔';
+        return "🔔";
     }
   };
 
@@ -73,14 +76,14 @@ export default function NotificationsPage() {
 
         <div className="flex gap-2 mb-6">
           <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilter('all')}
+            variant={filter === "all" ? "default" : "outline"}
+            onClick={() => setFilter("all")}
           >
             Tất cả
           </Button>
           <Button
-            variant={filter === 'unread' ? 'default' : 'outline'}
-            onClick={() => setFilter('unread')}
+            variant={filter === "unread" ? "default" : "outline"}
+            onClick={() => setFilter("unread")}
           >
             Chưa đọc
           </Button>
@@ -99,14 +102,22 @@ export default function NotificationsPage() {
                 onClick={() => handleNotificationClick(notification)}
                 className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                   notification.isRead
-                    ? 'bg-white border-gray-200'
-                    : 'bg-blue-50 border-blue-200'
+                    ? "bg-white border-gray-200"
+                    : "bg-blue-50 border-blue-200"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="text-2xl">{getNotificationIcon(notification.type)}</div>
+                  <div className="text-2xl">
+                    {getNotificationIcon(notification.type)}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${notification.isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                    <p
+                      className={`text-sm ${
+                        notification.isRead
+                          ? "text-gray-700"
+                          : "text-gray-900 font-medium"
+                      }`}
+                    >
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
@@ -114,7 +125,9 @@ export default function NotificationsPage() {
                         {formatTimeAgo(notification.createdAt)}
                       </span>
                       {!notification.isRead && (
-                        <Badge variant="secondary" className="text-xs">Mới</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Mới
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -130,7 +143,9 @@ export default function NotificationsPage() {
             <Bell className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">Không có thông báo</p>
             <p className="text-gray-400 text-sm mt-2">
-              {filter === 'unread' ? 'Bạn đã đọc tất cả thông báo' : 'Chưa có thông báo nào'}
+              {filter === "unread"
+                ? "Bạn đã đọc tất cả thông báo"
+                : "Chưa có thông báo nào"}
             </p>
           </div>
         )}
@@ -138,4 +153,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-

@@ -14,8 +14,11 @@ import com.example.legal_connect.mapper.PostMapper;
 import com.example.legal_connect.mapper.PostCategoryMapper;
 import com.example.legal_connect.mapper.PostReplyMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,6 +42,7 @@ public class ForumServiceImpl implements ForumService {
     private final ForumRepository postRepository;
     private final PostCategoryRepository postCategoryRepository;
     private final PostReplyRepository postReplyRepository;
+    private final CacheManager cacheManager;
     private final UserRepository userRepository;
     private final PostVoteRepository postVoteRepository;
     private final ReplyVoteRepository replyVoteRepository;
@@ -48,9 +53,21 @@ public class ForumServiceImpl implements ForumService {
 
     // Category
     @Override
-    @Cacheable(value = "categories")
     @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
+        // Try to get from cache first
+        Cache cache = cacheManager.getCache("categories");
+        if (cache != null) {
+            @SuppressWarnings("unchecked")
+            List<PostCategoryDto> cachedCategories = (List<PostCategoryDto>) cache.get("all", List.class);
+            if (cachedCategories != null) {
+                log.info("Returning categories from cache");
+                return cachedCategories;
+            }
+        }
+
+        log.info("Fetching all categories from database...");
+
         List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         
         // Get latest posts for all categories in one query
@@ -75,7 +92,7 @@ public class ForumServiceImpl implements ForumService {
             ));
         
         // Map categories to DTOs and enrich with latest post
-        return categories.stream()
+        List<PostCategoryDto> result = categories.stream()
             .map(category -> {
                 PostCategoryDto dto = categoryMapper.toDto(category);
                 
@@ -106,6 +123,18 @@ public class ForumServiceImpl implements ForumService {
                 return dto;
             })
             .collect(Collectors.toList());
+
+        // Cache the result
+        try {
+            if (cache != null) {
+                cache.put("all", result);
+                log.info("Categories cached successfully");
+            }
+        } catch (Exception e) {
+            log.error("Failed to cache categories: {}", e.getMessage());
+        }
+
+        return result;
     }
     
     // Helper methods for user display
@@ -177,7 +206,6 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
-    @Cacheable(value = "posts_by_category", key = "#categorySlug + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
     @Transactional(readOnly = true)
     public Page<PostDto> getPostsByCategory(String categorySlug, Pageable pageable) {
         return postRepository.findByCategorySlugAndIsActiveTrue(categorySlug, pageable)
@@ -227,15 +255,22 @@ public class ForumServiceImpl implements ForumService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public PostDto getPostBySlug(String categorySlug, String postSlug, Long currentUserId) {
         Post post = postRepository.findByCategorySlugAndPostSlug(categorySlug, postSlug)
                 .orElseThrow(() -> new RuntimeException("Post not found with slug: " + postSlug + " in category: " + categorySlug));
-        post.incrementViews();
-        postRepository.save(post);
         
         PostDto dto = postMapper.toDto(post);
         enrichWithUserVote(dto, currentUserId);
         return dto;
+    }
+    
+    @Transactional
+    public void incrementPostViews(String categorySlug, String postSlug) {
+        Post post = postRepository.findByCategorySlugAndPostSlug(categorySlug, postSlug)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.incrementViews();
+        postRepository.save(post);
     }
     
     // Helper method to get current user ID from security context
@@ -305,7 +340,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
-    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
+    @CacheEvict(value = {"categories", "forumStats", "popularTopics", "categoryStats", "popularTags"}, allEntries = true)
     public PostDto createPost(PostCreateDto postCreateDto, Long authorId) {
         User author = userRepository.findById(authorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -328,7 +363,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
-    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
+    @CacheEvict(value = {"categories", "forumStats", "popularTopics", "categoryStats", "popularTags"}, allEntries = true)
     public PostDto updatePost(Long id, PostCreateDto postUpdateDto, Long authorId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -363,7 +398,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
-    @CacheEvict(value = {"posts_by_category", "search_posts", "search_posts_by_category", "post_by_id"}, allEntries = true)
+    @CacheEvict(value = {"categories", "forumStats", "popularTopics", "categoryStats", "popularTags"}, allEntries = true)
     public void deletePost(Long id, Long authorId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -383,6 +418,7 @@ public class ForumServiceImpl implements ForumService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<PostReplyDto> getRepliesByPost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -391,7 +427,6 @@ public class ForumServiceImpl implements ForumService {
                 .map(replyMapper::toDto)
                 .collect(Collectors.toList());
         
-        // Enrich with user votes
         if (currentUserId != null) {
             for (PostReplyDto reply : replies) {
                 enrichReplyWithUserVote(reply, currentUserId);
@@ -402,6 +437,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @CacheEvict(value = {"categories", "forumStats", "popularTopics", "categoryStats", "popularTags"}, allEntries = true)
     public PostReplyDto addReply(Long postId, String content, Long authorId, Long parentId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -429,6 +465,7 @@ public class ForumServiceImpl implements ForumService {
     }
 
     @Override
+    @CacheEvict(value = {"categories", "forumStats", "popularTopics", "categoryStats", "popularTags"}, allEntries = true)
     public void deleteReply(Long replyId, Long authorId) {
         PostReply reply = postReplyRepository.findById(replyId)
                 .orElseThrow(() -> new RuntimeException("Reply not found"));
@@ -446,6 +483,8 @@ public class ForumServiceImpl implements ForumService {
     
     // Statistics
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "forumStats")
     public ForumStatsDto getForumStats() {
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
         
@@ -468,6 +507,8 @@ public class ForumServiceImpl implements ForumService {
     }
     
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "popularTopics", key = "#limit")
     public List<PopularTopicDto> getPopularTopics(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         List<Post> popularPosts = postRepository.findPopularTopics(pageable);
@@ -498,6 +539,8 @@ public class ForumServiceImpl implements ForumService {
     }
     
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categoryStats")
     public List<CategoryStatsDto> getCategoryStats() {
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
         List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
@@ -525,6 +568,8 @@ public class ForumServiceImpl implements ForumService {
     }
     
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "popularTags", key = "#limit")
     public List<PopularTagDto> getPopularTags(int limit) {
         List<Object[]> tagResults = postRepository.findPopularTags(limit);
         

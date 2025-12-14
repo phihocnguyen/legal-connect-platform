@@ -6,12 +6,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostLabelDto {
+public class PostLabelDto implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
     
     private Long id;
     private String name;

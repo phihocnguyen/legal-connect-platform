@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { container } from "../infrastructure/container";
+import axiosInstance from "@/lib/axiosInstance";
 import {
   CreatePostUseCase,
   GetPostsUseCase,
@@ -177,13 +178,19 @@ export function usePostUseCases() {
     return useCase.execute(replyId);
   }, []);
 
+  const incrementPostViews = useCallback(
+    (categorySlug: string, postSlug: string) => {
+      return axiosInstance.post(
+        `/forum/categories/${categorySlug}/posts/${postSlug}/increment-views`
+      );
+    },
+    []
+  );
+
   return {
-    // Legacy methods
     createPost,
     getPosts,
     votePost,
-
-    // New Forum API methods
     getAllCategories,
     getCategoryBySlug,
     getAllPosts,
@@ -198,5 +205,6 @@ export function usePostUseCases() {
     getRepliesByPost,
     addReply,
     deleteReply,
+    incrementPostViews,
   };
 }

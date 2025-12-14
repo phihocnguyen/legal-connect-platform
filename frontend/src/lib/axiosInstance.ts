@@ -6,7 +6,7 @@ import axios, {
 } from "axios";
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+  baseURL: "/api",
   timeout: 30000, // Increased to 30 seconds for heavy queries
   withCredentials: true,
   headers: {

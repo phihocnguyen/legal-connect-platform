@@ -8,12 +8,15 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostCategoryDto {
+public class PostCategoryDto implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
     
     private Long id;
     
@@ -50,7 +53,8 @@ public class PostCategoryDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class PostSummaryDto {
+    public static class PostSummaryDto implements Serializable {
+        private static final long serialVersionUID = 2L;
         private Long id;
         private String title;
         private String slug;

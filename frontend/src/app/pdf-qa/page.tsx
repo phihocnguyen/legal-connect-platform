@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { PdfViewer } from '@/components/pdf/pdf-viewer';
-import { NotebookChat } from '@/components/pdf/notebook-chat';
-import { DocumentUpload } from '@/components/pdf/document-upload';
-import { ConversationSidebar } from '@/components/pdf/conversation-sidebar';
-import { ConfirmationModal } from '@/components/ui/confirmation-modal';
-import { ApiKeyInput } from '@/components/shared/api-key-input';
-import { ApiLimitModal } from '@/components/shared/api-limit-modal';
-import { useState, useCallback, useEffect } from 'react';
-import { usePdfCases } from '@/hooks/use-pdf-cases';
-import { useApiKey } from '@/hooks/use-user-cases';
-import { PdfConversation } from '@/domain/entities';
-import { toast } from 'sonner';
+import { PdfViewer } from "@/components/pdf/pdf-viewer";
+import { NotebookChat } from "@/components/pdf/notebook-chat";
+import { DocumentUpload } from "@/components/pdf/document-upload";
+import { ConversationSidebar } from "@/components/pdf/conversation-sidebar";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import { ApiKeyInput } from "@/components/shared/api-key-input";
+import { ApiLimitModal } from "@/components/shared/api-limit-modal";
+import { useState, useCallback, useEffect } from "react";
+import { usePdfCases } from "@/hooks/use-pdf-cases";
+import { useApiKey } from "@/hooks/use-user-cases";
+import { PdfConversation } from "@/domain/entities";
+import { toast } from "sonner";
 
 interface PdfFile {
   url: string;
@@ -27,15 +27,17 @@ export default function PdfQAPage() {
   const [activeConversationId, setActiveConversationId] = useState<number>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // API Key state
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [showApiLimitModal, setShowApiLimitModal] = useState(false);
   const { apiKey, getMyApiKey } = useApiKey();
-  
+
   // Modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<number | null>(null);
+  const [conversationToDelete, setConversationToDelete] = useState<
+    number | null
+  >(null);
 
   const {
     uploadPdf,
@@ -54,46 +56,51 @@ export default function PdfQAPage() {
       const convs = await getConversations();
       setConversations(convs);
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error("Error loading conversations:", error);
     }
   }, [getConversations]);
 
-  const handleSelectConversation = useCallback(async (conversationId: number) => {
-    try {
-      const conversation = await getConversationWithDetails(conversationId);
-      setActiveConversationId(conversationId);
-      
-      // Set PDF file from conversation with summary from DB
-      if (conversation.pdfDocument) {
-        setPdfFile({
-          url: getPdfViewUrl(conversationId),
-          name: conversation.pdfDocument.originalFileName,
-          conversationId: conversationId,
-          summary: conversation.summary, // Get summary from DB
-          fileId: undefined // fileId is not stored in DB, only used during upload
-        });
+  const handleSelectConversation = useCallback(
+    async (conversationId: number) => {
+      try {
+        const conversation = await getConversationWithDetails(conversationId);
+        setActiveConversationId(conversationId);
+
+        // Set PDF file from conversation with summary from DB
+        if (conversation.pdfDocument) {
+          setPdfFile({
+            url: getPdfViewUrl(conversationId),
+            name: conversation.pdfDocument.originalFileName,
+            conversationId: conversationId,
+            summary: conversation.summary, // Get summary from DB
+            fileId: undefined, // fileId is not stored in DB, only used during upload
+          });
+        }
+      } catch (error) {
+        console.error("Error loading conversation:", error);
       }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-    }
-  }, [getConversationWithDetails, getPdfViewUrl]);
+    },
+    [getConversationWithDetails, getPdfViewUrl]
+  );
 
   // Load conversations on component mount and restore last active conversation
   useEffect(() => {
     const initializePage = async () => {
       // Check API key first
-      const storedKey = localStorage.getItem('user_api_key');
+      const storedKey = localStorage.getItem("user_api_key");
       if (storedKey) {
         setIsApiKeyValid(true);
       }
-      
+
       // Load API key info
       await getMyApiKey();
-      
+
       await loadConversations();
-      
+
       // Try to restore last active conversation from localStorage
-      const lastActiveConversation = localStorage.getItem('lastActiveConversationId');
+      const lastActiveConversation = localStorage.getItem(
+        "lastActiveConversationId"
+      );
       if (lastActiveConversation) {
         const conversationId = parseInt(lastActiveConversation, 10);
         if (!isNaN(conversationId)) {
@@ -101,23 +108,26 @@ export default function PdfQAPage() {
         }
       }
     };
-    
+
     initializePage();
   }, [loadConversations, handleSelectConversation, getMyApiKey]);
 
   // Save active conversation to localStorage
   useEffect(() => {
     if (activeConversationId) {
-      localStorage.setItem('lastActiveConversationId', activeConversationId.toString());
+      localStorage.setItem(
+        "lastActiveConversationId",
+        activeConversationId.toString()
+      );
     } else {
-      localStorage.removeItem('lastActiveConversationId');
+      localStorage.removeItem("lastActiveConversationId");
     }
   }, [activeConversationId]);
 
   const handleFileSelect = async (url: string, file: File) => {
     // Check API key validity and limit
     if (!isApiKeyValid) {
-      toast.error('Vui lòng xác thực API key trước khi upload PDF');
+      toast.error("Vui lòng xác thực API key trước khi upload PDF");
       return;
     }
 
@@ -128,49 +138,49 @@ export default function PdfQAPage() {
 
     setLoading(true);
     try {
-      console.log('Uploading PDF to Python API...');
+      console.log("Uploading PDF to Python API...");
       const pythonResult = await uploadPdfToPython(file);
-      console.log('Python upload result:', pythonResult);
-      console.log('Getting PDF summary with fileId:', pythonResult.file_id);
+      console.log("Python upload result:", pythonResult);
+      console.log("Getting PDF summary with fileId:", pythonResult.file_id);
       if (!pythonResult.file_id) {
-        throw new Error('No file_id received from Python upload');
+        throw new Error("No file_id received from Python upload");
       }
       const summaryResult = await getPdfSummary(pythonResult.file_id, 200);
-      console.log('Summary result:', summaryResult);
-      
-      console.log('Creating conversation in Spring Boot with summary...');
-      const result = await uploadPdf(file, file.name.replace('.pdf', ''), summaryResult.summary);
-      
+      console.log("Summary result:", summaryResult);
+
+      console.log("Creating conversation in Spring Boot with summary...");
+      const result = await uploadPdf(file, file.name.replace(".pdf", ""));
+
       if (result.success && result.conversation) {
         setPdfFile({
           url: getPdfViewUrl(result.conversation.id),
           name: file.name,
           conversationId: result.conversation.id,
           fileId: pythonResult.file_id,
-          summary: summaryResult.summary
+          summary: summaryResult.summary,
         });
-        
+
         await loadConversations();
-        
+
         setActiveConversationId(result.conversation.id);
         URL.revokeObjectURL(url);
-        
-        console.log('PDF processing completed successfully');
+
+        console.log("PDF processing completed successfully");
       } else {
-        console.error('Upload failed:', result.error);
+        console.error("Upload failed:", result.error);
         setPdfFile({
           url,
           name: file.name,
           fileId: pythonResult.file_id,
-          summary: summaryResult.summary
+          summary: summaryResult.summary,
         });
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       // Keep the local URL for preview
       setPdfFile({
         url,
-        name: file.name
+        name: file.name,
       });
     } finally {
       setLoading(false);
@@ -198,31 +208,36 @@ export default function PdfQAPage() {
 
   const confirmDeleteConversation = useCallback(async () => {
     if (!conversationToDelete) return;
-    
+
     try {
       await deleteConversation(conversationToDelete);
-      
+
       // Show success toast
-      toast.success('Conversation deleted successfully');
-      
+      toast.success("Conversation deleted successfully");
+
       // Refresh conversations list
       await loadConversations();
-      
+
       // Clear active conversation if it was deleted
       if (activeConversationId === conversationToDelete) {
         setPdfFile(null);
         setActiveConversationId(undefined);
       }
     } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
+      console.error("Error deleting conversation:", error);
+      toast.error("Failed to delete conversation");
     } finally {
       setConversationToDelete(null);
     }
-  }, [conversationToDelete, deleteConversation, loadConversations, activeConversationId]);
+  }, [
+    conversationToDelete,
+    deleteConversation,
+    loadConversations,
+    activeConversationId,
+  ]);
 
   // Convert PdfConversation to legacy Conversation interface for sidebar
-  const legacyConversations = conversations.map(conv => ({
+  const legacyConversations = conversations.map((conv) => ({
     id: conv.id.toString(),
     title: conv.title,
     timestamp: conv.updatedAt,
@@ -231,25 +246,27 @@ export default function PdfQAPage() {
   return (
     <div className="h-[calc(100vh-90px)] bg-gradient-to-b from-gray-50 to-white flex overflow-hidden">
       {/* Conversation Sidebar - Always visible */}
-      <ConversationSidebar 
+      <ConversationSidebar
         conversations={legacyConversations}
         activeId={activeConversationId?.toString()}
         onSelect={(id) => handleSelectConversation(id as number)}
-        onDelete={(conversation) => handleDeleteConversation(conversation.id as number)}
+        onDelete={(conversation) =>
+          handleDeleteConversation(conversation.id as number)
+        }
         onNew={handleNewConversation}
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
       />
-      
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-y-scroll">
         {!isApiKeyValid ? (
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
-              <ApiKeyInput 
+              <ApiKeyInput
                 onValidKey={() => {
                   setIsApiKeyValid(true);
-                  toast.success('API key đã được xác thực thành công!');
+                  toast.success("API key đã được xác thực thành công!");
                 }}
                 featureName="PDF Q/A"
               />
@@ -263,12 +280,13 @@ export default function PdfQAPage() {
                   Legal Document Analysis
                 </h1>
                 <p className="text-gray-600">
-                  Upload your legal document and get instant insights through AI-powered analysis
+                  Upload your legal document and get instant insights through
+                  AI-powered analysis
                 </p>
               </div>
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:border-gray-300 transition-colors">
-                <DocumentUpload 
-                  onFileSelect={handleFileSelect} 
+                <DocumentUpload
+                  onFileSelect={handleFileSelect}
                   loading={loading}
                 />
               </div>
@@ -289,8 +307,8 @@ export default function PdfQAPage() {
 
               {/* PDF Preview */}
               <div className="p-6 border-b border-gray-200">
-                <PdfViewer 
-                  url={pdfFile.url} 
+                <PdfViewer
+                  url={pdfFile.url}
                   fileName={pdfFile.name}
                   onDelete={handleDelete}
                 />
@@ -317,7 +335,7 @@ export default function PdfQAPage() {
 
               {/* Notebook-style Chat Interface */}
               <div className="flex-1 flex flex-col divide-y divide-gray-200">
-                <NotebookChat 
+                <NotebookChat
                   conversationId={activeConversationId}
                   onSendMessage={sendMessage}
                 />

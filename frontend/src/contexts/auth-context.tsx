@@ -26,32 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getCurrentUser,
   } = useAuthUseCases();
 
-  const redirectBasedOnRole = (user: User, currentPath: string = "/") => {
-    const role = user.role?.toLowerCase();
-    console.log(
-      "Redirecting user with role:",
-      user.role,
-      "normalized to:",
-      role
-    );
-    // If user is on home page, don't redirect
-    if (currentPath === "/") {
-      return;
-    }
-
-    switch (role) {
-      case "admin":
-        console.log("Redirecting to /admin");
-        router.push("/admin");
-        break;
-      case "lawyer":
-      case "user":
-      default:
-        router.push("/forum");
-        break;
-    }
-  };
-
   const login = async (
     email: string,
     password: string

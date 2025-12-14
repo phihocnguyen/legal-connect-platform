@@ -388,3 +388,14 @@ export interface NotificationDto {
   createdAt: string;
   updatedAt?: string;
 }
+
+// Vote entities
+export interface VoteDto {
+  upvotes: number;
+  downvotes: number;
+  totalVotes: number;
+  userVote?: "up" | "down" | null;
+}
+
+// Re-export user-related types
+export type { UserProfile, UserPost, ApiKey } from "./user";

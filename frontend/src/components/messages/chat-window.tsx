@@ -1,14 +1,14 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Phone, Video, MoreVertical, MessageCircle } from 'lucide-react';
-import { UserConversation, UserMessage } from '@/domain/entities';
-import useOnlineUserStore from '@/stores/online-user-store';
-import { useWebSocketStore } from '@/stores/web-socket-store';
+import { useState, useRef, useEffect, useMemo } from "react";
+import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Phone, Video, MoreVertical, MessageCircle } from "lucide-react";
+import { UserConversation, UserMessage } from "@/domain/entities";
+import useOnlineUserStore from "@/stores/online-user-store";
+import { useWebSocketStore } from "@/stores/web-socket-store";
 
 interface ChatWindowProps {
   conversation: UserConversation | null;
@@ -21,13 +21,17 @@ export function ChatWindow({
   conversation,
   messages,
   currentUserId,
-  onSendMessage
+  onSendMessage,
 }: ChatWindowProps) {
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const {fetchOnlineUsers, onlineUsers, loading: onlineUsersLoading, resetState} = useOnlineUserStore();
-  const {connected} = useWebSocketStore();
-  const getOnlineUsers = useWebSocketStore(s => s.getOnlineUsers);
+  const {
+    fetchOnlineUsers,
+    onlineUsers,
+    loading: onlineUsersLoading,
+  } = useOnlineUserStore();
+  const { connected } = useWebSocketStore();
+  const getOnlineUsers = useWebSocketStore((s) => s.getOnlineUsers);
 
   // Rate-limit / debounce online checks to avoid spamming the API on every render
   const lastOnlineCheckRef = useRef<number>(0);
@@ -35,7 +39,6 @@ export function ChatWindow({
   const doFetchOnlineUsers = useMemo(() => {
     return async () => {
       if (!connected) {
-        resetState();
         return;
       }
       if (!getOnlineUsers) return;
@@ -49,12 +52,12 @@ export function ChatWindow({
       try {
         await fetchOnlineUsers(getOnlineUsers);
       } catch (e) {
-        console.warn('Error fetching online users (debounced):', e);
+        console.warn("Error fetching online users (debounced):", e);
       }
     };
     // Intentionally not including fetchOnlineUsers/getOnlineUsers in deps if they are stable from store
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, resetState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
 
   useEffect(() => {
     // run once when connection toggles or component mounts
@@ -71,7 +74,7 @@ export function ChatWindow({
   }, [connected, getOnlineUsers, doFetchOnlineUsers]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -82,27 +85,30 @@ export function ChatWindow({
     e.preventDefault();
     if (newMessage.trim() && conversation) {
       onSendMessage(newMessage.trim());
-      setNewMessage('');
+      setNewMessage("");
     }
   };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // Calculate online status with memoization to avoid unnecessary re-calculations
   const isParticipantOnline = useMemo(() => {
     if (onlineUsersLoading || !onlineUsers || !conversation) {
-      console.log('🔍 Online check skipped:', { 
-        loading: onlineUsersLoading, 
-        hasOnlineUsers: !!onlineUsers, 
-        hasConversation: !!conversation 
+      console.log("🔍 Online check skipped:", {
+        loading: onlineUsersLoading,
+        hasOnlineUsers: !!onlineUsers,
+        hasConversation: !!conversation,
       });
       return false;
     }
-    
-    console.log('🔍 Checking online status for participant:', {
+
+    console.log("🔍 Checking online status for participant:", {
       participantId: conversation.participant.id,
       participantIdType: typeof conversation.participant.id,
       participantName: conversation.participant.name,
@@ -110,40 +116,50 @@ export function ChatWindow({
       totalUsers: onlineUsers.users?.length || 0,
       totalLawyers: onlineUsers.lawyers?.length || 0,
       totalOnline: onlineUsers.totalOnline,
-      allUsers: onlineUsers.users?.map(u => ({ 
-        id: u.userId, 
+      allUsers: onlineUsers.users?.map((u) => ({
+        id: u.userId,
         idType: typeof u.userId,
-        name: u.userName, 
+        name: u.userName,
         type: u.userType,
-        online: u.online 
+        online: u.online,
       })),
-      allLawyers: onlineUsers.lawyers?.map(u => ({ 
-        id: u.userId, 
+      allLawyers: onlineUsers.lawyers?.map((u) => ({
+        id: u.userId,
         idType: typeof u.userId,
-        name: u.userName, 
+        name: u.userName,
         type: u.userType,
-        online: u.online 
-      }))
+        online: u.online,
+      })),
     });
-    
+
     const participantIdStr = conversation.participant.id.toString();
-    const findExactUser = onlineUsers.users?.find(user => user.userId === participantIdStr) || 
-                         onlineUsers.lawyers?.find(user => user.userId === participantIdStr);
-    
-    console.log('🔍 Search details:', {
+    const findExactUser =
+      onlineUsers.users?.find((user) => user.userId === participantIdStr) ||
+      onlineUsers.lawyers?.find((user) => user.userId === participantIdStr);
+
+    console.log("🔍 Search details:", {
       searchingFor: participantIdStr,
       searchingForType: typeof participantIdStr,
-      foundInUsers: onlineUsers.users?.find(user => user.userId === participantIdStr),
-      foundInLawyers: onlineUsers.lawyers?.find(user => user.userId === participantIdStr)
+      foundInUsers: onlineUsers.users?.find(
+        (user) => user.userId === participantIdStr
+      ),
+      foundInLawyers: onlineUsers.lawyers?.find(
+        (user) => user.userId === participantIdStr
+      ),
     });
-    
-    console.log('🔍 Found online user:', findExactUser ? {
-      id: findExactUser.userId,
-      name: findExactUser.userName,
-      type: findExactUser.userType,
-      online: findExactUser.online
-    } : 'NOT FOUND');
-    
+
+    console.log(
+      "🔍 Found online user:",
+      findExactUser
+        ? {
+            id: findExactUser.userId,
+            name: findExactUser.userName,
+            type: findExactUser.userType,
+            online: findExactUser.online,
+          }
+        : "NOT FOUND"
+    );
+
     return !!findExactUser;
   }, [onlineUsers, onlineUsersLoading, conversation]);
 
@@ -154,17 +170,23 @@ export function ChatWindow({
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'lawyer': return 'bg-[#004646] text-white';
-      case 'admin': return 'bg-red-600 text-white';
-      default: return 'bg-gray-600 text-white';
+      case "lawyer":
+        return "bg-[#004646] text-white";
+      case "admin":
+        return "bg-red-600 text-white";
+      default:
+        return "bg-gray-600 text-white";
     }
   };
 
   const getRoleDisplay = (role: string) => {
     switch (role) {
-      case 'lawyer': return 'Luật sư';
-      case 'admin': return 'Admin';
-      default: return 'Thành viên';
+      case "lawyer":
+        return "Luật sư";
+      case "admin":
+        return "Admin";
+      default:
+        return "Thành viên";
     }
   };
 
@@ -188,7 +210,10 @@ export function ChatWindow({
           <div className="flex items-center gap-3">
             <div className="relative">
               <Avatar className="w-10 h-10">
-                <AvatarImage src={conversation.participant.avatar} alt={conversation.participant.name} />
+                <AvatarImage
+                  src={conversation.participant.avatar}
+                  alt={conversation.participant.name}
+                />
                 <AvatarFallback>
                   {conversation.participant.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -197,22 +222,28 @@ export function ChatWindow({
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
               )}
             </div>
-            
+
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg">
                   {conversation.participant.name}
                 </CardTitle>
-                <Badge className={`text-xs ${getRoleColor(conversation.participant.role)}`}>
+                <Badge
+                  className={`text-xs ${getRoleColor(
+                    conversation.participant.role
+                  )}`}
+                >
                   {getRoleDisplay(conversation.participant.role)}
                 </Badge>
               </div>
               <p className="text-sm text-gray-500">
-                {conversation.participant.online ? 'Đang online' : 'Không online'}
+                {conversation.participant.online
+                  ? "Đang online"
+                  : "Không online"}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm">
               <Phone className="w-4 h-4" />
@@ -232,22 +263,37 @@ export function ChatWindow({
         <ScrollArea className="h-[450px] p-4">
           <div className="space-y-4">
             {messages
-              .filter((msg, idx, arr) => arr.findIndex(m => m.id === msg.id) === idx)
+              .filter(
+                (msg, idx, arr) => arr.findIndex((m) => m.id === msg.id) === idx
+              )
               .map((message) => {
                 const isCurrentUser = message.senderId === currentUserId;
                 return (
-                  <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] ${isCurrentUser ? 'order-2' : 'order-1'}`}>
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      isCurrentUser ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] ${
+                        isCurrentUser ? "order-2" : "order-1"
+                      }`}
+                    >
                       <div
                         className={`rounded-lg px-4 py-2 ${
                           isCurrentUser
-                            ? 'bg-[#004646] text-white'
-                            : 'bg-gray-100 text-gray-900'
+                            ? "bg-[#004646] text-white"
+                            : "bg-gray-100 text-gray-900"
                         }`}
                       >
                         <p className="break-words">{message.content}</p>
                       </div>
-                      <p className={`text-xs text-gray-500 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                      <p
+                        className={`text-xs text-gray-500 mt-1 ${
+                          isCurrentUser ? "text-right" : "text-left"
+                        }`}
+                      >
                         {formatTime(message.createdAt)}
                       </p>
                     </div>

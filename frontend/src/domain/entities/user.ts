@@ -5,6 +5,7 @@ export interface UserProfile {
   avatar: string | null;
   role: string;
   phoneNumber: string | null;
+  lawyerVerified: boolean;
   postCount: number;
   replyCount: number;
   joinedAt: string;

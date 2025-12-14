@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import Link from "next/link";
+import { HoverCard, HoverCardContent } from "@/components/ui/hover-card";
 
 interface CategoryCardProps {
   id: string;
@@ -34,9 +34,7 @@ export function CategoryCard({
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {name}
               </h3>
-              <p className="text-gray-600 text-sm mb-4">
-                {description}
-              </p>
+              <p className="text-gray-600 text-sm mb-4">{description}</p>
               <div className="flex items-center gap-6 text-sm text-gray-500">
                 <span>{threads} chủ đề</span>
                 <span>{posts} bài viết</span>

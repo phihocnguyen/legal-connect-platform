@@ -1,5 +1,5 @@
-import axiosInstance, { apiClient } from '@/lib/axiosInstance';
-import { NotificationDto } from '@/domain/entities';
+import { apiClient } from "@/lib/axiosInstance";
+import { NotificationDto } from "@/domain/entities";
 
 export interface NotificationPage {
   content: NotificationDto[];
@@ -15,13 +15,16 @@ export class NotificationRepository {
     size: number = 20,
     unreadOnly?: boolean
   ): Promise<NotificationPage> {
-    const params: Record<string, string | boolean> = { page: page.toString(), size: size.toString() };
+    const params: Record<string, string | boolean> = {
+      page: page.toString(),
+      size: size.toString(),
+    };
     if (unreadOnly !== undefined) {
       params.unreadOnly = unreadOnly;
     }
-    
-    const response = await apiClient.get<NotificationPage>('/notifications', {
-      params
+
+    const response = await apiClient.get<NotificationPage>("/notifications", {
+      params,
     });
     return response.data;
   }
@@ -34,14 +37,13 @@ export class NotificationRepository {
   }
 
   async markAllAsRead(): Promise<void> {
-    await apiClient.put('/notifications/read-all');
+    await apiClient.put("/notifications/read-all");
   }
 
   async getUnreadCount(): Promise<number> {
-    const response = await apiClient.get<number>('/notifications/unread-count');
+    const response = await apiClient.get<number>("/notifications/unread-count");
     return response.data;
   }
 }
 
 export const notificationRepository = new NotificationRepository();
-

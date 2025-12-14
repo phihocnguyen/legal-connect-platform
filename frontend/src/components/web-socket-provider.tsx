@@ -1,13 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useWebSocketStore, useSyncWebSocket } from '@/stores/web-socket-store';
-import { useAuth } from '@/contexts/auth-context';
+import { useEffect } from "react";
+import { useWebSocketStore, useSyncWebSocket } from "@/stores/web-socket-store";
+import { useAuth } from "@/contexts/auth-context";
 
-export default function WebSocketProvider({ children }: { children: React.ReactNode }) {
+export default function WebSocketProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user } = useAuth();
 
-  useSyncWebSocket('http://localhost:8080/ws');
+  useSyncWebSocket(
+    process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8080/ws"
+  );
 
   const connected = useWebSocketStore((s) => s.connected);
   const connect = useWebSocketStore((s) => s.connect);

@@ -26,6 +26,7 @@ public interface ForumService {
     PostDto getPostById(Long id);
     PostDto getPostById(Long id, Long currentUserId);
     PostDto getPostBySlug(String categorySlug, String postSlug, Long currentUserId);
+    void incrementPostViews(String categorySlug, String postSlug);
     PostDto createPost(PostCreateDto postCreateDto, Long authorId);
     PostDto updatePost(Long id, PostCreateDto postUpdateDto, Long authorId);
     void deletePost(Long id, Long authorId);

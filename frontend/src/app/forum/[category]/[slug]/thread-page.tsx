@@ -29,8 +29,13 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [quotedReply, setQuotedReply] = useState<PostReplyDto | null>(null);
 
-  const { getPostBySlug, getRepliesByPost, addReply, getPostsByCategory } =
-    usePostUseCases();
+  const {
+    getPostBySlug,
+    getRepliesByPost,
+    addReply,
+    getPostsByCategory,
+    incrementPostViews,
+  } = usePostUseCases();
   const { startLoading, stopLoading } = useLoadingState();
   const [relatedPosts, setRelatedPosts] = useState<PostDto[]>([]);
 
@@ -40,24 +45,20 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         startLoading("Đang tải...");
         setError(null);
 
-        // Load post, replies AND related posts in parallel using slug
-        const [postData, repliesData, relatedData] = await Promise.all([
-          getPostBySlug(category, slug),
-          // We still need to get postId first for replies
-          getPostBySlug(category, slug).then((post) =>
-            getRepliesByPost(post.id)
-          ),
+        const postData = await getPostBySlug(category, slug);
+
+        const [repliesData, relatedData] = await Promise.all([
+          getRepliesByPost(postData.id),
           getPostsByCategory(category, {
             page: 0,
             size: 10,
             sort: "lastReplyAt,desc",
-          }).catch(() => ({ content: [] })), // Graceful fallback
+          }).catch(() => ({ content: [] })),
         ]);
 
         setPost(postData);
         setReplies(repliesData);
 
-        // Extract and filter related posts
         const items: PostDto[] = relatedData?.content || relatedData || [];
         setRelatedPosts((items as PostDto[]).filter((p) => p.slug !== slug));
       } catch (err) {
@@ -71,9 +72,27 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
     };
 
     loadPostData();
-    // Only depend on slug and category
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, category]);
+  }, [
+    slug,
+    category,
+    getPostBySlug,
+    getRepliesByPost,
+    getPostsByCategory,
+    startLoading,
+    stopLoading,
+  ]);
+
+  useEffect(() => {
+    if (!post) return;
+
+    const timer = setTimeout(() => {
+      incrementPostViews(category, slug).catch((err) => {
+        console.error("Error incrementing views:", err);
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [post, category, slug, incrementPostViews]);
 
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();

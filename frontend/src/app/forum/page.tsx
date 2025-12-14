@@ -105,8 +105,6 @@ export default function ForumPage() {
         }
 
         const data = await getAllPosts(params);
-        console.log("API Request params:", params); // Debug log
-        console.log("API Response:", data);
 
         const posts = data.content || data || [];
         const total = data.totalElements || posts.length || 0;
@@ -118,14 +116,6 @@ export default function ForumPage() {
         setTotalPages(pages);
         setTotalElements(total);
         setCurrentPage(currentPageNum);
-
-        console.log("Pagination Data:", {
-          posts: posts.length,
-          total,
-          pages,
-          currentPageNum,
-          pageSize,
-        });
       } catch (err) {
         console.error("Error loading posts:", err);
         setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -138,35 +128,41 @@ export default function ForumPage() {
     [getAllPosts, pageSize, sortBy, selectedCategory, timeFilter]
   );
 
-  const loadData = useCallback(async () => {
-    try {
-      setError(null);
-      setPostsLoading(true);
-
-      // Load categories and posts in parallel to avoid layout shift
-      const [categoriesData] = await Promise.all([
-        getAllCategories().catch((err) => {
-          console.error("Error loading categories:", err);
-          return [];
-        }),
-        loadPosts(currentPage, false),
-      ]);
-
-      setCategories(categoriesData);
-      setCategoriesLoading(false);
-      setPostsLoading(false);
-    } catch (err) {
-      console.error("Error loading forum data:", err);
-      setError("Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.");
-      setPostsLoading(false);
-      setCategoriesLoading(false);
-    }
-  }, [loadPosts, currentPage, getAllCategories]);
-
-  // Single useEffect to load all data
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        setError(null);
+        setPostsLoading(true);
+
+        const [categoriesData] = await Promise.all([
+          getAllCategories().catch((err) => {
+            console.error("Error loading categories:", err);
+            return [];
+          }),
+          loadPosts(currentPage, false),
+        ]);
+
+        setCategories(categoriesData);
+        setCategoriesLoading(false);
+        setPostsLoading(false);
+      } catch (err) {
+        console.error("Error loading forum data:", err);
+        setError("Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.");
+        setPostsLoading(false);
+        setCategoriesLoading(false);
+      }
+    };
+
     loadData();
-  }, [loadData]);
+  }, [
+    selectedCategory,
+    sortBy,
+    timeFilter,
+    pageSize,
+    currentPage,
+    getAllCategories,
+    loadPosts,
+  ]);
 
   // Filter handlers
   const handlePageChange = (page: number) => {

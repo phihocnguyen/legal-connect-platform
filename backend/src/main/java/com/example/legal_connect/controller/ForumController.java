@@ -13,6 +13,7 @@ import com.example.legal_connect.dto.forum.VoteRequestDto;
 import com.example.legal_connect.service.ForumService;
 import com.example.legal_connect.service.VotingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
@@ -115,6 +118,16 @@ public class ForumController {
         System.out.println("getPostBySlug - Category: " + categorySlug + ", Slug: " + postSlug + ", CurrentUserId: " + currentUserId);
         PostDto post = postService.getPostBySlug(categorySlug, postSlug, currentUserId);
         return ResponseEntity.ok(post);
+    }
+
+    @PostMapping("/categories/{categorySlug}/posts/{postSlug}/increment-views")
+    public ResponseEntity<Map<String, String>> incrementPostViews(
+            @PathVariable String categorySlug,
+            @PathVariable String postSlug) {
+        log.info("Incrementing views for post: {}/{}", categorySlug, postSlug);
+        postService.incrementPostViews(categorySlug, postSlug);
+        log.info("Views incremented successfully for post: {}/{}", categorySlug, postSlug);
+        return ResponseEntity.ok(Map.of("message", "Views incremented successfully"));
     }
 
     /**

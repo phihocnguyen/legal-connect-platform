@@ -34,13 +34,15 @@ export function ForumSidebar() {
   const [popularTags, setPopularTags] = useState<PopularTagDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     if (connected) fetchOnlineUsers(getOnlineUsers);
   }, [connected, fetchOnlineUsers, getOnlineUsers]);
 
-  // Load forum statistics
   useEffect(() => {
+    if (dataLoaded) return;
+
     const loadForumData = async () => {
       try {
         setLoading(true);
@@ -54,8 +56,9 @@ export function ForumSidebar() {
 
         setStats(statsData);
         setPopularTopics(topicsData);
-        setCategoryStats(categoriesData.slice(0, 5)); // Top 5 categories
-        setPopularTags(tagsData.slice(0, 6)); // Top 6 tags
+        setCategoryStats(categoriesData.slice(0, 5));
+        setPopularTags(tagsData.slice(0, 6));
+        setDataLoaded(true);
       } catch (error) {
         console.error("Error loading forum statistics:", error);
       } finally {
@@ -64,7 +67,13 @@ export function ForumSidebar() {
     };
 
     loadForumData();
-  }, [getForumStats, getPopularTopics, getCategoryStats, getPopularTags]);
+  }, [
+    dataLoaded,
+    getForumStats,
+    getPopularTopics,
+    getCategoryStats,
+    getPopularTags,
+  ]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

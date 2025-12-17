@@ -65,8 +65,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminSidebar />
-      <main className="ml-64 min-h-screen overflow-auto">
-        <div className="p-6">{children}</div>
+      <main className="ml-64 min-h-screen w-[calc(100%-16rem)]">
+        <div className="p-6 max-w-full overflow-x-hidden">{children}</div>
       </main>
     </div>
   );

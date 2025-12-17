@@ -1,11 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment
+  output: "standalone",
+
   async rewrites() {
+    // Remove /api suffix if present (Terraform passes backend_url with /api appended)
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://backend:8080/api";
+    const apiBaseUrl = backendUrl.endsWith("/api")
+      ? backendUrl.slice(0, -4)
+      : backendUrl;
     return [
       {
         source: "/api/:path*",
-        destination: "http://backend:8080/api/:path*",
+        destination: `${apiBaseUrl}/api/:path*`,
       },
     ];
   },

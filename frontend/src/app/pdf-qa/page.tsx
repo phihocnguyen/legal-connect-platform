@@ -5,12 +5,15 @@ import { NotebookChat } from "@/components/pdf/notebook-chat";
 import { DocumentUpload } from "@/components/pdf/document-upload";
 import { ConversationSidebar } from "@/components/pdf/conversation-sidebar";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ApiKeyInput } from "@/components/shared/api-key-input";
 import { ApiLimitModal } from "@/components/shared/api-limit-modal";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { usePdfCases } from "@/hooks/use-pdf-cases";
+import { usePdfQACases } from "@/hooks/use-pdf-qa-cases";
 import { useApiKey } from "@/hooks/use-user-cases";
-import { PdfConversation } from "@/domain/entities";
+import { PdfConversation, PdfMessage } from "@/domain/entities";
 import { toast } from "sonner";
 
 interface PdfFile {
@@ -19,14 +22,23 @@ interface PdfFile {
   conversationId?: number;
   fileId?: string;
   summary?: string;
+  messages?: PdfMessage[];
 }
 
 export default function PdfQAPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [pdfFile, setPdfFile] = useState<PdfFile | null>(null);
   const [conversations, setConversations] = useState<PdfConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<number>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // Track if we're programmatically updating the URL to prevent loops
+  const isUpdatingUrlRef = useRef(false);
 
   // API Key state
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
@@ -51,39 +63,134 @@ export default function PdfQAPage() {
     getPdfSummary,
   } = usePdfCases();
 
+  const { askPdfQuestion } = usePdfQACases();
+
+  // Wrap sendMessage to call Python /pdf/qa when a fileId exists and return an assistant message
+  const handleSendMessage = async (conversationId: number, content: string) => {
+    // Persist user message first (if backend conversation exists)
+    let userMessageId: number | undefined;
+    try {
+      if (conversationId) {
+        const userMsg = await sendMessage(conversationId, content);
+        userMessageId = userMsg.id;
+      }
+    } catch (err) {
+      console.error("Failed to persist user message:", err);
+    }
+
+    // If we have fileId info, ask Python QA endpoint
+    try {
+      if (pdfFile?.fileId) {
+        const qaResult = await askPdfQuestion(pdfFile.fileId, content, 3);
+
+        const answerText =
+          qaResult?.answer ||
+          qaResult?.answers?.[0] ||
+          qaResult?.text ||
+          JSON.stringify(qaResult);
+
+        // Persist ASSISTANT response to backend
+        if (conversationId) {
+          try {
+            const assistantMsg = await sendMessage(conversationId, answerText);
+            // Return the persisted assistant message
+            return assistantMsg;
+          } catch (err) {
+            console.error("Failed to persist assistant message:", err);
+            // If persist fails, still return message for UI
+            const assistantMessage: PdfMessage = {
+              id: Date.now(),
+              conversationId: conversationId,
+              content: answerText,
+              role: "ASSISTANT",
+              createdAt: new Date(),
+            };
+            return assistantMessage;
+          }
+        } else {
+          // No conversationId, return temp message
+          const assistantMessage: PdfMessage = {
+            id: Date.now(),
+            conversationId: -1,
+            content: answerText,
+            role: "ASSISTANT",
+            createdAt: new Date(),
+          };
+          return assistantMessage;
+        }
+      }
+    } catch (err) {
+      console.error("PDF QA error:", err);
+      throw err;
+    }
+
+    // Fallback: just return the persisted user message (if any)
+    if (conversationId && userMessageId) {
+      // Return a dummy assistant message saying no fileId
+      const errorMessage: PdfMessage = {
+        id: Date.now(),
+        conversationId: conversationId,
+        content:
+          "Sorry, I cannot answer questions about this PDF. The file reference is missing.",
+        role: "ASSISTANT",
+        createdAt: new Date(),
+      };
+      return errorMessage;
+    }
+
+    throw new Error("Unable to send message: no fileId and no conversationId");
+  };
+
   const loadConversations = useCallback(async () => {
     try {
+      setIsLoadingConversations(true);
       const convs = await getConversations();
       setConversations(convs);
     } catch (error) {
       console.error("Error loading conversations:", error);
+    } finally {
+      setIsLoadingConversations(false);
     }
   }, [getConversations]);
 
   const handleSelectConversation = useCallback(
-    async (conversationId: number) => {
+    async (conversationId: number, skipUrlUpdate = false) => {
       try {
+        setIsLoadingMessages(true);
         const conversation = await getConversationWithDetails(conversationId);
         setActiveConversationId(conversationId);
 
-        // Set PDF file from conversation with summary from DB
+        // Update URL with conversation ID (unless we're already responding to a URL change)
+        if (!skipUrlUpdate) {
+          isUpdatingUrlRef.current = true;
+          router.push(`/pdf-qa?id=${conversationId}`, { scroll: false });
+          // Reset the flag after a short delay
+          setTimeout(() => {
+            isUpdatingUrlRef.current = false;
+          }, 100);
+        }
+
+        // Set PDF file from conversation with summary and messages from DB
         if (conversation.pdfDocument) {
           setPdfFile({
             url: getPdfViewUrl(conversationId),
             name: conversation.pdfDocument.originalFileName,
             conversationId: conversationId,
             summary: conversation.summary, // Get summary from DB
-            fileId: undefined, // fileId is not stored in DB, only used during upload
+            fileId: conversation.pythonFileId, // Get pythonFileId from DB to enable QA
+            messages: conversation.messages, // Pass messages to render in chat
           });
         }
       } catch (error) {
         console.error("Error loading conversation:", error);
+      } finally {
+        setIsLoadingMessages(false);
       }
     },
-    [getConversationWithDetails, getPdfViewUrl]
+    [getConversationWithDetails, getPdfViewUrl, router]
   );
 
-  // Load conversations on component mount and restore last active conversation
+  // Load conversations on component mount ONLY
   useEffect(() => {
     const initializePage = async () => {
       // Check API key first
@@ -97,7 +204,17 @@ export default function PdfQAPage() {
 
       await loadConversations();
 
-      // Try to restore last active conversation from localStorage
+      // Try to restore from URL query param first
+      const conversationIdFromUrl = searchParams.get("id");
+      if (conversationIdFromUrl) {
+        const conversationId = parseInt(conversationIdFromUrl, 10);
+        if (!isNaN(conversationId)) {
+          await handleSelectConversation(conversationId);
+          return;
+        }
+      }
+
+      // Fallback: Try to restore last active conversation from localStorage
       const lastActiveConversation = localStorage.getItem(
         "lastActiveConversationId"
       );
@@ -110,7 +227,26 @@ export default function PdfQAPage() {
     };
 
     initializePage();
-  }, [loadConversations, handleSelectConversation, getMyApiKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Handle URL changes from browser navigation (back/forward)
+  useEffect(() => {
+    // Skip if we're the ones updating the URL
+    if (isUpdatingUrlRef.current) {
+      return;
+    }
+
+    const conversationIdFromUrl = searchParams.get("id");
+    const urlId = conversationIdFromUrl
+      ? parseInt(conversationIdFromUrl, 10)
+      : undefined;
+
+    // Only load if URL id is different from current active id
+    if (urlId && !isNaN(urlId) && urlId !== activeConversationId) {
+      handleSelectConversation(urlId, true); // Skip URL update since we're responding to URL change
+    }
+  }, [searchParams, activeConversationId, handleSelectConversation]);
 
   // Save active conversation to localStorage
   useEffect(() => {
@@ -148,8 +284,15 @@ export default function PdfQAPage() {
       const summaryResult = await getPdfSummary(pythonResult.file_id, 200);
       console.log("Summary result:", summaryResult);
 
-      console.log("Creating conversation in Spring Boot with summary...");
-      const result = await uploadPdf(file, file.name.replace(".pdf", ""));
+      console.log(
+        "Creating conversation in Spring Boot with summary and fileId..."
+      );
+      const result = await uploadPdf(
+        file,
+        file.name.replace(".pdf", ""),
+        summaryResult.summary,
+        pythonResult.file_id // Pass pythonFileId to backend
+      );
 
       if (result.success && result.conversation) {
         setPdfFile({
@@ -259,7 +402,7 @@ export default function PdfQAPage() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full overflow-y-scroll">
+      <div className="flex-1 flex flex-col h-full overflow-y-auto overflow-x-hidden min-w-0">
         {!isApiKeyValid ? (
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
@@ -272,16 +415,20 @@ export default function PdfQAPage() {
               />
             </div>
           </div>
+        ) : isLoadingConversations ? (
+          <div className="w-full h-full flex items-center justify-center p-4">
+            <LoadingSpinner size="lg" text="Đang tải cuộc trò chuyện..." />
+          </div>
         ) : !pdfFile ? (
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-                  Legal Document Analysis
+                  Phân Tích Văn Bản Pháp Luật
                 </h1>
                 <p className="text-gray-600">
-                  Upload your legal document and get instant insights through
-                  AI-powered analysis
+                  Tải lên văn bản pháp luật của bạn và nhận được phân tích thông
+                  minh từ AI
                 </p>
               </div>
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:border-gray-300 transition-colors">
@@ -293,15 +440,16 @@ export default function PdfQAPage() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col p-4 lg:p-8 mx-auto w-full">
-            <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg border border-gray-200">
+          <div className="flex-1 flex flex-col p-4 lg:p-8 mx-auto w-full max-w-full min-w-0">
+            <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
               {/* Header */}
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Document Analysis
+                  Phân Tích Tài Liệu
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Ask questions about your document and get AI-powered insights
+                  Đặt câu hỏi về tài liệu của bạn và nhận được phân tích thông
+                  minh từ AI
                 </p>
               </div>
 
@@ -334,10 +482,12 @@ export default function PdfQAPage() {
               )}
 
               {/* Notebook-style Chat Interface */}
-              <div className="flex-1 flex flex-col divide-y divide-gray-200">
+              <div className="flex-1 flex flex-col divide-y divide-gray-200 min-w-0 overflow-hidden">
                 <NotebookChat
                   conversationId={activeConversationId}
-                  onSendMessage={sendMessage}
+                  onSendMessage={handleSendMessage}
+                  initialMessages={pdfFile.messages}
+                  isLoadingMessages={isLoadingMessages}
                 />
               </div>
             </div>
@@ -353,10 +503,10 @@ export default function PdfQAPage() {
           setConversationToDelete(null);
         }}
         onConfirm={confirmDeleteConversation}
-        title="Delete Conversation"
-        message="Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently lost."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title="Xóa cuộc trò chuyện"
+        message="Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác và tất cả tin nhắn sẽ bị xóa vĩnh viễn."
+        confirmText="Xóa"
+        cancelText="Hủy"
         type="danger"
       />
 

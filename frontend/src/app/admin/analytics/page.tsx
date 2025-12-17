@@ -17,6 +17,8 @@ import { ReportFilters } from "@/components/admin/analytics/ReportFilters";
 import { UserGrowthReport } from "@/components/admin/analytics/UserGrowthReport";
 import { EngagementReport } from "@/components/admin/analytics/EngagementReport";
 import { CategoryReport } from "@/components/admin/analytics/CategoryReport";
+import { ContentStatsReport } from "@/components/admin/analytics/ContentStatsReport";
+import { HourlyActivityReport } from "@/components/admin/analytics/HourlyActivityReport";
 import {
   Card,
   CardContent,
@@ -105,22 +107,35 @@ export default function AnalyticsPage() {
   //   }
   // }, [reportType, timeRange, fromDate, toDate]);
 
-  const handleGenerateReport = async () => {
-    await generateReport({
-      reportType,
-      timeRange,
-      fromDate,
-      toDate,
-    });
-  };
+  // Removed handleGenerateReport - using generateReport directly from hook
 
   const handleExport = async (exportFormat: "pdf" | "excel" | "csv") => {
     await exportReport(reportType, timeRange, exportFormat, fromDate, toDate);
   };
 
-  const handleReportTypeChange = (newReportType: ReportType) => {
-    setReportType(newReportType);
-    // Report will auto-generate via useEffect
+  // Local state for filters before applying
+  const [localReportType, setLocalReportType] =
+    useState<ReportType>(reportType);
+  const [localTimeRange, setLocalTimeRange] = useState<TimeRange>(timeRange);
+  const [localFromDate, setLocalFromDate] = useState<Date | undefined>(
+    fromDate
+  );
+  const [localToDate, setLocalToDate] = useState<Date | undefined>(toDate);
+
+  const handleApplyFiltersAndGenerate = async () => {
+    // Update state
+    setReportType(localReportType);
+    setTimeRange(localTimeRange);
+    setFromDate(localFromDate);
+    setToDate(localToDate);
+
+    // Generate report with NEW values immediately (not waiting for state update)
+    await generateReport({
+      reportType: localReportType,
+      timeRange: localTimeRange,
+      fromDate: localFromDate,
+      toDate: localToDate,
+    });
   };
 
   const renderReport = () => {
@@ -137,6 +152,10 @@ export default function AnalyticsPage() {
         return <EngagementReport data={data} />;
       case "category-distribution":
         return <CategoryReport data={data} />;
+      case "content-stats":
+        return <ContentStatsReport data={data} />;
+      case "hourly-activity":
+        return <HourlyActivityReport data={data} />;
       default:
         return (
           <Card>
@@ -185,7 +204,7 @@ export default function AnalyticsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -295,16 +314,16 @@ export default function AnalyticsPage() {
 
         {/* Report Filters */}
         <ReportFilters
-          timeRange={timeRange}
-          reportType={reportType}
-          onTimeRangeChange={setTimeRange}
-          onReportTypeChange={handleReportTypeChange}
-          onGenerate={handleGenerateReport}
+          timeRange={localTimeRange}
+          reportType={localReportType}
+          onTimeRangeChange={setLocalTimeRange}
+          onReportTypeChange={setLocalReportType}
+          onGenerate={handleApplyFiltersAndGenerate}
           loading={reportLoading}
-          fromDate={fromDate}
-          toDate={toDate}
-          onFromDateChange={setFromDate}
-          onToDateChange={setToDate}
+          fromDate={localFromDate}
+          toDate={localToDate}
+          onFromDateChange={setLocalFromDate}
+          onToDateChange={setLocalToDate}
         />
 
         {/* Report Display */}

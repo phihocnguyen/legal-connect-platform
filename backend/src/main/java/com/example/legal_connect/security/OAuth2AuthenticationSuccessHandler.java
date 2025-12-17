@@ -47,7 +47,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                            SecurityContextHolder.getContext());
 
         // SESSIONID cookie is automatically set by Spring Security
-        String targetUrl = "http://localhost:3000/";
+        String targetUrl = "http://legal-connect-prod-alb-1638652928.ap-southeast-2.elb.amazonaws.com/";
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }

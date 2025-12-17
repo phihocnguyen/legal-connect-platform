@@ -1,11 +1,17 @@
-import { PdfRepository } from '../../domain/interfaces/repositories';
-import { PdfConversation, PdfMessage, PdfUploadResult, PythonPdfUploadResult, PdfSummaryResult } from '../../domain/entities';
-import { apiClient } from '../../lib/axiosInstance';
+import { PdfRepository } from "../../domain/interfaces/repositories";
+import {
+  PdfConversation,
+  PdfMessage,
+  PdfUploadResult,
+  PythonPdfUploadResult,
+  PdfSummaryResult,
+} from "../../domain/entities";
+import { apiClient } from "../../lib/axiosInstance";
 
 interface ConversationResponse {
   id: number;
   userId: number;
-  type: 'PDF_QA' | 'QA';
+  type: "PDF_QA" | "QA";
   title: string;
   createdAt: string;
   updatedAt: string;
@@ -16,7 +22,7 @@ interface ApiMessageResponse {
   id: number;
   conversationId: number;
   content: string;
-  role: 'USER' | 'ASSISTANT';
+  role: "USER" | "ASSISTANT";
   createdAt: string;
 }
 
@@ -32,7 +38,7 @@ interface ApiConversationWithDetails {
     id: number;
     conversationId: number;
     content: string;
-    role: 'USER' | 'ASSISTANT';
+    role: "USER" | "ASSISTANT";
     createdAt: string;
   }>;
   pdfDocument?: {
@@ -72,25 +78,39 @@ interface ApiPdfUploadResult {
 }
 
 export class HttpPdfRepository implements PdfRepository {
-  private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-  private pythonApiURL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8000';
+  private baseURL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+  private pythonApiURL =
+    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
 
-  async uploadPdf(file: File, title: string, summary?: string): Promise<PdfUploadResult> {
+  async uploadPdf(
+    file: File,
+    title: string,
+    summary?: string,
+    pythonFileId?: string
+  ): Promise<PdfUploadResult> {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
+    formData.append("file", file);
+    formData.append("title", title);
     if (summary) {
-      formData.append('summary', summary);
+      formData.append("summary", summary);
+    }
+    if (pythonFileId) {
+      formData.append("pythonFileId", pythonFileId);
     }
 
-    const response = await apiClient.post<ApiPdfUploadResult>('/pdf/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post<ApiPdfUploadResult>(
+      "/pdf/upload",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
     const data = response.data;
-    
+
     // Convert and return properly typed result
     const result: PdfUploadResult = {
       success: data.success,
@@ -101,7 +121,7 @@ export class HttpPdfRepository implements PdfRepository {
     if (data.conversation) {
       result.conversation = {
         ...data.conversation,
-        type: data.conversation.type as 'PDF_QA' | 'QA',
+        type: data.conversation.type as "PDF_QA" | "QA",
         createdAt: new Date(data.conversation.createdAt),
         updatedAt: new Date(data.conversation.updatedAt),
       };
@@ -118,9 +138,12 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   async getConversations(): Promise<PdfConversation[]> {
-    const response = await apiClient.get<ConversationResponse[]>('/conversations', {
-      params: { type: 'PDF_QA' }
-    });
+    const response = await apiClient.get<ConversationResponse[]>(
+      "/conversations",
+      {
+        params: { type: "PDF_QA" },
+      }
+    );
 
     return response.data.map((conv: ConversationResponse) => ({
       ...conv,
@@ -130,7 +153,9 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   async getConversation(id: number): Promise<PdfConversation> {
-    const response = await apiClient.get<ConversationResponse>(`/conversations/${id}`);
+    const response = await apiClient.get<ConversationResponse>(
+      `/conversations/${id}`
+    );
 
     const data = response.data;
     return {
@@ -141,33 +166,44 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   async getConversationWithDetails(id: number): Promise<PdfConversation> {
-    const response = await apiClient.get<ApiConversationWithDetails>(`/conversations/${id}`, {
-      params: { includeDetails: true }
-    });
+    const response = await apiClient.get<ApiConversationWithDetails>(
+      `/conversations/${id}`,
+      {
+        params: { includeDetails: true },
+      }
+    );
 
     const data = response.data;
     return {
       ...data,
-      type: data.type as 'PDF_QA' | 'QA',
+      type: data.type as "PDF_QA" | "QA",
       createdAt: new Date(data.createdAt),
       updatedAt: new Date(data.updatedAt),
       messages: data.messages?.map((msg) => ({
         ...msg,
         createdAt: new Date(msg.createdAt),
       })),
-      pdfDocument: data.pdfDocument ? {
-        ...data.pdfDocument,
-        uploadedAt: new Date(data.pdfDocument.uploadedAt),
-      } : undefined,
+      pdfDocument: data.pdfDocument
+        ? {
+            ...data.pdfDocument,
+            uploadedAt: new Date(data.pdfDocument.uploadedAt),
+          }
+        : undefined,
     };
   }
 
-  async sendMessage(conversationId: number, content: string): Promise<PdfMessage> {
-    const response = await apiClient.post<ApiMessageResponse>('/conversations/messages', {
-      conversationId,
-      content,
-      role: 'USER'
-    });
+  async sendMessage(
+    conversationId: number,
+    content: string
+  ): Promise<PdfMessage> {
+    const response = await apiClient.post<ApiMessageResponse>(
+      "/conversations/messages",
+      {
+        conversationId,
+        content,
+        role: "USER",
+      }
+    );
 
     const data = response.data;
     return {
@@ -177,7 +213,9 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   async getMessages(conversationId: number): Promise<PdfMessage[]> {
-    const response = await apiClient.get<ApiMessageResponse[]>(`/conversations/${conversationId}/messages`);
+    const response = await apiClient.get<ApiMessageResponse[]>(
+      `/conversations/${conversationId}/messages`
+    );
 
     return response.data.map((msg) => ({
       ...msg,
@@ -189,10 +227,16 @@ export class HttpPdfRepository implements PdfRepository {
     await apiClient.delete(`/conversations/${id}`);
   }
 
-  async updateConversationTitle(id: number, title: string): Promise<PdfConversation> {
-    const response = await apiClient.put<ConversationResponse>(`/conversations/${id}`, {
-      title
-    });
+  async updateConversationTitle(
+    id: number,
+    title: string
+  ): Promise<PdfConversation> {
+    const response = await apiClient.put<ConversationResponse>(
+      `/conversations/${id}`,
+      {
+        title,
+      }
+    );
 
     const data = response.data;
     return {
@@ -213,10 +257,10 @@ export class HttpPdfRepository implements PdfRepository {
   // Python API methods
   async uploadPdfToPython(file: File): Promise<PythonPdfUploadResult> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     const response = await fetch(`${this.pythonApiURL}/pdf/upload`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
@@ -227,37 +271,83 @@ export class HttpPdfRepository implements PdfRepository {
     return await response.json();
   }
 
-  async getPdfSummary(fileId: string, maxLength: number = 200): Promise<PdfSummaryResult> {
+  async getPdfSummary(
+    fileId: string,
+    maxLength: number = 200
+  ): Promise<PdfSummaryResult> {
     const formData = new URLSearchParams();
-    formData.append('file_id', fileId);
-    formData.append('max_length', maxLength.toString());
-    
-    console.log('Sending PDF summary request:', {
+    formData.append("file_id", fileId);
+    formData.append("max_length", maxLength.toString());
+
+    console.log("Sending PDF summary request:", {
       url: `${this.pythonApiURL}/pdf/summarize`,
       fileId: fileId,
-      maxLength: maxLength
+      maxLength: maxLength,
     });
 
     const response = await fetch(`${this.pythonApiURL}/pdf/summarize`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formData,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('PDF summary API error:', {
+      console.error("PDF summary API error:", {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: errorText,
       });
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, body: ${errorText}`
+      );
     }
 
     const result = await response.json();
-    console.log('PDF summary result:', result);
+    console.log("PDF summary result:", result);
+    return result;
+  }
+
+  async askPdfQuestion(
+    fileId: string,
+    question: string,
+    topK: number = 3
+  ): Promise<import("../../domain/entities").PdfQAResponse> {
+    const payload = {
+      file_id: fileId,
+      question,
+      top_k: topK,
+    };
+
+    console.log("Sending PDF Q/A request to Python API:", {
+      url: `${this.pythonApiURL}/pdf/qa`,
+      payload,
+    });
+
+    const response = await fetch(`${this.pythonApiURL}/pdf/qa`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("PDF QA API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errText,
+      });
+      throw new Error(
+        `HTTP error! status: ${response.status}, body: ${errText}`
+      );
+    }
+
+    const result = await response.json();
+    console.log("PDF QA result:", result);
     return result;
   }
 }

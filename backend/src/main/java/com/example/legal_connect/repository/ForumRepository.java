@@ -312,4 +312,55 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true " +
            "ORDER BY p.createdAt DESC")
     Optional<Post> findLatestPostByCategoryId(@Param("categoryId") Long categoryId);
+    
+    /**
+     * Analytics: Count posts grouped by date
+     */
+    @Query("SELECT DATE(p.createdAt) as date, COUNT(p) as count " +
+           "FROM Post p " +
+           "WHERE p.createdAt >= :startDate AND p.isActive = true " +
+           "GROUP BY DATE(p.createdAt) " +
+           "ORDER BY date")
+    List<Object[]> countPostsGroupedByDate(@Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Analytics: Count posts by category with time range
+     */
+    @Query("SELECT c.name as category, COUNT(p) as count " +
+           "FROM Post p JOIN p.category c " +
+           "WHERE p.createdAt >= :startDate AND p.isActive = true " +
+           "GROUP BY c.id, c.name " +
+           "ORDER BY count DESC")
+    List<Object[]> countPostsByCategoryGrouped(@Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Analytics: Count posts created between dates
+     */
+    long countByCreatedAtBetweenAndIsActiveTrue(LocalDateTime start, LocalDateTime end);
+    
+    /**
+     * Analytics: Sum total views for posts in time range
+     */
+    @Query("SELECT SUM(p.views) FROM Post p WHERE p.createdAt >= :startDate AND p.isActive = true")
+    Long sumViewsByCreatedAtAfter(@Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Analytics: Get daily views aggregation (approximate using created date as proxy)
+     */
+    @Query("SELECT DATE(p.createdAt) as date, SUM(p.views) as views " +
+           "FROM Post p " +
+           "WHERE p.createdAt >= :startDate AND p.isActive = true " +
+           "GROUP BY DATE(p.createdAt) " +
+           "ORDER BY date")
+    List<Object[]> sumViewsGroupedByDate(@Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Analytics: Count posts by hour of day
+     */
+    @Query("SELECT HOUR(p.createdAt) as hour, COUNT(p) as count " +
+           "FROM Post p " +
+           "WHERE p.createdAt >= :startDate AND p.isActive = true " +
+           "GROUP BY HOUR(p.createdAt) " +
+           "ORDER BY hour")
+    List<Object[]> countPostsGroupedByHour(@Param("startDate") LocalDateTime startDate);
 }

@@ -214,6 +214,7 @@ export interface PdfConversation {
   type: "PDF_QA" | "QA";
   title: string;
   summary?: string;
+  pythonFileId?: string; // Store fileId from Python API for PDF Q/A
   createdAt: Date;
   updatedAt: Date;
   messageCount: number;
@@ -276,6 +277,23 @@ export interface ChatQAResponse {
   processing_time: number;
   model_used: string;
   timestamp: string;
+}
+
+// PDF Q/A entities for Python backend
+export interface PdfQARequest {
+  file_id: string;
+  question: string;
+  top_k?: number;
+}
+
+export interface PdfQAResponse {
+  answer?: string;
+  answers?: string[];
+  text?: string;
+  processing_time?: number;
+  model_used?: string;
+  timestamp?: string;
+  [key: string]: unknown; // Allow other fields from API
 }
 
 // Messaging entities for user-to-user messages

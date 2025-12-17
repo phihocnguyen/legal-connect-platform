@@ -4,6 +4,8 @@ import com.example.legal_connect.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -30,6 +32,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Chart data methods
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     long countByRoleAndCreatedAtBetween(User.Role role, LocalDateTime start, LocalDateTime end);
+    
+    // Analytics methods for user growth
+    @Query("SELECT DATE(u.createdAt) as date, COUNT(u) as count " +
+           "FROM User u " +
+           "WHERE u.createdAt >= :startDate " +
+           "GROUP BY DATE(u.createdAt) " +
+           "ORDER BY date")
+    List<Object[]> countUsersGroupedByDate(@Param("startDate") LocalDateTime startDate);
+    
+    @Query("SELECT DATE(u.createdAt) as date, u.role, COUNT(u) as count " +
+           "FROM User u " +
+           "WHERE u.createdAt >= :startDate " +
+           "GROUP BY DATE(u.createdAt), u.role " +
+           "ORDER BY date, u.role")
+    List<Object[]> countUsersByRoleGroupedByDate(@Param("startDate") LocalDateTime startDate);
     
     // Temporarily disabled lastLogin methods to fix cached plan issue
     // default long countByLastLoginAfter(LocalDateTime since) {

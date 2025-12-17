@@ -1,13 +1,19 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import { AdminLayout } from '@/components/admin/admin-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -15,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -23,25 +29,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Search, 
-  Scale, 
-  CheckCircle, 
+} from "@/components/ui/dialog";
+import {
+  Search,
+  Scale,
+  CheckCircle,
   XCircle,
   Eye,
-  User as UserIcon
-} from 'lucide-react';
-import { useAdminCases } from '@/hooks/use-admin-cases';
-import { LawyerApplication } from '@/domain/entities';
-import { LawyerDetailModal } from '@/components/admin/lawyer-detail-modal';
+  User as UserIcon,
+} from "lucide-react";
+import { useAdminCases } from "@/hooks/use-admin-cases";
+import { LawyerApplication } from "@/domain/entities";
+import { LawyerDetailModal } from "@/components/admin/lawyer-detail-modal";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function LawyerApplicationsPage() {
   const [applications, setApplications] = useState<LawyerApplication[]>([]);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('PENDING');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("PENDING");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // Local state for filters (before applying)
+  const [localSearch, setLocalSearch] = useState("");
+  const [localStatusFilter, setLocalStatusFilter] = useState("PENDING");
 
   // Use admin cases hook
   const {
@@ -52,31 +63,34 @@ export default function LawyerApplicationsPage() {
   } = useAdminCases();
 
   // Modal state
-  const [selectedApplication, setSelectedApplication] = useState<LawyerApplication | null>(null);
+  const [selectedApplication, setSelectedApplication] =
+    useState<LawyerApplication | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   // Review dialog state (for approve/reject actions)
   const [showReviewDialog, setShowReviewDialog] = useState(false);
-  const [adminNotes, setAdminNotes] = useState('');
-  const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
+  const [adminNotes, setAdminNotes] = useState("");
+  const [reviewAction, setReviewAction] = useState<"approve" | "reject">(
+    "approve"
+  );
 
   const fetchApplications = useCallback(async () => {
     const params = {
       page,
       size: 10,
-      sortBy: 'createdAt',
-      sortDir: 'desc' as const,
+      sortBy: "createdAt",
+      sortDir: "desc" as const,
       ...(search.trim() && { search: search.trim() }),
-      ...(statusFilter && statusFilter !== '' && { status: statusFilter }),
+      ...(statusFilter && statusFilter !== "" && { status: statusFilter }),
     };
 
     const result = await getLawyerApplications(params);
     if (result) {
-      console.log('Fetched lawyer applications:', result);
+      console.log("Fetched lawyer applications:", result);
       setApplications(result.content || []);
       setTotalPages(result.totalPages || 0);
     } else {
-      console.log('No result from getLawyerApplications');
+      console.log("No result from getLawyerApplications");
     }
   }, [page, search, statusFilter, getLawyerApplications]);
 
@@ -84,10 +98,20 @@ export default function LawyerApplicationsPage() {
     fetchApplications();
   }, [fetchApplications]);
 
-  const handleReview = (application: LawyerApplication, action: 'approve' | 'reject') => {
+  // Apply filters function
+  const handleApplyFilters = () => {
+    setSearch(localSearch);
+    setStatusFilter(localStatusFilter);
+    setPage(0); // Reset to first page when applying filters
+  };
+
+  const handleReview = (
+    application: LawyerApplication,
+    action: "approve" | "reject"
+  ) => {
     setSelectedApplication(application);
     setReviewAction(action);
-    setAdminNotes('');
+    setAdminNotes("");
     setShowReviewDialog(true);
   };
 
@@ -99,23 +123,30 @@ export default function LawyerApplicationsPage() {
   const handleModalApprove = async () => {
     setShowModal(false);
     if (selectedApplication) {
-      handleReview(selectedApplication, 'approve');
+      handleReview(selectedApplication, "approve");
     }
   };
 
   const handleModalReject = async () => {
     setShowModal(false);
     if (selectedApplication) {
-      handleReview(selectedApplication, 'reject');
+      handleReview(selectedApplication, "reject");
     }
   };
 
   const submitReview = async () => {
     if (!selectedApplication) return;
 
-    const success = reviewAction === 'approve'
-      ? await approveLawyerApplication(selectedApplication.id, adminNotes.trim() || undefined)
-      : await rejectLawyerApplication(selectedApplication.id, adminNotes.trim() || undefined);
+    const success =
+      reviewAction === "approve"
+        ? await approveLawyerApplication(
+            selectedApplication.id,
+            adminNotes.trim() || undefined
+          )
+        : await rejectLawyerApplication(
+            selectedApplication.id,
+            adminNotes.trim() || undefined
+          );
 
     if (success) {
       setShowReviewDialog(false);
@@ -125,11 +156,15 @@ export default function LawyerApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case "PENDING":
         return <Badge variant="secondary">Chờ duyệt</Badge>;
-      case 'APPROVED':
-        return <Badge variant="default" className="bg-green-600">Đã phê duyệt</Badge>;
-      case 'REJECTED':
+      case "APPROVED":
+        return (
+          <Badge variant="default" className="bg-green-600">
+            Đã phê duyệt
+          </Badge>
+        );
+      case "REJECTED":
         return <Badge variant="destructive">Bị từ chối</Badge>;
       default:
         return <Badge variant="outline">Không xác định</Badge>;
@@ -141,7 +176,9 @@ export default function LawyerApplicationsPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý đơn đăng ký luật sư</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Quản lý đơn đăng ký luật sư
+          </h1>
           <p className="text-gray-600 mt-2">
             Xem xét và phê duyệt đơn đăng ký trở thành luật sư
           </p>
@@ -156,18 +193,20 @@ export default function LawyerApplicationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {applications.filter(a => a.status === 'PENDING').length}
+                {applications.filter((a) => a.status === "PENDING").length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Đã phê duyệt</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Đã phê duyệt
+              </CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {applications.filter(a => a.status === 'APPROVED').length}
+                {applications.filter((a) => a.status === "APPROVED").length}
               </div>
             </CardContent>
           </Card>
@@ -178,7 +217,7 @@ export default function LawyerApplicationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {applications.filter(a => a.status === 'REJECTED').length}
+                {applications.filter((a) => a.status === "REJECTED").length}
               </div>
             </CardContent>
           </Card>
@@ -193,46 +232,67 @@ export default function LawyerApplicationsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Tìm kiếm theo tên, email hoặc số giấy phép..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                  />
+            <div className="space-y-4">
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Tìm kiếm theo tên, email hoặc số giấy phép..."
+                      value={localSearch}
+                      onChange={(e) => setLocalSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleApplyFilters();
+                        }
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant={
+                      localStatusFilter === "PENDING" ? "default" : "outline"
+                    }
+                    onClick={() => setLocalStatusFilter("PENDING")}
+                    size="sm"
+                  >
+                    Chờ duyệt
+                  </Button>
+                  <Button
+                    variant={
+                      localStatusFilter === "APPROVED" ? "default" : "outline"
+                    }
+                    onClick={() => setLocalStatusFilter("APPROVED")}
+                    size="sm"
+                  >
+                    Đã duyệt
+                  </Button>
+                  <Button
+                    variant={
+                      localStatusFilter === "REJECTED" ? "default" : "outline"
+                    }
+                    onClick={() => setLocalStatusFilter("REJECTED")}
+                    size="sm"
+                  >
+                    Bị từ chối
+                  </Button>
+                  <Button
+                    variant={localStatusFilter === "" ? "default" : "outline"}
+                    onClick={() => setLocalStatusFilter("")}
+                    size="sm"
+                  >
+                    Tất cả
+                  </Button>
                 </div>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex justify-end">
                 <Button
-                  variant={statusFilter === 'PENDING' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('PENDING')}
-                  size="sm"
+                  onClick={handleApplyFilters}
+                  className="bg-[#004646] hover:bg-[#003333]"
                 >
-                  Chờ duyệt
-                </Button>
-                <Button
-                  variant={statusFilter === 'APPROVED' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('APPROVED')}
-                  size="sm"
-                >
-                  Đã duyệt
-                </Button>
-                <Button
-                  variant={statusFilter === 'REJECTED' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('REJECTED')}
-                  size="sm"
-                >
-                  Bị từ chối
-                </Button>
-                <Button
-                  variant={statusFilter === '' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('')}
-                  size="sm"
-                >
-                  Tất cả
+                  Áp dụng bộ lọc
                 </Button>
               </div>
             </div>
@@ -247,8 +307,7 @@ export default function LawyerApplicationsPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Đang tải...</p>
+                <LoadingSpinner size="md" />
               </div>
             ) : (
               <Table>
@@ -300,7 +359,8 @@ export default function LawyerApplicationsPage() {
                             {application.licenseNumber}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {application.lawSchool} - {application.graduationYear}
+                            {application.lawSchool} -{" "}
+                            {application.graduationYear}
                           </div>
                           <div className="text-sm text-gray-500">
                             {application.yearsOfExperience} năm kinh nghiệm
@@ -311,7 +371,9 @@ export default function LawyerApplicationsPage() {
                         {getStatusBadge(application.status)}
                       </TableCell>
                       <TableCell>
-                        {new Date(application.createdAt).toLocaleDateString('vi-VN')}
+                        {new Date(application.createdAt).toLocaleDateString(
+                          "vi-VN"
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
@@ -323,12 +385,14 @@ export default function LawyerApplicationsPage() {
                             <Eye className="h-4 w-4 mr-1" />
                             Chi tiết
                           </Button>
-                          {application.status === 'PENDING' && (
+                          {application.status === "PENDING" && (
                             <>
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => handleReview(application, 'approve')}
+                                onClick={() =>
+                                  handleReview(application, "approve")
+                                }
                                 className="bg-green-600 hover:bg-green-700"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -337,7 +401,9 @@ export default function LawyerApplicationsPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleReview(application, 'reject')}
+                                onClick={() =>
+                                  handleReview(application, "reject")
+                                }
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
                                 Từ chối
@@ -393,28 +459,30 @@ export default function LawyerApplicationsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {reviewAction === 'approve' ? 'Phê duyệt đơn đăng ký' : 'Từ chối đơn đăng ký'}
+                {reviewAction === "approve"
+                  ? "Phê duyệt đơn đăng ký"
+                  : "Từ chối đơn đăng ký"}
               </DialogTitle>
               <DialogDescription>
-                {reviewAction === 'approve' 
-                  ? 'Sau khi phê duyệt, người dùng sẽ trở thành luật sư trên hệ thống.' 
-                  : 'Vui lòng cung cấp lý do từ chối để người dùng có thể cải thiện đơn đăng ký.'
-                }
+                {reviewAction === "approve"
+                  ? "Sau khi phê duyệt, người dùng sẽ trở thành luật sư trên hệ thống."
+                  : "Vui lòng cung cấp lý do từ chối để người dùng có thể cải thiện đơn đăng ký."}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  Ghi chú {reviewAction === 'reject' ? '(bắt buộc)' : '(tùy chọn)'}
+                  Ghi chú{" "}
+                  {reviewAction === "reject" ? "(bắt buộc)" : "(tùy chọn)"}
                 </label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder={
-                    reviewAction === 'approve' 
-                      ? 'Ghi chú về quá trình phê duyệt...' 
-                      : 'Lý do từ chối và hướng dẫn cải thiện...'
+                    reviewAction === "approve"
+                      ? "Ghi chú về quá trình phê duyệt..."
+                      : "Lý do từ chối và hướng dẫn cải thiện..."
                   }
                   rows={4}
                 />
@@ -422,15 +490,24 @@ export default function LawyerApplicationsPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowReviewDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewDialog(false)}
+              >
                 Hủy
               </Button>
               <Button
                 onClick={submitReview}
-                disabled={loading || (reviewAction === 'reject' && !adminNotes.trim())}
-                variant={reviewAction === 'approve' ? 'default' : 'destructive'}
+                disabled={
+                  loading || (reviewAction === "reject" && !adminNotes.trim())
+                }
+                variant={reviewAction === "approve" ? "default" : "destructive"}
               >
-                {loading ? 'Đang xử lý...' : (reviewAction === 'approve' ? 'Phê duyệt' : 'Từ chối')}
+                {loading
+                  ? "Đang xử lý..."
+                  : reviewAction === "approve"
+                  ? "Phê duyệt"
+                  : "Từ chối"}
               </Button>
             </DialogFooter>
           </DialogContent>

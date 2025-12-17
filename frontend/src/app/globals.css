@@ -2,6 +2,13 @@
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent horizontal scrollbar globally */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   font-family: "Alexandria", sans-serif;
   font-weight: 400;
@@ -122,6 +129,36 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Force scrollbar to always be visible to prevent layout shift */
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+
+  /* Lock body dimensions when Select Portal opens */
+  body {
+    overflow-x: hidden;
+    width: 100vw !important;
+    position: relative !important;
+  }
+
+  /* Override Radix adding padding-right or other inline styles to body */
+  body[style] {
+    padding-right: 0px !important;
+    overflow-y: scroll !important;
+  }
+
+  /* Ensure Select trigger maintains full width */
+  [data-slot="select-trigger"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Prevent Select from shrinking parent containers */
+  [data-slot="select"] {
+    width: 100%;
   }
 
   /* Custom scrollbar styles for Select dropdowns */

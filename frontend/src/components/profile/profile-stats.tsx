@@ -1,14 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, MessageSquare, Eye, Trophy } from "lucide-react";
-import { UserProfile } from "@/domain/entities";
+// import { UserProfile } from "@/domain/entities";
 
-interface ProfileStatsProps {
-  user?: UserProfile;
-}
+// interface ProfileStatsProps {
+//   user?: UserProfile;
+// }
 
-export function ProfileStats({ user: _user }: ProfileStatsProps) {
-  // eslint-disable-line @typescript-eslint/no-unused-vars
+export function ProfileStats() {
   // Mock stats - in real app, these would come from API
+  // TODO: Use user prop when implementing real stats from API
   const stats = {
     posts: 295,
     replies: 1250,

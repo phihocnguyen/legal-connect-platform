@@ -52,7 +52,7 @@ export function ReportFilters({
   onToDateChange,
 }: ReportFiltersProps) {
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5" />
@@ -60,13 +60,13 @@ export function ReportFilters({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           {/* First row: Time Range and Report Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
             <div className="space-y-2">
               <label className="text-sm font-medium">Khoảng thời gian</label>
               <Select value={timeRange} onValueChange={onTimeRangeChange}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -83,7 +83,7 @@ export function ReportFilters({
             <div className="space-y-2">
               <label className="text-sm font-medium">Loại báo cáo</label>
               <Select value={reportType} onValueChange={onReportTypeChange}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -109,7 +109,7 @@ export function ReportFilters({
 
           {/* Second row: Custom Date Range (only shown when custom is selected) */}
           {timeRange === "custom" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Từ ngày</label>
                 <DatePicker

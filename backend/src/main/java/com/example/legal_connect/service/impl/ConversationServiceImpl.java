@@ -34,6 +34,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .type(request.getType())
                 .title(request.getTitle())
                 .summary(request.getSummary())
+                .pythonFileId(request.getPythonFileId())
                 .build();
         
         conversation = conversationRepository.save(conversation);

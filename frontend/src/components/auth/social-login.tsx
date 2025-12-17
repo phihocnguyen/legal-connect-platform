@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
 import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `http://legal-connect-prod-alb-1638652928.ap-southeast-2.elb.amazonaws.com/login/oauth2/authorization/google`;
   };
 
   return (

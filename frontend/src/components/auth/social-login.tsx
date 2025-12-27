@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    window.location.href = `http://legal-connect-prod-alb-1638652928.ap-southeast-2.elb.amazonaws.com/login/oauth2/authorization/google`;
+    // Redirect to local backend OAuth2 endpoint during development
+    window.location.href = `http://localhost:8080/oauth2/authorization/google`;
   };
 
   return (

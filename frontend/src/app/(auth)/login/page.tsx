@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useLoadingState } from "@/hooks/use-loading-state";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-
-interface LoginFormData {
-  email: string;
-  password: string;
-  remember: boolean;
-}
+import { loginSchema, type LoginFormData } from "@/domain/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,7 +53,14 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<LoginFormData>();
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      remember: false,
+    },
+  });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -173,13 +176,7 @@ export default function LoginPage() {
                       autoComplete="email"
                       autoCorrect="off"
                       disabled={isLoading}
-                      {...register("email", {
-                        required: "Email là bắt buộc",
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: "Email không hợp lệ",
-                        },
-                      })}
+                      {...register("email")}
                       className={`pl-10 h-12 transition-all duration-200 ${
                         errors.email
                           ? "border-red-500 focus:ring-red-500"
@@ -208,13 +205,7 @@ export default function LoginPage() {
                       type="password"
                       autoComplete="current-password"
                       disabled={isLoading}
-                      {...register("password", {
-                        required: "Mật khẩu là bắt buộc",
-                        minLength: {
-                          value: 6,
-                          message: "Mật khẩu phải có ít nhất 6 ký tự",
-                        },
-                      })}
+                      {...register("password")}
                       className={`pl-10 h-12 transition-all duration-200 ${
                         errors.password
                           ? "border-red-500 focus:ring-red-500"

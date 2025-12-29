@@ -1,6 +1,6 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 interface PaginationProps {
   currentPage: number;
@@ -15,28 +15,38 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   onPageChange,
   totalElements,
-  pageSize
+  pageSize,
 }) => {
   // Fix edge cases
   const safeTotalElements = Math.max(0, totalElements);
   const safeTotalPages = Math.max(1, totalPages);
-  const safeCurrentPage = Math.max(0, Math.min(currentPage, safeTotalPages - 1));
-  
+  const safeCurrentPage = Math.max(
+    0,
+    Math.min(currentPage, safeTotalPages - 1)
+  );
+
   const startItem = safeTotalElements > 0 ? safeCurrentPage * pageSize + 1 : 0;
-  const endItem = safeTotalElements > 0 ? Math.min((safeCurrentPage + 1) * pageSize, safeTotalElements) : 0;
+  const endItem =
+    safeTotalElements > 0
+      ? Math.min((safeCurrentPage + 1) * pageSize, safeTotalElements)
+      : 0;
 
   const getVisiblePages = () => {
     const delta = 2;
     const range = [];
     const rangeWithDots = [];
 
-    for (let i = Math.max(0, safeCurrentPage - delta); i <= Math.min(safeTotalPages - 1, safeCurrentPage + delta); i++) {
+    for (
+      let i = Math.max(0, safeCurrentPage - delta);
+      i <= Math.min(safeTotalPages - 1, safeCurrentPage + delta);
+      i++
+    ) {
       range.push(i);
     }
 
     if (range[0] > 0) {
       if (range[0] > 1) {
-        rangeWithDots.push(0, '...');
+        rangeWithDots.push(0, "...");
       } else {
         rangeWithDots.push(0);
       }
@@ -46,7 +56,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
     if (range[range.length - 1] < safeTotalPages - 1) {
       if (range[range.length - 1] < safeTotalPages - 2) {
-        rangeWithDots.push('...', safeTotalPages - 1);
+        rangeWithDots.push("...", safeTotalPages - 1);
       } else {
         rangeWithDots.push(safeTotalPages - 1);
       }
@@ -73,33 +83,36 @@ export const Pagination: React.FC<PaginationProps> = ({
           Sau
         </Button>
       </div>
-      
+
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-gray-700">
-            Hiển thị <span className="font-medium">{startItem}</span> đến{' '}
-            <span className="font-medium">{endItem}</span> trong{' '}
+            Hiển thị <span className="font-medium">{startItem}</span> đến{" "}
+            <span className="font-medium">{endItem}</span> trong{" "}
             <span className="font-medium">{safeTotalElements}</span> kết quả
           </p>
         </div>
-        
+
         <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          <nav
+            className="relative z-0 inline-flex rounded-md shadow-sm"
+            aria-label="Pagination"
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={() => onPageChange(safeCurrentPage - 1)}
               disabled={safeCurrentPage === 0}
-              className="relative inline-flex items-center px-2 py-2 rounded-l-md border-r-0"
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md mx-1"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            
+
             {safeTotalPages > 1 ? (
               getVisiblePages().map((page, index) => (
                 <React.Fragment key={index}>
-                  {page === '...' ? (
-                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  {page === "..." ? (
+                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 mx-1 rounded">
                       <MoreHorizontal className="h-4 w-4" />
                     </span>
                   ) : (
@@ -107,7 +120,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                       variant={page === safeCurrentPage ? "default" : "outline"}
                       size="sm"
                       onClick={() => onPageChange(page as number)}
-                      className="relative inline-flex items-center px-4 py-2 border-r-0 border-l-0"
+                      className="relative inline-flex items-center px-4 py-2 mx-1 rounded"
                     >
                       {(page as number) + 1}
                     </Button>
@@ -118,19 +131,19 @@ export const Pagination: React.FC<PaginationProps> = ({
               <Button
                 variant="default"
                 size="sm"
-                className="relative inline-flex items-center px-4 py-2 border-r-0 border-l-0"
+                className="relative inline-flex items-center px-4 py-2 mx-1 rounded"
                 disabled
               >
                 1
               </Button>
             )}
-            
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => onPageChange(safeCurrentPage + 1)}
               disabled={safeCurrentPage === safeTotalPages - 1}
-              className="relative inline-flex items-center px-2 py-2 rounded-r-md border-l-0"
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md mx-1"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

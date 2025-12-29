@@ -1,3 +1,15 @@
+export interface User {
+  id: number;
+  email: string;
+  fullName: string;
+  avatar?: string;
+  role: UserRole;
+  lawyerLicenseNumber?: string;
+  lawyerVerified: boolean;
+}
+
+export type UserRole = "user" | "lawyer" | "admin";
+
 export interface UserProfile {
   id: number;
   email: string;

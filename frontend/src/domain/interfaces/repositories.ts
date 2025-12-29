@@ -14,6 +14,7 @@ import {
   PdfUploadResult,
   PythonPdfUploadResult,
   PdfSummaryResult,
+  PdfQAResponse,
   UserMessage,
   UserConversation,
   ForumStatsDto,
@@ -140,7 +141,8 @@ export interface PdfRepository {
   uploadPdf(
     file: File,
     title: string,
-    summary?: string
+    summary?: string,
+    pythonFileId?: string
   ): Promise<PdfUploadResult>;
   getConversations(): Promise<PdfConversation[]>;
   getConversation(id: number): Promise<PdfConversation>;
@@ -155,6 +157,11 @@ export interface PdfRepository {
   // Python API methods
   uploadPdfToPython(file: File): Promise<PythonPdfUploadResult>;
   getPdfSummary(fileId: string, maxLength?: number): Promise<PdfSummaryResult>;
+  askPdfQuestion(
+    fileId: string,
+    question: string,
+    topK?: number
+  ): Promise<PdfQAResponse>;
 }
 
 export interface MessagingRepository {

@@ -46,6 +46,10 @@ export default function UsersPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Local state for filters before applying
+  const [localSearch, setLocalSearch] = useState("");
+  const [localRoleFilter, setLocalRoleFilter] = useState("ALL");
+
   const { loading, getUsers, updateUserStatus } = useAdminCases();
 
   const fetchUsers = useCallback(async () => {
@@ -69,6 +73,13 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handleApplyFilters = () => {
+    // Update actual filter state from local state
+    setSearch(localSearch);
+    setRoleFilter(localRoleFilter);
+    setPage(0); // Reset to first page when filters change
+  };
 
   const handleToggleUserStatus = async (
     userId: number,
@@ -169,8 +180,8 @@ export default function UsersPage() {
 
         {/* Filters */}
         <AdminTableFilters
-          searchValue={search}
-          onSearchChange={setSearch}
+          searchValue={localSearch}
+          onSearchChange={setLocalSearch}
           searchPlaceholder="Tìm kiếm theo tên hoặc email..."
           filterRows={[
             {
@@ -178,8 +189,8 @@ export default function UsersPage() {
                 {
                   id: "role",
                   label: "Vai trò",
-                  value: roleFilter,
-                  onChange: setRoleFilter,
+                  value: localRoleFilter,
+                  onChange: setLocalRoleFilter,
                   options: [
                     { value: "ALL", label: "Tất cả vai trò" },
                     { value: "USER", label: "Người dùng" },
@@ -190,7 +201,7 @@ export default function UsersPage() {
               ],
             },
           ]}
-          onApplyFilters={fetchUsers}
+          onApplyFilters={handleApplyFilters}
           isLoading={loading}
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters(!showFilters)}

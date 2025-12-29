@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Eye, Calendar } from "lucide-react";
-import { UserProfile, PostDto } from "@/domain/entities";
-import { UserPost } from "@/domain/entities/user";
+import { UserProfile, PostDto, UserPost } from "@/domain/entities";
 
 interface ProfilePostsProps {
   posts: PostDto[] | UserPost[];

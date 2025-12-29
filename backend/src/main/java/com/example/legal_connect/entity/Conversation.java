@@ -34,6 +34,9 @@ public class Conversation {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
+    @Column(name = "python_file_id")
+    private String pythonFileId; // Store fileId from Python API for PDF Q/A
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

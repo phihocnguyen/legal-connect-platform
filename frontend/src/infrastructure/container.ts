@@ -66,6 +66,7 @@ import {
   DeleteConversationUseCase,
   UploadPdfToPythonUseCase,
   GetPdfSummaryUseCase,
+  AskPdfQuestionUseCase,
 } from "../application/use-cases/pdf.use-case";
 import {
   GetConversationsUseCase as MessagingGetConversationsUseCase,
@@ -262,6 +263,10 @@ class Container {
     this.useCases.set(
       "GetPdfSummaryUseCase",
       new GetPdfSummaryUseCase(pdfRepo)
+    );
+    this.useCases.set(
+      "AskPdfQuestionUseCase",
+      new AskPdfQuestionUseCase(pdfRepo)
     );
 
     // Messaging use cases

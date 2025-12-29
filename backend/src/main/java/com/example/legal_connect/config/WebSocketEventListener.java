@@ -38,14 +38,15 @@ public class WebSocketEventListener {
                     UserPrincipal userPrincipal = (UserPrincipal) principal;
                     String userId = userPrincipal.getId().toString();
                     String userName = userPrincipal.getFullName();
+                    String email = userPrincipal.getEmail();
                     String userType = userPrincipal.getRole().name();
                     String avatar = userPrincipal.getAvatar();
-                    log.debug("Extracted user info: id={}, name={}, type={}, avatar={}", userId, userName, userType, avatar);
+                    log.debug("Extracted user info: id={}, name={}, email={}, type={}, avatar={}", userId, userName, email, userType, avatar);
                     headerAccessor.getSessionAttributes().put("userId", userId);
                     headerAccessor.getSessionAttributes().put("userName", userName);
                     headerAccessor.getSessionAttributes().put("userType", userType);
                     try {
-                        onlineUserService.addUser(userId, userName, userType, sessionId, avatar);
+                        onlineUserService.addUser(userId, userName, email, userType, sessionId, avatar);
                         log.info("User {} ({}) connected via WebSocket - Session: {}", userName, userType, sessionId);
                     } catch (Exception e) {
                         log.error("Exception when adding user to onlineUserService: {}", e.getMessage(), e);

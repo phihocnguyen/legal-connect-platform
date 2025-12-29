@@ -3,8 +3,8 @@ import { UserConversation, UserMessage } from "../../domain/entities";
 import { apiClient } from "@/lib/axiosInstance";
 
 export class MessagingRepositoryImpl implements MessagingRepository {
-  async getConversations(_userId: number): Promise<UserConversation[]> {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
+  async getConversations(): Promise<UserConversation[]> {
+    // userId not used - endpoint returns conversations for current authenticated user
     const response = await apiClient.get("/user-conversations");
     return response.data as UserConversation[];
   }
@@ -20,10 +20,9 @@ export class MessagingRepositoryImpl implements MessagingRepository {
 
   async sendMessage(
     conversationId: string,
-    content: string,
-    _senderId: number
+    content: string
   ): Promise<UserMessage> {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
+    // senderId not used - backend infers from authenticated user
     const response = await apiClient.post("/user-conversations/messages", {
       conversationId: parseInt(conversationId),
       content,
@@ -51,11 +50,8 @@ export class MessagingRepositoryImpl implements MessagingRepository {
     return response.data as UserConversation;
   }
 
-  async markMessagesAsRead(
-    conversationId: string,
-    _userId: number
-  ): Promise<void> {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
+  async markMessagesAsRead(conversationId: string): Promise<void> {
+    // userId not used - backend infers from authenticated user
     await apiClient.put(`/user-conversations/${conversationId}/read`);
   }
 }

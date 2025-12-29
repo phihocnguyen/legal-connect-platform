@@ -24,10 +24,11 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     }
 
     @Override
-    public void addUser(String userId, String userName, String userType, String sessionId, String avatar) {
+    public void addUser(String userId, String userName, String email, String userType, String sessionId, String avatar) {
         UserOnlineStatus userStatus = UserOnlineStatus.builder()
                 .userId(userId)
                 .userName(userName)
+                .email(email)
                 .userType(userType)
                 .avatar(avatar)
                 .online(true)

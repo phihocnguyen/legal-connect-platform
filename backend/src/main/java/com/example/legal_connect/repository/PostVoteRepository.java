@@ -17,5 +17,15 @@ public interface PostVoteRepository extends JpaRepository<PostVote, Long> {
     long countByPostIdAndVoteType(@Param("postId") Long postId, @Param("voteType") PostVote.VoteType voteType);
     
     void deleteByPostIdAndUserId(Long postId, Long userId);
+    
+    /**
+     * Analytics: Count votes by date
+     */
+    @Query("SELECT DATE(v.createdAt) as date, COUNT(v) as count " +
+           "FROM PostVote v " +
+           "WHERE v.createdAt >= :startDate AND v.voteType = com.example.legal_connect.entity.PostVote.VoteType.UPVOTE " +
+           "GROUP BY DATE(v.createdAt) " +
+           "ORDER BY date")
+    java.util.List<Object[]> countUpvotesGroupedByDate(@Param("startDate") java.time.LocalDateTime startDate);
 }
 

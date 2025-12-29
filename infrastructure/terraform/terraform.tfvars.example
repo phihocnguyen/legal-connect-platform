@@ -1,0 +1,58 @@
+# AWS Configuration
+aws_region  = "ap-southeast-1"
+project_name = "legal-connect"
+environment  = "prod"
+
+# VPC Configuration
+vpc_cidr                     = "10.0.0.0/16"
+availability_zones           = ["ap-southeast-1a", "ap-southeast-1b"]
+public_subnet_cidrs          = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs_app     = ["10.0.10.0/24", "10.0.11.0/24"]
+private_subnet_cidrs_data    = ["10.0.20.0/24", "10.0.21.0/24"]
+
+# SSL Certificates
+ssl_certificate_arn        = "arn:aws:acm:ap-southeast-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+cloudfront_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+
+# RDS Configuration
+db_engine            = "mysql"
+db_engine_version    = "8.0"
+db_instance_class    = "db.t3.micro"
+db_name              = "legalconnect"
+db_username          = "admin"
+db_password          = "CHANGE_ME_STRONG_PASSWORD"
+db_allocated_storage = 20
+db_backup_retention  = 7
+
+# ECS Configuration
+backend_image           = "ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/legal-connect-backend:latest"
+backend_cpu             = 512
+backend_memory          = 1024
+backend_desired_count   = 2
+backend_container_port  = 8080
+
+# Application Configuration
+jwt_secret = "CHANGE_ME_JWT_SECRET_KEY"
+
+# CloudWatch Configuration
+log_retention_days = 30
+alarm_email        = "admin@legalconnect.com"
+
+# OAuth2 Configuration
+# Get from Google Cloud Console: https://console.cloud.google.com/apis/credentials
+google_client_id     = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+google_client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
+google_oauth_scope   = "openid,profile,email"
+
+# URLs Configuration
+# Update after getting ALB DNS or Custom Domain
+backend_url  = "https://api.yourdomain.com"  # Or ALB DNS
+frontend_url = "https://yourdomain.com"      # Or CloudFront URL
+
+# Cloudinary Configuration (Optional)
+cloudinary_cloud_name = "your_cloudinary_cloud_name"
+cloudinary_api_key    = "your_cloudinary_api_key"
+cloudinary_api_secret = "your_cloudinary_api_secret"
+
+# CORS Configuration (Optional - leave empty to use frontend_url)
+cors_allowed_origins = "https://yourdomain.com,https://www.yourdomain.com"

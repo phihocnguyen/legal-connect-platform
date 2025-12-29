@@ -79,7 +79,7 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto py-8 space-y-8">
       <ProfileHeader user={profile} />
-      <ProfileStats user={profile} />
+      <ProfileStats />
       <ProfilePosts posts={userPosts} user={profile} />
     </div>
   );

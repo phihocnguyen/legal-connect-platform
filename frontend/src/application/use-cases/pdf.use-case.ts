@@ -1,11 +1,22 @@
-import { PdfConversation, PdfMessage, PdfUploadResult, PythonPdfUploadResult, PdfSummaryResult } from '../../domain/entities';
-import { PdfRepository } from '../../domain/interfaces/repositories';
+import {
+  PdfConversation,
+  PdfMessage,
+  PdfUploadResult,
+  PythonPdfUploadResult,
+  PdfSummaryResult,
+} from "../../domain/entities";
+import { PdfRepository } from "../../domain/interfaces/repositories";
 
 export class UploadPdfUseCase {
   constructor(private pdfRepository: PdfRepository) {}
 
-  async execute(file: File, title: string, summary?: string): Promise<PdfUploadResult> {
-    return this.pdfRepository.uploadPdf(file, title, summary);
+  async execute(
+    file: File,
+    title: string,
+    summary?: string,
+    pythonFileId?: string
+  ): Promise<PdfUploadResult> {
+    return this.pdfRepository.uploadPdf(file, title, summary, pythonFileId);
   }
 }
 
@@ -71,5 +82,17 @@ export class GetPdfSummaryUseCase {
 
   async execute(fileId: string, maxLength?: number): Promise<PdfSummaryResult> {
     return this.pdfRepository.getPdfSummary(fileId, maxLength);
+  }
+}
+
+export class AskPdfQuestionUseCase {
+  constructor(private pdfRepository: PdfRepository) {}
+
+  async execute(
+    fileId: string,
+    question: string,
+    topK?: number
+  ): Promise<import("../../domain/entities").PdfQAResponse> {
+    return this.pdfRepository.askPdfQuestion(fileId, question, topK);
   }
 }

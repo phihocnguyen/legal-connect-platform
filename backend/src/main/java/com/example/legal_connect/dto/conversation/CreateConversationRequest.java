@@ -22,5 +22,7 @@ public class CreateConversationRequest {
     
     private String summary;
     
+    private String pythonFileId; // Store fileId from Python API for PDF Q/A
+    
     private String initialMessage;
 }

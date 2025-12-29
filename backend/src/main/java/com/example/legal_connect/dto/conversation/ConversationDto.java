@@ -19,6 +19,7 @@ public class ConversationDto {
     private ConversationType type;
     private String title;
     private String summary;
+    private String pythonFileId; // Store fileId from Python API for PDF Q/A
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<MessageDto> messages;

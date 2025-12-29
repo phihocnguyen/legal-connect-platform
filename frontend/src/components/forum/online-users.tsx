@@ -1,12 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { parseVietnameseDate } from '@/lib/utils';
+import React, { useState, useRef, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { parseVietnameseDate } from "@/lib/utils";
 
 type User = {
   userId: string;
   userName: string;
+  email?: string;
   userType: string;
   avatar: string;
   online: boolean;
@@ -20,12 +25,11 @@ interface OnlineUser {
   totalOnline: number;
 }
 
-
 const roleTitles = {
-  admin: 'Quản trị viên',
-  moderator: 'Điều hành viên',
-  lawyer: 'Luật sư',
-  user: 'Thành viên'
+  admin: "Quản trị viên",
+  moderator: "Điều hành viên",
+  lawyer: "Luật sư",
+  user: "Thành viên",
 } as const;
 
 interface OnlineUserListProps {
@@ -41,14 +45,22 @@ function UserPopupContent({ user }: { user: User }) {
         </Avatar>
         <div>
           <h4 className="font-semibold">{user.userName}</h4>
-          <Badge variant={user.userType === 'lawyer' ? 'default' : 'secondary'}>
+          <Badge variant={user.userType === "lawyer" ? "default" : "secondary"}>
             {roleTitles[user.userType as keyof typeof roleTitles]}
           </Badge>
         </div>
       </div>
       <div className="text-sm text-gray-600">
-        <p>Trạng thái: <span className="text-green-600 font-medium">Đang online</span></p>
-        <p>Lần cuối hoạt động: {parseVietnameseDate(user.lastSeen as string)?.toLocaleString('vi-vn')}</p>
+        <p>
+          Trạng thái:{" "}
+          <span className="text-green-600 font-medium">Đang online</span>
+        </p>
+        <p>
+          Lần cuối hoạt động:{" "}
+          {parseVietnameseDate(user.lastSeen as string)?.toLocaleString(
+            "vi-vn"
+          )}
+        </p>
         <p>ID: {user.userId}</p>
       </div>
     </div>
@@ -100,7 +112,7 @@ function LawyerCard({ user }: { user: User }) {
             onMouseLeave={handleMouseLeave}
           >
             <div className="truncate font-semibold text-gray-800 cursor-pointer hover:text-green-700 transition-colors">
-              {user.userName}
+              {user.email || user.userName}
             </div>
           </PopoverTrigger>
 
@@ -120,7 +132,6 @@ function LawyerCard({ user }: { user: User }) {
         </div>
       </div>
     </div>
-
   );
 }
 
@@ -160,10 +171,10 @@ function UserPopover({ user }: { user: User }) {
         onMouseLeave={handleMouseLeave}
       >
         <span className="text-blue-600 cursor-pointer hover:text-blue-800 transition-colors font-medium">
-          {user.userName}
+          {user.email || user.userName}
         </span>
       </PopoverTrigger>
-      
+
       <PopoverContent
         side="top"
         align="center"
@@ -179,7 +190,7 @@ function UserPopover({ user }: { user: User }) {
 }
 
 export function OnlineUserList({ userList }: OnlineUserListProps) {
-  const { users : regularUsers, totalOnline, lawyers } = userList;
+  const { users: regularUsers, totalOnline, lawyers } = userList;
 
   return (
     <div className="bg-white rounded-lg shadow p-6">

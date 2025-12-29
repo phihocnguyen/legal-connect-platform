@@ -58,4 +58,35 @@ public interface PostReplyRepository extends JpaRepository<PostReply, Long> {
      */
     @Query("SELECT COUNT(r) FROM PostReply r WHERE r.post.category.id = :categoryId AND r.isActive = true")
     long countByCategoryId(@Param("categoryId") Long categoryId);
+    
+    /**
+     * Analytics: Count replies created after a date
+     */
+    long countByCreatedAtAfterAndIsActiveTrue(java.time.LocalDateTime startDate);
+    
+    /**
+     * Analytics: Get average reply count per post
+     */
+    @Query("SELECT AVG(r.replyCount) FROM Post r WHERE r.createdAt >= :startDate AND r.isActive = true")
+    Double getAverageReplyCountPerPost(@Param("startDate") java.time.LocalDateTime startDate);
+    
+    /**
+     * Analytics: Count replies by date
+     */
+    @Query("SELECT DATE(r.createdAt) as date, COUNT(r) as count " +
+           "FROM PostReply r " +
+           "WHERE r.createdAt >= :startDate AND r.isActive = true " +
+           "GROUP BY DATE(r.createdAt) " +
+           "ORDER BY date")
+    java.util.List<Object[]> countRepliesGroupedByDate(@Param("startDate") java.time.LocalDateTime startDate);
+    
+    /**
+     * Analytics: Count replies by hour of day
+     */
+    @Query("SELECT HOUR(r.createdAt) as hour, COUNT(r) as count " +
+           "FROM PostReply r " +
+           "WHERE r.createdAt >= :startDate AND r.isActive = true " +
+           "GROUP BY HOUR(r.createdAt) " +
+           "ORDER BY hour")
+    java.util.List<Object[]> countRepliesGroupedByHour(@Param("startDate") java.time.LocalDateTime startDate);
 }

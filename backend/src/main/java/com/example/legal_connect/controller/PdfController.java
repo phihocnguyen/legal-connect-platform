@@ -34,13 +34,15 @@ public class PdfController {
             @RequestParam("title") String title,
             @Parameter(description = "Summary of the PDF content")
             @RequestParam(value = "summary", required = false) String summary,
+            @Parameter(description = "Python file ID from Python API")
+            @RequestParam(value = "pythonFileId", required = false) String pythonFileId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
         try {
             // Validate and deduct API key
             apiKeyValidationService.validateAndUseApiKey(userPrincipal.getId(), "pdf");
             
-            PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, userPrincipal.getId());
+            PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, pythonFileId, userPrincipal.getId());
             
             if (response.isSuccess()) {
                 return ResponseEntity.ok(response);

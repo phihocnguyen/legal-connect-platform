@@ -17,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -42,7 +40,6 @@ public class ForumServiceImpl implements ForumService {
     private final ForumRepository postRepository;
     private final PostCategoryRepository postCategoryRepository;
     private final PostReplyRepository postReplyRepository;
-    private final CacheManager cacheManager;
     private final UserRepository userRepository;
     private final PostVoteRepository postVoteRepository;
     private final ReplyVoteRepository replyVoteRepository;
@@ -55,18 +52,7 @@ public class ForumServiceImpl implements ForumService {
     @Override
     @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
-        // Try to get from cache first
-        Cache cache = cacheManager.getCache("categories");
-        if (cache != null) {
-            @SuppressWarnings("unchecked")
-            List<PostCategoryDto> cachedCategories = (List<PostCategoryDto>) cache.get("all", List.class);
-            if (cachedCategories != null) {
-                log.info("Returning categories from cache");
-                return cachedCategories;
-            }
-        }
-
-        log.info("Fetching all categories from database...");
+        log.info("Fetching all categories from database (cache disabled)...");
 
         List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         
@@ -123,16 +109,6 @@ public class ForumServiceImpl implements ForumService {
                 return dto;
             })
             .collect(Collectors.toList());
-
-        // Cache the result
-        try {
-            if (cache != null) {
-                cache.put("all", result);
-                log.info("Categories cached successfully");
-            }
-        } catch (Exception e) {
-            log.error("Failed to cache categories: {}", e.getMessage());
-        }
 
         return result;
     }
@@ -294,11 +270,6 @@ public class ForumServiceImpl implements ForumService {
         }
         System.out.println("No authenticated user found");
         return null;
-    }
-    
-    // Enrich PostDto with user's vote (legacy - uses security context)
-    private void enrichWithUserVote(PostDto dto) {
-        enrichWithUserVote(dto, getCurrentUserId());
     }
     
     // Enrich PostDto with user's vote

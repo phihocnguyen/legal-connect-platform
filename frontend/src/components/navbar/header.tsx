@@ -4,8 +4,12 @@ import Link from "next/link";
 // search removed from header because home page has the primary search
 import { UserMenu } from "./user-menu";
 import { MobileNav } from "./mobile-nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { useAuth } from "@/contexts/auth-context";
 
 export function Header() {
+  const { user } = useAuth();
+
   return (
     <header className="border-b border-gray-200 py-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,6 +59,11 @@ export function Header() {
 
           {/* Auth/User Menu and Mobile Menu */}
           <div className="flex items-center space-x-4 ml-4">
+            {user && (
+              <div className="hidden sm:block">
+                <NotificationBell />
+              </div>
+            )}
             <div className="hidden sm:block">
               <UserMenu />
             </div>

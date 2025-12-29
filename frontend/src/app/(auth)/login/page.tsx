@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SocialLogin } from "@/components/auth/social-login";
 import { useAuth } from "@/contexts/auth-context";
-import { useLoadingState } from "@/hooks/use-loading-state";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/domain/validations/auth";
@@ -20,7 +19,6 @@ import { loginSchema, type LoginFormData } from "@/domain/validations/auth";
 export default function LoginPage() {
   const router = useRouter();
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { startLoading, stopLoading, isLoading } = useLoadingState();
 
   useEffect(() => {
     // Only redirect if authLoading is complete and user is authenticated
@@ -51,7 +49,7 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -64,8 +62,6 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      startLoading("Đang tải...");
-
       const user = await login(data.email, data.password);
 
       toast.success("Đăng nhập thành công!");
@@ -75,20 +71,25 @@ export default function LoginPage() {
         "returnUrl"
       );
 
+      // Determine target URL
+      let targetUrl = "/";
       if (returnUrl) {
-        router.push(returnUrl);
+        targetUrl = returnUrl;
       } else if (user) {
         // Redirect based on role directly - no need to go through homepage
         const role = user.role?.toLowerCase();
         if (role === "admin") {
-          router.push("/admin");
+          targetUrl = "/admin";
         } else {
-          router.push("/forum");
+          targetUrl = "/forum";
         }
-      } else {
-        // No user returned - go to homepage
-        router.push("/");
       }
+
+      // Small delay to show success message before navigation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Navigate
+      router.push(targetUrl);
     } catch (error) {
       console.error("Login error:", error);
 
@@ -105,8 +106,6 @@ export default function LoginPage() {
       } else {
         toast.error("Có lỗi xảy ra. Vui lòng thử lại!");
       }
-    } finally {
-      stopLoading();
     }
   };
 
@@ -158,7 +157,11 @@ export default function LoginPage() {
               </div>
 
               {/* Form */}
-              <div onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <form
+                id="login-form"
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-5"
+              >
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"
@@ -175,7 +178,7 @@ export default function LoginPage() {
                       autoCapitalize="none"
                       autoComplete="email"
                       autoCorrect="off"
-                      disabled={isLoading}
+                      disabled={isSubmitting}
                       {...register("email")}
                       className={`pl-10 h-12 transition-all duration-200 ${
                         errors.email
@@ -204,7 +207,7 @@ export default function LoginPage() {
                       id="password"
                       type="password"
                       autoComplete="current-password"
-                      disabled={isLoading}
+                      disabled={isSubmitting}
                       {...register("password")}
                       className={`pl-10 h-12 transition-all duration-200 ${
                         errors.password
@@ -226,7 +229,7 @@ export default function LoginPage() {
                       type="checkbox"
                       className="w-4 h-4 rounded border-gray-300 text-[#004646] focus:ring-[#004646] focus:ring-2 cursor-pointer transition-all"
                       {...register("remember")}
-                      disabled={isLoading}
+                      disabled={isSubmitting}
                     />
                     <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
                       Ghi nhớ đăng nhập
@@ -241,12 +244,12 @@ export default function LoginPage() {
                 </div>
 
                 <Button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  className="w-full h-12 bg-gradient-to-r from-[#004646] to-[#006666] hover:from-[#005555] hover:to-[#007777] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group"
-                  disabled={isLoading}
+                  type="submit"
+                  form="login-form"
+                  className="w-full h-12 bg-gradient-to-r from-[#004646] to-[#006666] hover:from-[#005555] hover:to-[#007777] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group disabled:opacity-60"
+                  disabled={isSubmitting}
                 >
-                  {isLoading ? (
+                  {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                       Đang đăng nhập...
@@ -258,7 +261,7 @@ export default function LoginPage() {
                     </span>
                   )}
                 </Button>
-              </div>
+              </form>
               <div className="mt-6">
                 <SocialLogin />
               </div>

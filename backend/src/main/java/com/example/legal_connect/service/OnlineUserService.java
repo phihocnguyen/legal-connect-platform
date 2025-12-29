@@ -5,7 +5,7 @@ import com.example.legal_connect.dto.chat.UserOnlineStatus;
 
 import java.util.List;
 public interface OnlineUserService {
-    void addUser(String userId, String userName, String userType, String sessionId, String avatar);
+    void addUser(String userId, String userName, String email, String userType, String sessionId, String avatar);
     void removeUser(String userId);
     void removeUserBySessionId(String sessionId);
     void updateLastSeen(String userId);

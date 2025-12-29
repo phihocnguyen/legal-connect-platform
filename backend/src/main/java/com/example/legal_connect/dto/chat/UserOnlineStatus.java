@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class UserOnlineStatus {
     private String userId;
     private String userName;
+    private String email;
     private String userType;
     private String avatar;
     private boolean online;

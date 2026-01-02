@@ -1,6 +1,7 @@
 package com.example.legal_connect.service.impl;
 
 import com.example.legal_connect.dto.auth.RegisterRequest;
+import com.example.legal_connect.dto.user.UpdateProfileRequest;
 import com.example.legal_connect.dto.user.UserProfileDto;
 import com.example.legal_connect.dto.user.UserPostDto;
 import com.example.legal_connect.entity.Post;
@@ -17,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -78,6 +81,12 @@ public class UserServiceImpl implements UserService {
         
         long postCount = forumRepository.countByAuthorAndIsActiveTrue(user);
         long replyCount = postReplyRepository.countByAuthorAndIsActiveTrue(user);
+
+        // Parse legalExpertise from comma-separated string to List
+        List<String> legalExpertiseList = new java.util.ArrayList<>();
+        if (user.getLegalExpertise() != null && !user.getLegalExpertise().isEmpty()) {
+            legalExpertiseList = Arrays.asList(user.getLegalExpertise().split(","));
+        }
         
         return UserProfileDto.builder()
                 .id(user.getId())
@@ -89,7 +98,55 @@ public class UserServiceImpl implements UserService {
                 .postCount(postCount)
                 .replyCount(replyCount)
                 .joinedAt(user.getCreatedAt())
+                .bio(user.getBio())
+                .legalExpertise(legalExpertiseList)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public UserProfileDto updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Update fields if provided
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getLegalExpertise() != null) {
+            // Validate legal expertise list
+            if (request.getLegalExpertise().size() > 10) {
+                throw new RuntimeException("Legal expertise list cannot exceed 10 items");
+            }
+            // Validate each expertise item
+            for (String expertise : request.getLegalExpertise()) {
+                if (expertise == null || expertise.trim().isEmpty()) {
+                    throw new RuntimeException("Legal expertise items cannot be empty");
+                }
+                if (expertise.length() > 50) {
+                    throw new RuntimeException("Each legal expertise must not exceed 50 characters");
+                }
+            }
+            // Convert List to comma-separated string, or empty string if list is empty
+            String legalExpertiseStr = request.getLegalExpertise().isEmpty() 
+                    ? "" 
+                    : String.join(",", request.getLegalExpertise());
+            user.setLegalExpertise(legalExpertiseStr);
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getAvatar() != null) {
+            user.setAvatar(request.getAvatar());
+        }
+        
+        User updatedUser = userRepository.save(user);
+        
+        // Return updated profile
+        return getUserProfile(updatedUser.getId());
     }
     
     @Override

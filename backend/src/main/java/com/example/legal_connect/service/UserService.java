@@ -1,6 +1,7 @@
 package com.example.legal_connect.service;
 
 import com.example.legal_connect.dto.auth.RegisterRequest;
+import com.example.legal_connect.dto.user.UpdateProfileRequest;
 import com.example.legal_connect.dto.user.UserProfileDto;
 import com.example.legal_connect.dto.user.UserPostDto;
 import com.example.legal_connect.entity.User;
@@ -20,6 +21,8 @@ public interface UserService {
     boolean existsByEmail(String email);
     
     UserProfileDto getUserProfile(Long userId);
+
+    UserProfileDto updateProfile(Long userId, UpdateProfileRequest request);
     
     Page<UserPostDto> getUserPosts(Long userId, Pageable pageable);
 }

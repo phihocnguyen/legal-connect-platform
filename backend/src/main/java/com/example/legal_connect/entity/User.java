@@ -35,6 +35,12 @@ public class User {
     @Column(name = "avatar")
     private String avatar;
 
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = "legal_expertise", columnDefinition = "TEXT")
+    private String legalExpertise; // JSON array or comma-separated
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

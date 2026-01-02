@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,4 +22,6 @@ public class UserProfileDto {
     private Long replyCount;
     private LocalDateTime joinedAt;
     private String phoneNumber;
+    private String bio;
+    private List<String> legalExpertise;
 }

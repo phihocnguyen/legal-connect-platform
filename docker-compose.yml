@@ -2,6 +2,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
+    platform: linux/arm64
     container_name: legal-connect-postgres
     ports:
       - "5432:5432"
@@ -22,6 +23,7 @@ services:
   # Redis - Caching layer for posts and sessions
   redis:
     image: redis:7-alpine
+    platform: linux/arm64
     container_name: legal-connect-redis
     ports:
       - "6379:6379"
@@ -39,6 +41,7 @@ services:
   # RabbitMQ - Message queue for async tasks
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
+    platform: linux/arm64
     container_name: legal-connect-rabbitmq
     ports:
       - "5672:5672" # AMQP port
@@ -61,45 +64,27 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      platforms:
+        - linux/arm64
+    platform: linux/arm64
     container_name: legal-connect-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8080:8080"
     environment:
       # Enable dev profile for data seeding
       SPRING_PROFILES_ACTIVE: dev
 
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
-
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-
-      APP_JWT_SECRET: ${APP_JWT_SECRET}
-      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
-
-      # Redis configuration
+      # Redis configuration - override host to use Docker service
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_TIMEOUT: 60s
-      SPRING_REDIS_CLIENT_TYPE: lettuce
-      SPRING_REDIS_LETTUCE_POOL_MAX_ACTIVE: 8
-      SPRING_REDIS_LETTUCE_POOL_MAX_IDLE: 8
-      SPRING_REDIS_LETTUCE_POOL_MIN_IDLE: 0
-      SPRING_REDIS_LETTUCE_POOL_TIME_BETWEEN_EVICTION_RUNS: 30s
-      SPRING_REDIS_LETTUCE_SHUTDOWN_TIMEOUT: 200ms
-      SPRING_CACHE_TYPE: redis
-      SPRING_CACHE_REDIS_TIME_TO_LIVE: 3600000
 
-      # RabbitMQ configuration
+      # RabbitMQ configuration - override host to use Docker service
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-guest}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-guest}
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
 
     depends_on:
       postgres:
@@ -111,22 +96,79 @@ services:
     networks:
       - legal-connect-network
 
+  python-ml:
+    build:
+      context: ./python-ml-service
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    container_name: legal-connect-python-ml
+    ports:
+      - "8000:8000"
+    environment:
+      # Google Gemini API Key (required)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # ChromaDB settings
+      - CHROMA_PERSIST_DIR=/app/data/vector_stores
+      - COLLECTION_NAME=legal_documents
+      # Model settings
+      - EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      - LLM_MODEL=gemini-pro
+      - TEMPERATURE=0.3
+      - MAX_TOKENS=2048
+      # RAG settings
+      - TOP_K=5
+      - CHUNK_SIZE=1000
+      - CHUNK_OVERLAP=200
+    volumes:
+      - ./python-ml-service/app:/app/app
+      - ml_vector_stores:/app/data/vector_stores
+    networks:
+      - legal-connect-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      platforms:
+        - linux/arm64
+      target: deps
+    platform: linux/arm64
     container_name: legal-connect-frontend
+    env_file:
+      - ./frontend/.env.local
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
+      - ./frontend/components.json:/app/components.json
+      - ./frontend/.env.local:/app/.env.local
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
     environment:
-      - NEXT_PUBLIC_TINYMCE_API_KEY=${NEXT_PUBLIC_TINYMCE_API_KEY}
-    command: npm run dev
+      - NODE_ENV=development
+      # Override API URL để gọi backend trong Docker network
+      - NEXT_PUBLIC_API_URL=http://backend:8080/api
+      # Python ML service URL
+      - NEXT_PUBLIC_PYTHON_API_URL=http://python-ml:8000
+
+    command: sh -c "npm install && npm run dev"
+    working_dir: /app
     depends_on:
       - backend
+      - python-ml
     networks:
       - legal-connect-network
 
@@ -134,6 +176,9 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  frontend_node_modules:
+  frontend_next:
+  ml_vector_stores:
 
 networks:
   legal-connect-network:

@@ -192,13 +192,13 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const getRoleDisplayName = (role: UserRole): string => {
     switch (role) {
       case "lawyer":
-        return "luật sư";
+        return "Luật sư";
       case "admin":
-        return "quản trị viên";
+        return "Quản trị viên";
       case "user":
-        return "thành viên";
+        return "Thành viên";
       default:
-        return "thành viên";
+        return "Thành viên";
     }
   };
 
@@ -271,7 +271,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         <div className="p-6">
           <div className="flex gap-6">
             {/* Author Info */}
-            <div className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg">
+            <Link href={`/profile/${post.author.id}`} className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
               <Avatar className="w-20 h-20 mb-3">
                 {post.author.avatar && (
                   <Image
@@ -283,7 +283,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                   />
                 )}
               </Avatar>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-gray-900 hover:text-[#004646] transition-colors">
                 {post.author.name}
               </div>
               <Badge className={`mt-1 ${getRoleBadgeStyle(post.author.role)}`}>
@@ -292,7 +292,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
               <div className="mt-3 text-sm text-gray-500">
                 <div>ID: {post.author.id}</div>
               </div>
-            </div>
+            </Link>
 
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-start mb-4">
@@ -345,20 +345,22 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
               <div className="p-6">
                 <div className="flex gap-6">
                   <div className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg">
-                    <Avatar className="w-20 h-20 mb-3">
-                      {reply.author.avatar && (
-                        <Image
-                          src={reply.author.avatar}
-                          alt={reply.author.name}
-                          width={80}
-                          height={80}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </Avatar>
-                    <div className="font-semibold text-gray-900">
-                      {reply.author.name}
-                    </div>
+                    <Link href={`/profile/${reply.author.id}`} className="flex flex-col items-center w-full hover:opacity-80 transition-opacity">
+                      <Avatar className="w-20 h-20 mb-3">
+                        {reply.author.avatar && (
+                          <Image
+                            src={reply.author.avatar}
+                            alt={reply.author.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </Avatar>
+                      <div className="font-semibold text-gray-900 hover:text-[#004646] transition-colors">
+                        {reply.author.name}
+                      </div>
+                    </Link>
                     <Badge
                       className={`mt-1 ${getRoleBadgeStyle(reply.author.role)}`}
                     >

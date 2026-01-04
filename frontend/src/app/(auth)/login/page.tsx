@@ -44,7 +44,8 @@ export default function LoginPage() {
           router.push("/forum");
       }
     }
-  }, [isAuthenticated, authLoading, user, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading, user]);
 
   const {
     register,
@@ -53,6 +54,7 @@ export default function LoginPage() {
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: "onBlur",
     defaultValues: {
       email: "",
       password: "",
@@ -63,6 +65,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const user = await login(data.email, data.password);
+
+      if (!user) {
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại!");
+        return;
+      }
 
       toast.success("Đăng nhập thành công!");
 
@@ -75,14 +82,6 @@ export default function LoginPage() {
       let targetUrl = "/";
       if (returnUrl) {
         targetUrl = returnUrl;
-      } else if (user) {
-        // Redirect based on role directly - no need to go through homepage
-        const role = user.role?.toLowerCase();
-        if (role === "admin") {
-          targetUrl = "/admin";
-        } else {
-          targetUrl = "/forum";
-        }
       }
 
       // Small delay to show success message before navigation
@@ -159,7 +158,10 @@ export default function LoginPage() {
               {/* Form */}
               <form
                 id="login-form"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit(onSubmit)(e);
+                }}
                 className="space-y-5"
               >
                 <div className="space-y-2">

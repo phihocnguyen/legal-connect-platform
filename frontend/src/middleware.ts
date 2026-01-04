@@ -100,23 +100,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Homepage - redirect based on role if authenticated
+  // Homepage - allow access for all authenticated users (no auto-redirect)
   if (pathname === "/") {
-    const sessionId = request.cookies.get("SESSIONID")?.value;
-    if (sessionId) {
-      const userRole = await getUserRole(sessionId);
-      console.log("[MIDDLEWARE] Homepage access with role:", userRole);
-
-      if (userRole === "admin") {
-        const adminUrl = request.nextUrl.clone();
-        adminUrl.pathname = "/admin";
-        console.log("[MIDDLEWARE] Redirecting admin to /admin");
-        return NextResponse.redirect(adminUrl);
-      }
-      // User and lawyer stay on homepage
-      console.log("[MIDDLEWARE]", userRole, "accessing homepage - allowing");
-    }
-    // Not authenticated or unknown role - allow access to homepage
+    console.log("[MIDDLEWARE] Homepage access - allowing all users");
     return NextResponse.next();
   }
 

@@ -148,7 +148,7 @@ public class ForumServiceImpl implements ForumService {
     public Page<PostDto> getAllPosts(Pageable pageable, Long categoryId, String timeFilter) {
         if (categoryId != null) {
             // Filter by category with eager loading
-            return postRepository.findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(categoryId, pageable)
+            return postRepository.findByCategoryIdAndIsActiveTrue(categoryId, pageable)
                     .map(postMapper::toDto);
         }
         
@@ -172,7 +172,7 @@ public class ForumServiceImpl implements ForumService {
             }
             
             if (startDate != null) {
-                return postRepository.findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(startDate, pageable)
+                return postRepository.findByIsActiveTrueAndCreatedAtAfter(startDate, pageable)
                         .map(postMapper::toDto);
             }
         }

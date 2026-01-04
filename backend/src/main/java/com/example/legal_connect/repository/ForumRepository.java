@@ -133,40 +133,34 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     void updateLastReplyTime(@Param("postId") Long postId, @Param("lastReplyAt") LocalDateTime lastReplyAt);
     
     /**
-     * Find posts with eager loading of category, author and labels
+     * Find posts with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.isActive = true " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.isActive = true",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true")
     Page<Post> findAllWithCategoryAndAuthor(Pageable pageable);
     
     /**
-     * Find posts by category ID with eager loading of category, author and labels
+     * Find posts by category ID with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.category.id = :categoryId AND p.isActive = true " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.category.id = :categoryId AND p.isActive = true",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true")
-    Page<Post> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(@Param("categoryId") Long categoryId, Pageable pageable);
+    Page<Post> findByCategoryIdAndIsActiveTrue(@Param("categoryId") Long categoryId, Pageable pageable);
     
     /**
-     * Find posts created after a certain date with eager loading of category, author and labels
+     * Find posts created after a certain date with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.isActive = true AND p.createdAt >= :startDate " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.isActive = true AND p.createdAt >= :startDate",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true AND p.createdAt >= :startDate")
-    Page<Post> findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(@Param("startDate") LocalDateTime startDate, Pageable pageable);
+    Page<Post> findByIsActiveTrueAndCreatedAtAfter(@Param("startDate") LocalDateTime startDate, Pageable pageable);
     
     /**
      * Find post by ID with category, author and labels

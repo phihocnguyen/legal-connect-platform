@@ -32,12 +32,6 @@ export function Header() {
               Diễn đàn
             </Link>
             <Link
-              href="/messages"
-              className="text-gray-600 hover:text-[#004646] font-medium"
-            >
-              Tin nhắn
-            </Link>
-            <Link
               href="/chat"
               className="text-gray-600 hover:text-[#004646] font-medium"
             >
@@ -48,12 +42,6 @@ export function Header() {
               className="text-gray-600 hover:text-[#004646] font-medium"
             >
               Hỏi đáp văn bản
-            </Link>
-            <Link
-              href="/tu-van-luat-su"
-              className="text-gray-600 hover:text-[#004646] font-medium"
-            >
-              Tư vấn luật sư
             </Link>
           </nav>
 

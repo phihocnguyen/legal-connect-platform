@@ -54,7 +54,7 @@ export default function LoginPage() {
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: "onBlur",
+    mode: "onSubmit",
     defaultValues: {
       email: "",
       password: "",
@@ -82,13 +82,16 @@ export default function LoginPage() {
       let targetUrl = "/";
       if (returnUrl) {
         targetUrl = returnUrl;
+      } else {
+        // Default redirect based on role
+        const role = user.role?.toLowerCase();
+        targetUrl = role === "admin" ? "/admin" : "/forum";
       }
 
-      // Small delay to show success message before navigation
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Navigate
-      router.push(targetUrl);
+      // Navigate after showing success message
+      setTimeout(() => {
+        router.push(targetUrl);
+      }, 500);
     } catch (error) {
       console.error("Login error:", error);
 
@@ -97,8 +100,6 @@ export default function LoginPage() {
       };
 
       if (axiosError.response?.status === 401) {
-        setError("email", { message: "Email hoặc mật khẩu không đúng" });
-        setError("password", { message: "Email hoặc mật khẩu không đúng" });
         toast.error("Email hoặc mật khẩu không đúng");
       } else if (axiosError.response?.status === 400) {
         toast.error("Thông tin đăng nhập không hợp lệ");

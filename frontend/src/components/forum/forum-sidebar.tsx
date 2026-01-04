@@ -78,7 +78,7 @@ export function ForumSidebar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?type=forum&keyword=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

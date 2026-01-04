@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { PostDto, PostCategoryDto } from "@/domain/entities";
+import { RecentPosts } from "@/components/forum/recent-posts";
+import { usePostUseCases } from "@/hooks/use-post-cases";
+import axiosInstance from "@/lib/axiosInstance";
+import { handleApiError } from "@/lib/errors";
+import { useLoading } from "@/contexts/loading-context";
 import { Search, Filter, Calendar, Building2, FileText, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +18,228 @@ import { useLoadingState } from '@/hooks/use-loading-state';
 import { LegalDocument, loadLegalDocuments } from '@/lib/csv-parser';
 import { parseVietnameseDate, formatVietnameseDate } from '@/lib/utils';
 
+function ForumSearchPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setLoading } = useLoading();
+
+  const [categories, setCategories] = useState<PostCategoryDto[]>([]);
+  const [searchResults, setSearchResults] = useState<PostDto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  const [searchKeyword, setSearchKeyword] = useState<string>("");
+
+  const { getAllCategories } = usePostUseCases();
+
+  useEffect(() => {
+    const keyword = searchParams.get("keyword") || "";
+    setSearchKeyword(keyword);
+    setCurrentPage(parseInt(searchParams.get("page") || "0"));
+    setPageSize(parseInt(searchParams.get("size") || "5"));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await getAllCategories();
+        setCategories(data);
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    loadCategories();
+  }, [getAllCategories]);
+
+  const updateURL = useCallback(
+    (params: {
+      page?: number;
+      size?: number;
+    }) => {
+      const urlParams = new URLSearchParams();
+
+      urlParams.set("type", "forum");
+      urlParams.set("keyword", searchKeyword);
+      
+      if (params.page !== undefined) {
+        urlParams.set("page", params.page.toString());
+      }
+      if (params.size !== undefined) {
+        urlParams.set("size", params.size.toString());
+      }
+
+      const newURL = `/search?${urlParams.toString()}`;
+      router.push(newURL, { scroll: false });
+    },
+    [searchKeyword, router]
+  );
+
+  const loadSearchResults = useCallback(
+    async (page: number = 0) => {
+      if (!searchKeyword.trim()) {
+        setSearchResults([]);
+        setTotalPages(0);
+        setTotalElements(0);
+        return;
+      }
+
+      try {
+        setPostsLoading(true);
+        setLoading(true);
+        setError(null);
+
+        const params: Record<string, string | number> = {
+          keyword: searchKeyword,
+          page,
+          size: pageSize,
+        };
+
+        const response = await axiosInstance.get("/forum/posts/search", { params });
+        const data = response.data;
+
+        const posts = data.content || data || [];
+        const total = data.totalElements || posts.length || 0;
+        const pages =
+          data.totalPages || (total > 0 ? Math.ceil(total / pageSize) : 1);
+
+        setSearchResults(posts);
+        setTotalPages(pages);
+        setTotalElements(total);
+        setPostsLoading(false);
+        setLoading(false);
+      } catch (err: unknown) {
+        console.error("Error searching posts:", err);
+        setSearchResults([]);
+        setTotalPages(0);
+        setTotalElements(0);
+        setPostsLoading(false);
+        setLoading(false);
+        
+        const { status } = handleApiError(err);
+        if (status !== 400) {
+          const { message } = handleApiError(err);
+          setError(message);
+        }
+      }
+    },
+    [searchKeyword, pageSize, setLoading]
+  );
+
+  useEffect(() => {
+    loadSearchResults(currentPage);
+  }, [currentPage, pageSize, searchKeyword, loadSearchResults]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    updateURL({
+      page,
+      size: pageSize,
+    });
+    setPostsLoading(true);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(0);
+    updateURL({
+      page: 0,
+      size,
+    });
+    setPostsLoading(true);
+  };
+
+  if (categoriesLoading) {
+    return null;
+  }
+
+  if (error && !postsLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button
+            onClick={() => router.push("/forum")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Quay lại diễn đàn
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 animate-fade-in">
+      <div className="flex gap-8">
+        <div className="flex-1 space-y-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Kết quả tìm kiếm
+            </h1>
+            <p className="text-gray-600">
+              {searchKeyword ? `Tìm kiếm cho: "${searchKeyword}"` : "Nhập từ khóa để tìm kiếm"}
+            </p>
+            {totalElements > 0 && (
+              <p className="text-sm text-gray-500 mt-2">
+                Tìm thấy {totalElements} kết quả
+              </p>
+            )}
+          </div>
+
+          {searchKeyword.trim() && searchResults.length > 0 && (
+            <RecentPosts
+              posts={searchResults}
+              categories={categories}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              selectedCategory={null}
+              sortBy="createdAt,desc"
+              timeFilter="all"
+              isLoading={postsLoading}
+              onPageChange={handlePageChange}
+              onCategoryChange={() => {}}
+              onSortChange={() => {}}
+              onTimeFilterChange={() => {}}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          )}
+
+          {searchKeyword.trim() && searchResults.length === 0 && !postsLoading && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Không tìm thấy kết quả
+                </h3>
+                <p className="text-gray-600">
+                  Thử thay đổi từ khóa tìm kiếm
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!searchKeyword.trim() && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              <p className="text-blue-800">
+                Vui lòng nhập từ khóa tìm kiếm
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SearchFilters {
   loai_van_ban: string;
   noi_ban_hanh: string;
@@ -20,7 +248,7 @@ interface SearchFilters {
   date_to: string;
 }
 
-export default function SearchPage() {
+function LegalDocumentSearchPage() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [allDocuments, setAllDocuments] = useState<LegalDocument[]>([]);
@@ -517,4 +745,25 @@ export default function SearchPage() {
       </div>
     </div>
   );
+}
+
+export default function SearchPage() {
+  const searchParams = useSearchParams();
+  const searchType = searchParams.get("type") || "legal";
+  
+  useEffect(() => {
+    console.log("SearchPage - searchParams:", {
+      type: searchParams.get("type"),
+      keyword: searchParams.get("keyword"),
+      q: searchParams.get("q"),
+    });
+  }, [searchParams]);
+  
+  if (searchType === "forum") {
+    console.log("Rendering ForumSearchPage");
+    return <ForumSearchPage />;
+  }
+  
+  console.log("Rendering LegalDocumentSearchPage");
+  return <LegalDocumentSearchPage />;
 }

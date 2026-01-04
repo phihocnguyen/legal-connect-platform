@@ -9,11 +9,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { usePostUseCases } from "@/hooks/use-post-cases";
 import { PostDto, PostReplyDto, UserRole } from "@/domain/entities";
 import { useLoadingState } from "@/hooks/use-loading-state";
-import { Editor } from "@tinymce/tinymce-react";
-import { Flag, Reply, X } from "lucide-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Flag, Reply, X, Bookmark, BookmarkX } from "lucide-react";
 import { ReportPostDialog } from "@/components/forum/report-post-dialog";
-
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || "no-api-key";
+import { apiClient } from "@/lib/axiosInstance";
+import { toast } from "sonner";
 
 interface ThreadPageProps {
   category: string;
@@ -28,6 +28,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [quotedReply, setQuotedReply] = useState<PostReplyDto | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const {
     getPostBySlug,
@@ -227,6 +228,18 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
     );
   }
 
+  const toggleBookmark = async () => {
+    try {
+      if (!post) return;
+      await apiClient.post(`/forum/posts/${post.id}/bookmark`);
+      setIsBookmarked(!isBookmarked);
+      toast.success(isBookmarked ? "Đã xóa khỏi danh sách lưu" : "Đã lưu bài viết");
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      toast.error("Không thể lưu bài viết");
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 animate-fade-in">
       {/* Breadcrumb */}
@@ -301,6 +314,21 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                 </span>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Tác giả bài viết</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleBookmark}
+                    className={`text-gray-500 hover:text-amber-600 ${
+                      isBookmarked ? "text-amber-600" : ""
+                    }`}
+                  >
+                    {isBookmarked ? (
+                      <BookmarkX className="h-4 w-4 mr-1" />
+                    ) : (
+                      <Bookmark className="h-4 w-4 mr-1" />
+                    )}
+                    {isBookmarked ? "Đã lưu" : "Lưu"}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -431,39 +459,17 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         )}
 
         <form onSubmit={handleSubmitReply}>
-          <Editor
-            apiKey={TINYMCE_API_KEY}
+          <RichTextEditor
             value={replyContent}
-            onEditorChange={(content: string) => setReplyContent(content)}
-            init={{
-              menubar: false,
-              height: 200,
-              plugins: [
-                "advlist",
-                "autolink",
-                "lists",
-                "link",
-                "charmap",
-                "preview",
-                "anchor",
-                "searchreplace",
-                "visualblocks",
-                "code",
-                "insertdatetime",
-                "table",
-                "help",
-                "wordcount",
-              ],
-              toolbar:
-                "undo redo | formatselect | bold italic underline | bullist numlist | link | code",
-              placeholder: quotedReply
+            onChange={setReplyContent}
+            placeholder={
+              quotedReply
                 ? `Trả lời ${quotedReply.author.name}...`
-                : "Viết câu trả lời của bạn...",
-            }}
-            disabled={submittingReply}
+                : "Viết câu trả lời của bạn..."
+            }
+            minHeight="200px"
           />
-          <div className="mt-4 flex justify-end gap-2">
-            {quotedReply && (
+          <div className="mt-4 flex justify-end gap-2">{quotedReply && (
               <Button
                 type="button"
                 variant="outline"

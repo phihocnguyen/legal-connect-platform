@@ -106,7 +106,11 @@ export default function CategoryPage() {
           <div className="bg-white rounded-lg shadow divide-y">
             {posts.length > 0 ? (
               posts.map((post) => (
-                <div key={post.id} className="p-6 hover:bg-gray-50">
+                <Link
+                  key={post.id}
+                  href={`/forum/${categorySlug}/${post.slug || post.id}`}
+                  className="block p-6 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-start gap-4">
                     <Avatar className="w-10 h-10">
                       <AvatarImage
@@ -119,14 +123,9 @@ export default function CategoryPage() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Link
-                          href={`/forum/${categorySlug}/${
-                            post.slug || post.id
-                          }`}
-                          className="text-lg font-semibold text-gray-900 hover:text-[#004646]"
-                        >
+                        <h3 className="text-lg font-semibold text-gray-900 hover:text-[#004646]">
                           {post.title}
-                        </Link>
+                        </h3>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
                         <span>
@@ -146,7 +145,7 @@ export default function CategoryPage() {
                       <div>{post.views} lượt xem</div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="p-6 text-center text-gray-500">

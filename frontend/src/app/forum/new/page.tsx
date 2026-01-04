@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Editor } from "@tinymce/tinymce-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 import { usePostUseCases } from "@/hooks/use-post-cases";
 import {
@@ -15,8 +15,6 @@ import {
   PostCreateDto,
   PostLabelDto,
 } from "@/domain/entities";
-
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || "no-api-key";
 
 export default function NewThreadPage() {
   const router = useRouter();
@@ -295,36 +293,11 @@ export default function NewThreadPage() {
             {/* Content */}
             <div className="space-y-2">
               <Label htmlFor="content">Nội dung</Label>
-              <Editor
-                apiKey={TINYMCE_API_KEY}
+              <RichTextEditor
                 value={content}
-                onEditorChange={(content: string) => setContent(content)}
-                init={{
-                  menubar: false,
-                  height: 400,
-                  plugins: [
-                    "advlist",
-                    "autolink",
-                    "lists",
-                    "link",
-                    "charmap",
-                    "preview",
-                    "anchor",
-                    "searchreplace",
-                    "visualblocks",
-                    "code",
-                    "insertdatetime",
-                    "table",
-                    "help",
-                    "wordcount",
-                  ],
-                  toolbar:
-                    "undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code | help",
-                  placeholder: "Nhập nội dung chi tiết của chủ đề...",
-                  content_style:
-                    "body { font-family: Arial, sans-serif; font-size: 14px; }",
-                }}
-                disabled={loading}
+                onChange={setContent}
+                placeholder="Nhập nội dung chi tiết của chủ đề..."
+                minHeight="400px"
               />
               <div className="text-right text-sm text-gray-500">
                 <span>Tối thiểu 30 ký tự</span>

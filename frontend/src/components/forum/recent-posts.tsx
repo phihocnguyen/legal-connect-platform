@@ -67,53 +67,68 @@ export function RecentPosts({
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Bài viết mới nhất</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Select
-            value={selectedCategory?.toString() || "all"}
-            onValueChange={(value) =>
-              onCategoryChange(value === "all" ? null : parseInt(value))
-            }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Chọn danh mục" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả danh mục</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id.toString()}>
-                  {category.name}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Danh mục:
+            </label>
+            <Select
+              value={selectedCategory?.toString() || "all"}
+              onValueChange={(value) =>
+                onCategoryChange(value === "all" ? null : parseInt(value))
+              }
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Chọn danh mục" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả danh mục</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Sắp xếp:
+            </label>
+            <Select value={sortBy} onValueChange={onSortChange}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sắp xếp theo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt,desc">Mới nhất</SelectItem>
+                <SelectItem value="views,desc">Xem nhiều nhất</SelectItem>
+                <SelectItem value="replyCount,desc">
+                  Nhiều phản hồi nhất
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Sắp xếp theo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="createdAt,desc">Mới nhất</SelectItem>
-              <SelectItem value="views,desc">Xem nhiều nhất</SelectItem>
-              <SelectItem value="replyCount,desc">
-                Nhiều phản hồi nhất
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={timeFilter} onValueChange={onTimeFilterChange}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Thời gian" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="today">Hôm nay</SelectItem>
-              <SelectItem value="week">Tuần này</SelectItem>
-              <SelectItem value="month">Tháng này</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Thời gian:
+            </label>
+            <Select value={timeFilter} onValueChange={onTimeFilterChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Thời gian" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="today">Hôm nay</SelectItem>
+                <SelectItem value="week">Tuần này</SelectItem>
+                <SelectItem value="month">Tháng này</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            <label className="text-sm text-gray-500">Hiển thị:</label>
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Hiển thị:</label>
             <Select
               value={pageSize.toString()}
               onValueChange={(value) => onPageSizeChange(parseInt(value))}
@@ -149,7 +164,11 @@ export function RecentPosts({
           <PostsSkeleton count={pageSize} />
         ) : posts.length > 0 ? (
           posts.map((post) => (
-            <div key={post.id} className="p-6 hover:bg-gray-50">
+            <Link
+              key={post.id}
+              href={`/forum/${post.category.slug}/${post.slug}`}
+              className="block p-6 hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-start gap-4">
                 <Avatar className="w-10 h-10">
                   <Image
@@ -161,12 +180,9 @@ export function RecentPosts({
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Link
-                      href={`/forum/${post.category.slug}/${post.slug}`}
-                      className="text-lg font-semibold text-gray-900 hover:text-[#004646] line-clamp-2"
-                    >
+                    <div className="text-lg font-semibold text-gray-900 line-clamp-2">
                       {post.title}
-                    </Link>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                     <Badge
@@ -188,7 +204,7 @@ export function RecentPosts({
                   <div className="text-gray-500">{post.views} lượt xem</div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))
         ) : (
           <div className="p-6 text-center text-gray-500">

@@ -50,11 +50,9 @@ export default function LawyerApplicationsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Local state for filters (before applying)
   const [localSearch, setLocalSearch] = useState("");
   const [localStatusFilter, setLocalStatusFilter] = useState("PENDING");
 
-  // Use admin cases hook
   const {
     loading,
     getLawyerApplications,
@@ -62,12 +60,10 @@ export default function LawyerApplicationsPage() {
     rejectLawyerApplication,
   } = useAdminCases();
 
-  // Modal state
   const [selectedApplication, setSelectedApplication] =
     useState<LawyerApplication | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Review dialog state (for approve/reject actions)
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [reviewAction, setReviewAction] = useState<"approve" | "reject">(
@@ -98,7 +94,6 @@ export default function LawyerApplicationsPage() {
     fetchApplications();
   }, [fetchApplications]);
 
-  // Apply filters function
   const handleApplyFilters = () => {
     setSearch(localSearch);
     setStatusFilter(localStatusFilter);

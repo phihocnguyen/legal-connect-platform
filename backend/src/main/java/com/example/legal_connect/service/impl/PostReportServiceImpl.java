@@ -32,20 +32,16 @@ public class PostReportServiceImpl implements PostReportService {
     
     @Override
     public PostReportDto createReport(Long postId, PostReportCreateDto reportDto, Long reporterId) {
-        // Check if post exists
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài viết"));
         
-        // Check if user exists
         User reporter = userRepository.findById(reporterId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         
-        // Check if user already reported this post
         if (reportRepository.existsByPostIdAndReporterId(postId, reporterId)) {
             throw new RuntimeException("Bạn đã báo cáo bài viết này rồi");
         }
         
-        // Create report
         PostReport report = PostReport.builder()
                 .post(post)
                 .reporter(reporter)
@@ -56,7 +52,6 @@ public class PostReportServiceImpl implements PostReportService {
         
         report = reportRepository.save(report);
         
-        // Update post report count
         post.addReport();
         postRepository.save(post);
         

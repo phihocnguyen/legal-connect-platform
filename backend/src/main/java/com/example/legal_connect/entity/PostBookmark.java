@@ -13,13 +13,10 @@ import java.time.LocalDateTime;
         @UniqueConstraint(columnNames = {"post_id", "user_id"})
     },
     indexes = {
-        // Index on post_id for faster bookmark counting
         @Index(name = "idx_post_bookmarks_post_id", columnList = "post_id"),
         
-        // Index on user_id for user's bookmarks
         @Index(name = "idx_post_bookmarks_user_id", columnList = "user_id"),
         
-        // Composite index for finding user's bookmark on a post
         @Index(name = "idx_post_bookmarks_post_user", columnList = "post_id, user_id")
     }
 )

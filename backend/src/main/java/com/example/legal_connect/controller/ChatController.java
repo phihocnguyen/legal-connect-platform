@@ -104,10 +104,8 @@ public class ChatController {
     chatMessage.setTimestamp(LocalDateTime.now());
     chatMessage.setId(UUID.randomUUID().toString());
 
-    // Update last seen của sender
     onlineUserService.updateLastSeen(userId);
 
-    // Log trước khi gửi cho receiver
     log.info("[WS] Sending to receiverId: {} (convertAndSendToUser)", chatMessage.getReceiverId());
     messagingTemplate.convertAndSendToUser(
         chatMessage.getReceiverId(),
@@ -145,14 +143,12 @@ public class ChatController {
         chatMessage.setTimestamp(LocalDateTime.now());
 
         if (chatMessage.getReceiverId() != null) {
-            // Private typing indicator
             messagingTemplate.convertAndSendToUser(
                     chatMessage.getReceiverId(),
                     "/queue/typing",
                     chatMessage
             );
         } else {
-            // Public typing indicator
             messagingTemplate.convertAndSend("/topic/typing", chatMessage);
         }
     }
@@ -176,14 +172,12 @@ public class ChatController {
         chatMessage.setTimestamp(LocalDateTime.now());
 
         if (chatMessage.getReceiverId() != null) {
-            // Private stop typing indicator
             messagingTemplate.convertAndSendToUser(
                     chatMessage.getReceiverId(),
                     "/queue/typing",
                     chatMessage
             );
         } else {
-            // Public stop typing indicator
             messagingTemplate.convertAndSend("/topic/typing", chatMessage);
         }
     }
@@ -200,7 +194,6 @@ public class ChatController {
                 response.getLawyers().size(), 
                 response.getTotalOnline());
         
-        // Log chi tiết từng user
         response.getUsers().forEach(user -> 
             log.info("  👤 User: id={}, name={}, type={}, online={}", 
                     user.getUserId(), user.getUserName(), user.getUserType(), user.isOnline()));

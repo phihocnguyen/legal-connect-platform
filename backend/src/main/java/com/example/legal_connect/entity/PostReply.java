@@ -9,22 +9,16 @@ import java.util.List;
 
 @Entity
 @Table(name = "post_replies", indexes = {
-    // Index on post_id for filtering replies by post
     @Index(name = "idx_post_replies_post_id", columnList = "post_id"),
     
-    // Index on author_id for filtering replies by author
     @Index(name = "idx_post_replies_author_id", columnList = "author_id"),
     
-    // Index on is_active for filtering active replies
     @Index(name = "idx_post_replies_is_active", columnList = "is_active"),
     
-    // Index on created_at for sorting by date
     @Index(name = "idx_post_replies_created_at", columnList = "created_at DESC"),
     
-    // Composite index for common query pattern (active replies by post)
     @Index(name = "idx_post_replies_post_active", columnList = "post_id, is_active, created_at DESC"),
     
-    // Index on parent_id for nested replies
     @Index(name = "idx_post_replies_parent_id", columnList = "parent_id")
 })
 @Data
@@ -39,17 +33,14 @@ public class PostReply {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
     
-    // Relationship with Post
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
     
-    // Relationship with User (author)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
     
-    // Self-referencing for nested replies
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private PostReply parent;
@@ -57,11 +48,9 @@ public class PostReply {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostReply> children;
     
-    // Relationship with ReplyVote
     @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReplyVote> votes;
     
-    // Relationship with Mention
     @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Mention> mentions;
     
@@ -79,6 +68,12 @@ public class PostReply {
     
     @Column(name = "mentioned_user_ids")
     private String mentionedUserIds; // Comma-separated user IDs
+
+    @Column(name = "sentiment_label")
+    private String sentimentLabel; // positive, neutral, negative
+
+    @Column(name = "sentiment_score")
+    private Double sentimentScore;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -97,7 +92,6 @@ public class PostReply {
         updatedAt = LocalDateTime.now();
     }
     
-    // Helper methods
     public boolean isTopLevel() {
         return parent == null;
     }

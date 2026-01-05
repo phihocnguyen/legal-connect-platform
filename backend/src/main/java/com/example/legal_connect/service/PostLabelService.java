@@ -76,7 +76,6 @@ public class PostLabelService {
         PostLabel label = postLabelMapper.toEntity(labelDto);
         label.setIsActive(true);
         
-        // Set category if categoryId is provided
         if (labelDto.getCategoryId() != null) {
             PostCategory category = postCategoryRepository.findById(labelDto.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found with id: " + labelDto.getCategoryId()));
@@ -103,7 +102,6 @@ public class PostLabelService {
         existingLabel.setColor(labelDto.getColor());
         existingLabel.setIsActive(labelDto.getIsActive());
         
-        // Update category if categoryId is provided
         if (labelDto.getCategoryId() != null) {
             PostCategory category = postCategoryRepository.findById(labelDto.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found with id: " + labelDto.getCategoryId()));

@@ -9,11 +9,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { usePostUseCases } from "@/hooks/use-post-cases";
 import { PostDto, PostReplyDto, UserRole } from "@/domain/entities";
 import { useLoadingState } from "@/hooks/use-loading-state";
-import { Editor } from "@tinymce/tinymce-react";
-import { Flag, Reply, X } from "lucide-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Flag, Reply, X, Bookmark, BookmarkX } from "lucide-react";
 import { ReportPostDialog } from "@/components/forum/report-post-dialog";
-
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || "no-api-key";
+import { apiClient } from "@/lib/axiosInstance";
+import { toast } from "sonner";
 
 interface ThreadPageProps {
   category: string;
@@ -28,6 +28,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [quotedReply, setQuotedReply] = useState<PostReplyDto | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const {
     getPostBySlug,
@@ -120,7 +121,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const handleQuoteReply = (reply: PostReplyDto) => {
     setQuotedReply(reply);
 
-    // Strip HTML tags for the quote preview
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = reply.content;
     const textContent = tempDiv.textContent || tempDiv.innerText || "";
@@ -135,7 +135,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
 
     setReplyContent(quoteHtml);
 
-    // Scroll to reply form
     setTimeout(() => {
       document
         .getElementById("reply-form")
@@ -152,7 +151,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
     return new Date(dateString).toLocaleString("vi-VN");
   };
 
-  // Smart related posts sorting: prioritize same labels/tags
   const sortedRelatedPosts = useMemo(() => {
     if (!post || relatedPosts.length === 0) return [];
 
@@ -161,22 +159,18 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
 
     return relatedPosts
       .map((p) => {
-        // Calculate relevance score
         let score = 0;
 
-        // Same label bonus (high priority)
         const matchingLabels = (p.labels || []).filter((l) =>
           currentLabels.has(l.id)
         ).length;
         score += matchingLabels * 10;
 
-        // Same tag bonus
         const matchingTags = (p.tags || []).filter((t) =>
           currentTags.has(t)
         ).length;
         score += matchingTags * 5;
 
-        // Recent activity bonus
         if (p.lastReplyAt) {
           const hoursSinceReply =
             (Date.now() - new Date(p.lastReplyAt).getTime()) / (1000 * 60 * 60);
@@ -192,13 +186,13 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const getRoleDisplayName = (role: UserRole): string => {
     switch (role) {
       case "lawyer":
-        return "luật sư";
+        return "Luật sư";
       case "admin":
-        return "quản trị viên";
+        return "Quản trị viên";
       case "user":
-        return "thành viên";
+        return "Thành viên";
       default:
-        return "thành viên";
+        return "Thành viên";
     }
   };
 
@@ -226,6 +220,18 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
       </div>
     );
   }
+
+  const toggleBookmark = async () => {
+    try {
+      if (!post) return;
+      await apiClient.post(`/forum/posts/${post.id}/bookmark`);
+      setIsBookmarked(!isBookmarked);
+      toast.success(isBookmarked ? "Đã xóa khỏi danh sách lưu" : "Đã lưu bài viết");
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      toast.error("Không thể lưu bài viết");
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 animate-fade-in">
@@ -271,7 +277,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         <div className="p-6">
           <div className="flex gap-6">
             {/* Author Info */}
-            <div className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg">
+            <Link href={`/profile/${post.author.id}`} className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
               <Avatar className="w-20 h-20 mb-3">
                 {post.author.avatar && (
                   <Image
@@ -283,7 +289,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                   />
                 )}
               </Avatar>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-gray-900 hover:text-[#004646] transition-colors">
                 {post.author.name}
               </div>
               <Badge className={`mt-1 ${getRoleBadgeStyle(post.author.role)}`}>
@@ -292,7 +298,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
               <div className="mt-3 text-sm text-gray-500">
                 <div>ID: {post.author.id}</div>
               </div>
-            </div>
+            </Link>
 
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-start mb-4">
@@ -301,6 +307,21 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                 </span>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Tác giả bài viết</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleBookmark}
+                    className={`text-gray-500 hover:text-amber-600 ${
+                      isBookmarked ? "text-amber-600" : ""
+                    }`}
+                  >
+                    {isBookmarked ? (
+                      <BookmarkX className="h-4 w-4 mr-1" />
+                    ) : (
+                      <Bookmark className="h-4 w-4 mr-1" />
+                    )}
+                    {isBookmarked ? "Đã lưu" : "Lưu"}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -339,26 +360,36 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
               className={`bg-white rounded-lg shadow ${
                 reply.author.role === "lawyer"
                   ? "ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50"
+                  : reply.author.role === "admin"
+                  ? "ring-2 ring-red-600/20 shadow-lg shadow-red-50"
                   : ""
-              }`}
+              } ${!reply.isActive ? "opacity-75 border-l-4 border-red-500 bg-red-50" : ""}`}
             >
               <div className="p-6">
+                {!reply.isActive && (
+                  <div className="mb-4 text-xs font-semibold text-red-600 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                    Nội dung này đã bị ẩn với người dùng khác
+                  </div>
+                )}
                 <div className="flex gap-6">
                   <div className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg">
-                    <Avatar className="w-20 h-20 mb-3">
-                      {reply.author.avatar && (
-                        <Image
-                          src={reply.author.avatar}
-                          alt={reply.author.name}
-                          width={80}
-                          height={80}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </Avatar>
-                    <div className="font-semibold text-gray-900">
-                      {reply.author.name}
-                    </div>
+                    <Link href={`/profile/${reply.author.id}`} className="flex flex-col items-center w-full hover:opacity-80 transition-opacity">
+                      <Avatar className="w-20 h-20 mb-3">
+                        {reply.author.avatar && (
+                          <Image
+                            src={reply.author.avatar}
+                            alt={reply.author.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </Avatar>
+                      <div className="font-semibold text-gray-900 hover:text-[#004646] transition-colors">
+                        {reply.author.name}
+                      </div>
+                    </Link>
                     <Badge
                       className={`mt-1 ${getRoleBadgeStyle(reply.author.role)}`}
                     >
@@ -429,39 +460,17 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         )}
 
         <form onSubmit={handleSubmitReply}>
-          <Editor
-            apiKey={TINYMCE_API_KEY}
+          <RichTextEditor
             value={replyContent}
-            onEditorChange={(content: string) => setReplyContent(content)}
-            init={{
-              menubar: false,
-              height: 200,
-              plugins: [
-                "advlist",
-                "autolink",
-                "lists",
-                "link",
-                "charmap",
-                "preview",
-                "anchor",
-                "searchreplace",
-                "visualblocks",
-                "code",
-                "insertdatetime",
-                "table",
-                "help",
-                "wordcount",
-              ],
-              toolbar:
-                "undo redo | formatselect | bold italic underline | bullist numlist | link | code",
-              placeholder: quotedReply
+            onChange={setReplyContent}
+            placeholder={
+              quotedReply
                 ? `Trả lời ${quotedReply.author.name}...`
-                : "Viết câu trả lời của bạn...",
-            }}
-            disabled={submittingReply}
+                : "Viết câu trả lời của bạn..."
+            }
+            minHeight="200px"
           />
-          <div className="mt-4 flex justify-end gap-2">
-            {quotedReply && (
+          <div className="mt-4 flex justify-end gap-2">{quotedReply && (
               <Button
                 type="button"
                 variant="outline"

@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminViolations, type ViolationPostDto } from '@/hooks/use-admin-violations';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PAGE_SIZE = 10;
 
@@ -61,8 +62,8 @@ export default function ViolationsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [paginationLoading, setPaginationLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'replies'>((searchParams.get('tab') as 'posts' | 'replies') || 'posts');
   
-  // Stats state
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -70,7 +71,6 @@ export default function ViolationsPage() {
     disabled: 0,
   });
 
-  // Review dialog state
   const [selectedPost, setSelectedPost] = useState<ViolationPostDto | null>(null);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
@@ -81,9 +81,10 @@ export default function ViolationsPage() {
     loading,
     getViolationPosts,
     updatePostStatus,
+    getViolationReplies,
+    updateReplyStatus,
   } = useAdminViolations();
 
-  // Update URL parameters
   const updateUrl = (params: Record<string, string | number>) => {
     const newSearchParams = new URLSearchParams(searchParams);
     
@@ -111,26 +112,32 @@ export default function ViolationsPage() {
         }),
       };
 
-      const result = await getViolationPosts(params);
+      const result = activeTab === 'posts' 
+        ? await getViolationPosts(params)
+        : await getViolationReplies(params);
+
       if (result) {
         setPosts(result.content || []);
         setTotalPages(result.totalPages || 0);
         setTotalElements(result.totalElements || 0);
       }
     } finally {
-      // Reset pagination loading after API completes
       setPaginationLoading(false);
     }
-  }, [currentPage, searchQuery, statusFilter, getViolationPosts]);
+  }, [currentPage, searchQuery, statusFilter, activeTab, getViolationPosts, getViolationReplies]);
 
-  // Fetch stats separately - only on mount
   const fetchStats = useCallback(async () => {
     try {
-      // Fetch all violations to calculate stats
       const [allResult, pendingResult, disabledResult] = await Promise.all([
-        getViolationPosts({ page: 0, size: 1 }), // Just to get total
-        getViolationPosts({ page: 0, size: 1, isActive: true }), // Active + reported = pending
-        getViolationPosts({ page: 0, size: 1, isActive: false }), // Disabled
+        activeTab === 'posts' 
+          ? getViolationPosts({ page: 0, size: 1, skipLoading: true }) 
+          : getViolationReplies({ page: 0, size: 1, skipLoading: true }),
+        activeTab === 'posts' 
+          ? getViolationPosts({ page: 0, size: 1, isActive: true, skipLoading: true }) 
+          : getViolationReplies({ page: 0, size: 1, isActive: true, skipLoading: true }),
+        activeTab === 'posts' 
+          ? getViolationPosts({ page: 0, size: 1, isActive: false, skipLoading: true }) 
+          : getViolationReplies({ page: 0, size: 1, isActive: false, skipLoading: true }),
       ]);
 
       setStats({
@@ -142,18 +149,16 @@ export default function ViolationsPage() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  }, [getViolationPosts]);
+  }, [activeTab, getViolationPosts, getViolationReplies]);
 
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Fetch stats only on mount
   useEffect(() => {
     fetchStats();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchStats]);
 
-  // Handlers
   const handleSearch = () => {
     updateUrl({ search, page: 1 });
   };
@@ -182,15 +187,18 @@ export default function ViolationsPage() {
     try {
       setReviewing(true);
       
-      // Map review action to isActive boolean
       const isActive = reviewAction === 'approve';
       
-      await updatePostStatus(selectedPost.id, isActive);
+      if (activeTab === 'posts') {
+        await updatePostStatus(selectedPost.id, isActive);
+      } else {
+        await updateReplyStatus(selectedPost.id, isActive);
+      }
       
       const actionText = {
-        approve: 'Bài viết đã được kích hoạt!',
-        reject: 'Bài viết đã bị vô hiệu hóa!',
-        ban: 'Bài viết đã bị vô hiệu hóa!'
+        approve: activeTab === 'posts' ? 'Bài viết đã được kích hoạt!' : 'Bình luận đã được kích hoạt!',
+        reject: activeTab === 'posts' ? 'Bài viết đã bị vô hiệu hóa!' : 'Bình luận đã bị vô hiệu hóa!',
+        ban: activeTab === 'posts' ? 'Bài viết đã bị vô hiệu hóa!' : 'Bình luận đã bị vô hiệu hóa!'
       };
               toast.success(actionText[reviewAction]);
               setShowReviewDialog(false);
@@ -224,11 +232,31 @@ export default function ViolationsPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý bài viết vi phạm</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý vi phạm</h1>
           <p className="text-gray-600 mt-2">
-            Kiểm duyệt và xử lý các bài viết bị báo cáo vi phạm
+            Kiểm duyệt và xử lý các nội dung bị báo cáo hoặc vi phạm tiêu chuẩn
           </p>
         </div>
+
+        <Tabs value={activeTab} onValueChange={(v) => {
+          setActiveTab(v as 'posts' | 'replies');
+          updateUrl({ tab: v, page: 1 });
+        }} className="w-full">
+          <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+            <TabsTrigger 
+              value="posts" 
+              className="cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Bài viết
+            </TabsTrigger>
+            <TabsTrigger 
+              value="replies" 
+              className="cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Bình luận
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -309,14 +337,17 @@ export default function ViolationsPage() {
 
       {/* Posts Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Danh sách bài viết vi phạm</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Danh sách {activeTab === 'posts' ? 'bài viết' : 'bình luận'} vi phạm</CardTitle>
+          <Badge variant="outline" className="ml-2 font-normal capitalize">
+            Nguồn: {activeTab === 'posts' ? 'Báo cáo người dùng' : 'AI phát hiện tiêu cực'}
+          </Badge>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Bài viết</TableHead>
+                <TableHead>{activeTab === 'posts' ? 'Bài viết' : 'Nội dung bình luận'}</TableHead>
                 <TableHead>Tác giả</TableHead>
                 <TableHead>Số báo cáo</TableHead>
                 <TableHead>Lý do</TableHead>
@@ -453,9 +484,9 @@ export default function ViolationsPage() {
         <Dialog open={true} onOpenChange={() => setSelectedPost(null)}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Chi tiết bài viết vi phạm</DialogTitle>
+              <DialogTitle>Chi tiết {activeTab === 'posts' ? 'bài viết' : 'bình luận'} vi phạm</DialogTitle>
               <DialogDescription>
-                Bài viết #{selectedPost.id} - {getStatusBadge(selectedPost.isActive)}
+                {activeTab === 'posts' ? 'Bài viết' : 'Bình luận'} #{selectedPost.id} - {getStatusBadge(selectedPost.isActive)}
               </DialogDescription>
             </DialogHeader>
             
@@ -544,12 +575,12 @@ export default function ViolationsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {reviewAction === 'approve' && 'Kích hoạt bài viết'}
-              {reviewAction === 'reject' && 'Vô hiệu hóa bài viết'}
+              {reviewAction === 'approve' && (activeTab === 'posts' ? 'Kích hoạt bài viết' : 'Kích hoạt bình luận')}
+              {reviewAction === 'reject' && (activeTab === 'posts' ? 'Vô hiệu hóa bài viết' : 'Vô hiệu hóa bình luận')}
             </DialogTitle>
             <DialogDescription>
-              {reviewAction === 'approve' && 'Bài viết sẽ được hiển thị công khai sau khi kích hoạt.'}
-              {reviewAction === 'reject' && 'Bài viết sẽ bị ẩn và tác giả sẽ được thông báo.'}
+              {reviewAction === 'approve' && (activeTab === 'posts' ? 'Bài viết' : 'Bình luận') + ' sẽ được hiển thị công khai sau khi kích hoạt.'}
+              {reviewAction === 'reject' && (activeTab === 'posts' ? 'Bài viết' : 'Bình luận') + ' sẽ bị ẩn và tác giả sẽ được thông báo.'}
             </DialogDescription>
           </DialogHeader>
           

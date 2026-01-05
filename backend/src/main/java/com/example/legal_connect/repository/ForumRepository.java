@@ -133,40 +133,34 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     void updateLastReplyTime(@Param("postId") Long postId, @Param("lastReplyAt") LocalDateTime lastReplyAt);
     
     /**
-     * Find posts with eager loading of category, author and labels
+     * Find posts with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.isActive = true " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.isActive = true",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true")
     Page<Post> findAllWithCategoryAndAuthor(Pageable pageable);
     
     /**
-     * Find posts by category ID with eager loading of category, author and labels
+     * Find posts by category ID with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.category.id = :categoryId AND p.isActive = true " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.category.id = :categoryId AND p.isActive = true",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.category.id = :categoryId AND p.isActive = true")
-    Page<Post> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(@Param("categoryId") Long categoryId, Pageable pageable);
+    Page<Post> findByCategoryIdAndIsActiveTrue(@Param("categoryId") Long categoryId, Pageable pageable);
     
     /**
-     * Find posts created after a certain date with eager loading of category, author and labels
+     * Find posts created after a certain date with eager loading of category and author (without labels to allow proper pagination)
      */
     @Query(value = "SELECT DISTINCT p FROM Post p " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.author " +
-           "LEFT JOIN FETCH p.labels " +
-           "WHERE p.isActive = true AND p.createdAt >= :startDate " +
-           "ORDER BY p.createdAt DESC",
+           "WHERE p.isActive = true AND p.createdAt >= :startDate",
            countQuery = "SELECT COUNT(DISTINCT p) FROM Post p WHERE p.isActive = true AND p.createdAt >= :startDate")
-    Page<Post> findByIsActiveTrueAndCreatedAtAfterOrderByCreatedAtDesc(@Param("startDate") LocalDateTime startDate, Pageable pageable);
+    Page<Post> findByIsActiveTrueAndCreatedAtAfter(@Param("startDate") LocalDateTime startDate, Pageable pageable);
     
     /**
      * Find post by ID with category, author and labels
@@ -177,6 +171,13 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH p.labels " +
            "WHERE p.id = :id AND p.isActive = true")
     Optional<Post> findByIdWithCategoryAndAuthor(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.author " +
+           "LEFT JOIN FETCH p.labels " +
+           "WHERE p.id = :id")
+    Optional<Post> findByIdWithCategoryAndAuthorIncludingInactive(@Param("id") Long id);
     
     /**
      * Find post by slug (for SEO-friendly URLs)
@@ -188,7 +189,6 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
            "WHERE c.slug = :categorySlug AND p.slug = :postSlug AND p.isActive = true")
     Optional<Post> findByCategorySlugAndPostSlug(@Param("categorySlug") String categorySlug, @Param("postSlug") String postSlug);
     
-    // === STATISTICS QUERIES ===
     
     /**
      * Count total active posts
@@ -229,14 +229,11 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
      */
     long countByCategoryIdAndIsActiveTrueAndCreatedAtAfter(Long categoryId, LocalDateTime since);
     
-    // Dashboard statistics methods
     long countByCreatedAtAfter(LocalDateTime since);
     List<Post> findTop5ByOrderByCreatedAtDesc();
     
-    // Chart data methods
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     
-    // Default implementations for missing fields
     default long countByIsReportedTrue() {
         return 0; // Return 0 for now since isReported field doesn't exist yet
     }
@@ -253,7 +250,6 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
         return findTopPostsByViews(since, Pageable.ofSize(limit));
     }
 
-    // ========== VIOLATION POSTS QUERIES ==========
     
     /**
      * Find posts with report count greater than threshold
@@ -354,13 +350,26 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
            "ORDER BY date")
     List<Object[]> sumViewsGroupedByDate(@Param("startDate") LocalDateTime startDate);
     
-    /**
-     * Analytics: Count posts by hour of day
-     */
     @Query("SELECT HOUR(p.createdAt) as hour, COUNT(p) as count " +
            "FROM Post p " +
            "WHERE p.createdAt >= :startDate AND p.isActive = true " +
            "GROUP BY HOUR(p.createdAt) " +
            "ORDER BY hour")
     List<Object[]> countPostsGroupedByHour(@Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.sentimentLabel = :label AND p.createdAt >= :since AND p.isActive = true")
+    long countBySentimentLabelAndCreatedAtAfter(@Param("label") String label, @Param("since") LocalDateTime since);
+
+    @Query("SELECT p FROM Post p WHERE p.sentimentLabel = 'positive' AND p.isActive = true AND p.createdAt >= :since ORDER BY p.sentimentScore DESC")
+    List<Post> findTopPositivePosts(@Param("since") LocalDateTime since, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.sentimentLabel = 'negative' AND p.isActive = true AND p.createdAt >= :since ORDER BY p.sentimentScore DESC")
+    List<Post> findTopNegativePosts(@Param("since") LocalDateTime since, Pageable pageable);
+
+    @Query("SELECT DATE(p.createdAt) as date, p.sentimentLabel as label, COUNT(p) as count " +
+           "FROM Post p " +
+           "WHERE p.createdAt >= :since AND p.isActive = true AND p.sentimentLabel IS NOT NULL " +
+           "GROUP BY DATE(p.createdAt), p.sentimentLabel " +
+           "ORDER BY date")
+    List<Object[]> countPostSentimentGroupedByDate(@Param("since") LocalDateTime since);
 }

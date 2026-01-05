@@ -42,7 +42,6 @@ export class VotePostUseCase {
   }
 }
 
-// New Forum Use Cases
 export class GetAllCategoriesUseCase {
   constructor(private postRepository: PostRepository) {}
 

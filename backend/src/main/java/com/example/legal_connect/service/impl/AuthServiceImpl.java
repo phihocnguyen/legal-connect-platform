@@ -83,18 +83,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         try {
-            // 1. Exchange authorization code for access token
             String accessToken = exchangeCodeForToken(code);
             
-            // 2. Get user info from Google
             Map<String, Object> userInfo = getUserInfoFromGoogle(accessToken);
             
-            // 3. Extract user details
             String email = (String) userInfo.get("email");
             String name = (String) userInfo.get("name");
-            // String picture = (String) userInfo.get("picture"); // Reserved for future use
             
-            // 4. Find or create user
             User user = userService.findByEmail(email)
                     .orElseGet(() -> {
                         RegisterRequest registerRequest = new RegisterRequest();

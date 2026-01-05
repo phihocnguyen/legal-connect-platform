@@ -36,7 +36,6 @@ interface CategoryWithSubProps {
   };
 }
 
-// Helper function to format date
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -121,7 +120,6 @@ export function CategoryWithSub({
                     className="flex gap-2.5 items-start cursor-pointer hover:opacity-80 transition-opacity w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Use the category slug from lastPost if available, otherwise use the main category id
                       const categorySlug = lastPost.categorySlug || id;
                       router.push(`/forum/${categorySlug}/${lastPost.slug}`);
                     }}

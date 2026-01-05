@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    // Redirect to local backend OAuth2 endpoint during development
     window.location.href = `http://localhost:8080/oauth2/authorization/google`;
   };
 
@@ -52,7 +51,6 @@ export function SocialLogin() {
           variant="outline"
           className="w-full cursor-pointer"
           onClick={() => {
-            // TODO: Implement Facebook login
           }}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

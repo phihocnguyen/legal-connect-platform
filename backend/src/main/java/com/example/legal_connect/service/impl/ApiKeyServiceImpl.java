@@ -25,16 +25,13 @@ public class ApiKeyServiceImpl implements ApiKeyService {
 
     @Override
     public ApiKeyDto createApiKey(User user) {
-        // Check if user already has an active API key
         var existingKey = apiKeyRepository.findByUserAndIsActiveTrue(user);
         if (existingKey.isPresent()) {
             return mapToDto(existingKey.get());
         }
 
-        // Generate a new API key
         String key = generateApiKey();
         
-        // Ensure key is unique
         while (apiKeyRepository.existsByKey(key)) {
             key = generateApiKey();
         }

@@ -35,6 +35,7 @@ public class BookmarkController {
             Authentication authentication) {
         try {
             Long userId = getUserIdFromAuthentication(authentication);
+            log.info("Toggle bookmark for post {} by user {}", postId, userId);
             BookmarkDto bookmarkDto = bookmarkService.toggleBookmark(postId, userId);
             
             return ResponseEntity.ok(ApiResponse.<BookmarkDto>builder()
@@ -43,11 +44,18 @@ public class BookmarkController {
                     .data(bookmarkDto)
                     .build());
         } catch (RuntimeException e) {
-            log.error("Error toggling bookmark: {}", e.getMessage());
-            return ResponseEntity.badRequest()
+            log.error("Error toggling bookmark: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.<BookmarkDto>builder()
                             .success(false)
                             .message(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            log.error("Unexpected error toggling bookmark: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<BookmarkDto>builder()
+                            .success(false)
+                            .message("An unexpected error occurred")
                             .build());
         }
     }

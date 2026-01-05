@@ -47,8 +47,12 @@ export class GetConversationWithDetailsUseCase {
 export class SendMessageUseCase {
   constructor(private pdfRepository: PdfRepository) {}
 
-  async execute(conversationId: number, content: string): Promise<PdfMessage> {
-    return this.pdfRepository.sendMessage(conversationId, content);
+  async execute(
+    conversationId: number,
+    content: string,
+    role?: "USER" | "ASSISTANT"
+  ): Promise<PdfMessage> {
+    return this.pdfRepository.sendMessage(conversationId, content, role);
   }
 }
 
@@ -68,7 +72,6 @@ export class DeleteConversationUseCase {
   }
 }
 
-// Python API Use Cases
 export class UploadPdfToPythonUseCase {
   constructor(private pdfRepository: PdfRepository) {}
 

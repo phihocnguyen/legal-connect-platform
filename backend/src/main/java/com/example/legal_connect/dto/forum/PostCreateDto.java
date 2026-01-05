@@ -32,7 +32,6 @@ public class PostCreateDto {
     @Size(max = 5, message = "Không được vượt quá 5 thẻ")
     private Set<String> tags;
     
-    // Optional fields
     @Builder.Default
     private Boolean pinned = false;
     

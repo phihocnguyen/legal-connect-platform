@@ -20,31 +20,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  useEffect(() => {
-    // Only redirect if authLoading is complete and user is authenticated
-    // This prevents redirect loop during auth initialization
-    console.log(
-      "[LOGIN PAGE] authLoading:",
-      authLoading,
-      "isAuthenticated:",
-      isAuthenticated,
-      "user role:",
-      user?.role
-    );
-    if (authLoading === false && isAuthenticated === true && user) {
-      console.log(
-        "[LOGIN PAGE] User already authenticated, redirecting based on role"
-      );
-      const role = user.role?.toLowerCase();
-      switch (role) {
-        case "admin":
-          router.push("/admin");
-          break;
-        default:
-          router.push("/forum");
-      }
-    }
-  }, [isAuthenticated, authLoading, user, router]);
 
   const {
     register,
@@ -53,6 +28,7 @@ export default function LoginPage() {
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: "onSubmit",
     defaultValues: {
       email: "",
       password: "",
@@ -64,32 +40,17 @@ export default function LoginPage() {
     try {
       const user = await login(data.email, data.password);
 
-      toast.success("Đăng nhập thành công!");
-
-      // Check for returnUrl first
-      const returnUrl = new URLSearchParams(window.location.search).get(
-        "returnUrl"
-      );
-
-      // Determine target URL
-      let targetUrl = "/";
-      if (returnUrl) {
-        targetUrl = returnUrl;
-      } else if (user) {
-        // Redirect based on role directly - no need to go through homepage
-        const role = user.role?.toLowerCase();
-        if (role === "admin") {
-          targetUrl = "/admin";
-        } else {
-          targetUrl = "/forum";
-        }
+      if (!user) {
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại!");
+        return;
       }
 
-      // Small delay to show success message before navigation
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      toast.success("Đăng nhập thành công!");
 
-      // Navigate
-      router.push(targetUrl);
+      const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+      const targetUrl = returnUrl || "/";
+
+      window.location.href = targetUrl;
     } catch (error) {
       console.error("Login error:", error);
 
@@ -98,8 +59,6 @@ export default function LoginPage() {
       };
 
       if (axiosError.response?.status === 401) {
-        setError("email", { message: "Email hoặc mật khẩu không đúng" });
-        setError("password", { message: "Email hoặc mật khẩu không đúng" });
         toast.error("Email hoặc mật khẩu không đúng");
       } else if (axiosError.response?.status === 400) {
         toast.error("Thông tin đăng nhập không hợp lệ");
@@ -159,7 +118,10 @@ export default function LoginPage() {
               {/* Form */}
               <form
                 id="login-form"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit(onSubmit)(e);
+                }}
                 className="space-y-5"
               >
                 <div className="space-y-2">

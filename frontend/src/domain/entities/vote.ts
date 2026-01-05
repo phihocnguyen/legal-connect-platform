@@ -1,4 +1,3 @@
-// Vote entities
 export interface VoteDto {
   upvotes: number;
   downvotes: number;

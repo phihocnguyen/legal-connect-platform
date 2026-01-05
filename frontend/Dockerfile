@@ -1,14 +1,59 @@
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
-RUN apk add --no-cache libc6-compat
+FROM --platform=linux/arm64 node:18-alpine AS deps
+# Install build dependencies for native modules including lightningcss
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    musl-dev \
+    linux-headers
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+# Install all dependencies including optional dependencies for native bindings
+RUN npm ci --include=optional
 
-# Stage 2: Builder
-FROM node:18-alpine AS builder
+# Stage 2: Development (Hot Reload)
+FROM --platform=linux/arm64 node:18-alpine AS development
+# Install build dependencies for native modules
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    musl-dev \
+    linux-headers
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set environment variables for development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Start with dev server for hot reload
+CMD ["npm", "run", "dev"]
+
+# Stage 3: Builder
+FROM --platform=linux/arm64 node:18-alpine AS builder
+# Install build dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    musl-dev \
+    linux-headers
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -22,8 +67,8 @@ ENV NODE_ENV=production
 # Build application
 RUN npm run build
 
-# Stage 3: Runner (Production)
-FROM node:18-alpine AS runner
+# Stage 4: Runner (Production)
+FROM --platform=linux/arm64 node:18-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

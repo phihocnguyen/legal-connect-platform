@@ -44,7 +44,6 @@ public class PostReplyDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     
-    // Helper fields
     private Boolean isTopLevel;
     
     private Integer childrenCount;

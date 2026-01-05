@@ -51,11 +51,6 @@ export function MobileNav() {
             Hỏi đáp văn bản
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/tu-van-luat-su" className="w-full cursor-pointer">
-            Tư vấn luật sư
-          </Link>
-        </DropdownMenuItem>
         
         <DropdownMenuSeparator />
         

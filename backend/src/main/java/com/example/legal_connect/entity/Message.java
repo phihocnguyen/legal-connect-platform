@@ -33,7 +33,6 @@ public class Message {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    // Relationship with Conversation
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", insertable = false, updatable = false)
     private Conversation conversation;

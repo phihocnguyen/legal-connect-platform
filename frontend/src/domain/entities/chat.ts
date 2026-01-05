@@ -15,15 +15,25 @@ export interface ChatConversation {
   updatedAt: Date;
 }
 
-// Chat Q/A entities for Python backend
 export interface ChatQARequest {
   question: string;
   top_k?: number;
+  conversation_id?: string;
+  chat_history?: Array<{
+    role: string;
+    content: string;
+  }>;
 }
 
 export interface ChatQAResponse {
+  success: boolean;
   answer: string;
-  processing_time: number;
-  model_used: string;
-  timestamp: string;
+  sources?: Array<{
+    content: string;
+    metadata: Record<string, any>;
+  }>;
+  processing_time?: number;
+  model_used?: string;
+  timestamp?: string;
+  error?: string;
 }

@@ -85,7 +85,6 @@ public class AnalyticsDataSeeder {
         return args -> {
             log.info("🌱 Starting Analytics Data Seeding...");
             
-            // Check if data already exists
             long userCount = userRepository.count();
             if (userCount > 5) {
                 log.info("⚠️  Data already exists (found {} users). Skipping seeding.", userCount);
@@ -162,10 +161,8 @@ public class AnalyticsDataSeeder {
                 .authProvider(User.AuthProvider.LOCAL)
                 .build();
             
-            // Set random created date in the last 90 days
             User savedUser = userRepository.save(user);
             
-            // Manually update createdAt to spread data over time
             LocalDateTime randomDate = LocalDateTime.now()
                 .minusDays(random.nextInt(90))
                 .minusHours(random.nextInt(24))
@@ -194,7 +191,6 @@ public class AnalyticsDataSeeder {
             
             User savedLawyer = userRepository.save(lawyer);
             
-            // Set random created date
             LocalDateTime randomDate = LocalDateTime.now()
                 .minusDays(random.nextInt(90))
                 .minusHours(random.nextInt(24));
@@ -217,21 +213,16 @@ public class AnalyticsDataSeeder {
         for (int i = 0; i < count; i++) {
             Post post = new Post();
             
-            // Random title
             String title = POST_TITLES[random.nextInt(POST_TITLES.length)] + " #" + (i + 1);
             post.setTitle(title);
             post.setSlug(createSlug(title) + "-" + i);
             
-            // Random content
             post.setContent(generatePostContent());
             
-            // Random category
             post.setCategory(categories.get(random.nextInt(categories.size())));
             
-            // Random author
             post.setAuthor(allUsers.get(random.nextInt(allUsers.size())));
             
-            // Random metrics
             post.setViews(random.nextInt(1000));
             post.setReplyCount(random.nextInt(20));
             post.setUpvoteCount(random.nextInt(50));
@@ -243,7 +234,6 @@ public class AnalyticsDataSeeder {
             
             Post savedPost = forumRepository.save(post);
             
-            // Set random created date in the last 60 days
             LocalDateTime randomDate = LocalDateTime.now()
                 .minusDays(random.nextInt(60))
                 .minusHours(random.nextInt(24))
@@ -266,14 +256,11 @@ public class AnalyticsDataSeeder {
         for (int i = 0; i < count; i++) {
             PostReply reply = new PostReply();
             
-            // Random post
             Post post = posts.get(random.nextInt(posts.size()));
             reply.setPost(post);
             
-            // Random author
             reply.setAuthor(allUsers.get(random.nextInt(allUsers.size())));
             
-            // Random content
             reply.setContent(generateReplyContent());
             
             reply.setIsActive(true);
@@ -283,7 +270,6 @@ public class AnalyticsDataSeeder {
             
             PostReply savedReply = postReplyRepository.save(reply);
             
-            // Set random created date (after post creation)
             LocalDateTime replyDate = post.getCreatedAt()
                 .plusHours(random.nextInt(48))
                 .plusMinutes(random.nextInt(60));
@@ -303,22 +289,18 @@ public class AnalyticsDataSeeder {
         for (int i = 0; i < count; i++) {
             PostVote vote = new PostVote();
             
-            // Random post
             Post post = posts.get(random.nextInt(posts.size()));
             vote.setPost(post);
             
-            // Random user
             User user = users.get(random.nextInt(users.size()));
             vote.setUser(user);
             
-            // 80% upvote, 20% downvote
             vote.setVoteType(random.nextDouble() < 0.8 ? 
                 PostVote.VoteType.UPVOTE : PostVote.VoteType.DOWNVOTE);
             
             try {
                 PostVote savedVote = postVoteRepository.save(vote);
                 
-                // Set random created date
                 LocalDateTime voteDate = post.getCreatedAt()
                     .plusHours(random.nextInt(72));
                 
@@ -331,7 +313,6 @@ public class AnalyticsDataSeeder {
                 savedVote.setUpdatedAt(voteDate);
                 postVoteRepository.save(savedVote);
             } catch (Exception e) {
-                // Skip if duplicate vote (same user voted on same post)
                 log.debug("Skipping duplicate vote: {}", e.getMessage());
             }
         }
@@ -372,7 +353,6 @@ public class AnalyticsDataSeeder {
     }
     
     private String createSlug(String text) {
-        // Simple slug generation (you can improve this)
         return text.toLowerCase()
             .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
             .replaceAll("[èéẹẻẽêềếệểễ]", "e")

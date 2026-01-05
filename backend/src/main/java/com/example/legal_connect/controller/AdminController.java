@@ -39,7 +39,6 @@ public class AdminController {
     private final AdminService adminService;
     private final AnalyticsService analyticsService;
 
-    // ========== DASHBOARD STATISTICS ==========
     
     @GetMapping("/dashboard/stats")
     @Operation(summary = "Get dashboard statistics")
@@ -55,7 +54,6 @@ public class AdminController {
             .build());
     }
 
-    // ========== USER MANAGEMENT ==========
     
     @GetMapping("/users")
     @Operation(summary = "Get all users for admin management")
@@ -95,7 +93,6 @@ public class AdminController {
             .build());
     }
 
-    // ========== POST MODERATION ==========
     
     @GetMapping("/posts")
     @Operation(summary = "Get posts for moderation")
@@ -221,6 +218,44 @@ public class AdminController {
             .build());
     }
 
+    @GetMapping("/violations/replies")
+    @Operation(summary = "Get reported replies for violation review")
+    public ResponseEntity<ApiResponse<Page<PostModerationDto>>> getViolationReplies(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean isActive) {
+        
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<PostModerationDto> violationReplies = adminService.getViolationReplies(search, isActive, pageable);
+        
+        return ResponseEntity.ok(ApiResponse.<Page<PostModerationDto>>builder()
+            .success(true)
+            .message("Violation replies retrieved successfully")
+            .data(violationReplies)
+            .build());
+    }
+
+    @PutMapping("/replies/{replyId}/status")
+    @Operation(summary = "Update reply active/inactive status")
+    public ResponseEntity<ApiResponse<String>> updateReplyStatus(
+            @PathVariable Long replyId,
+            @RequestParam Boolean isActive) {
+        
+        adminService.updateReplyStatus(replyId, isActive);
+        
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+            .success(true)
+            .message("Reply status updated successfully")
+            .data("Reply " + (isActive ? "activated" : "deactivated"))
+            .build());
+    }
+
     
     @GetMapping("/lawyer-applications")
     @Operation(summary = "Get lawyer applications for admin review")
@@ -275,7 +310,6 @@ public class AdminController {
             .build());
     }
 
-    // ========== CATEGORY MANAGEMENT ==========
     
     @GetMapping("/categories")
     @Operation(summary = "Get all categories for admin management")
@@ -364,7 +398,6 @@ public class AdminController {
             .build());
     }
 
-    // ========== ANALYTICS & REPORTS ==========
 
     @GetMapping("/analytics/user-growth")
     @Operation(summary = "Get user growth analytics")
@@ -527,22 +560,45 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/analytics/quality-metrics")
-    @Operation(summary = "Get quality metrics")
-    public ResponseEntity<ApiResponse<List<QualityMetricData>>> getQualityMetricsReport(
+    @GetMapping("/analytics/ai")
+    @Operation(summary = "Get AI usage analytics")
+    public ResponseEntity<ApiResponse<AiStatsData>> getAiReport(
             @RequestParam(defaultValue = "30days") String timeRange) {
-        log.info("Getting quality metrics report for timeRange: {}", timeRange);
+        log.info("Getting AI report for timeRange: {}", timeRange);
         
         try {
-            List<QualityMetricData> data = analyticsService.getQualityMetricsData(timeRange);
-            return ResponseEntity.ok(ApiResponse.<List<QualityMetricData>>builder()
+            AiStatsData data = analyticsService.getAiStatsData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<AiStatsData>builder()
                 .success(true)
-                .message("Quality metrics report generated successfully")
+                .message("AI report generated successfully")
                 .data(data)
                 .build());
         } catch (Exception e) {
-            log.error("Error generating quality metrics report", e);
-            return ResponseEntity.ok(ApiResponse.<List<QualityMetricData>>builder()
+            log.error("Error generating AI report", e);
+            return ResponseEntity.ok(ApiResponse.<AiStatsData>builder()
+                .success(false)
+                .message("An unexpected error occurred")
+                .data(null)
+                .build());
+        }
+    }
+
+    @GetMapping("/analytics/sentiment")
+    @Operation(summary = "Get sentiment analytics for posts and comments")
+    public ResponseEntity<ApiResponse<SentimentData>> getSentimentReport(
+            @RequestParam(defaultValue = "30days") String timeRange) {
+        log.info("Getting sentiment report for timeRange: {}", timeRange);
+        
+        try {
+            SentimentData data = analyticsService.getSentimentData(timeRange);
+            return ResponseEntity.ok(ApiResponse.<SentimentData>builder()
+                .success(true)
+                .message("Sentiment report generated successfully")
+                .data(data)
+                .build());
+        } catch (Exception e) {
+            log.error("Error generating sentiment report", e);
+            return ResponseEntity.ok(ApiResponse.<SentimentData>builder()
                 .success(false)
                 .message("An unexpected error occurred")
                 .data(null)

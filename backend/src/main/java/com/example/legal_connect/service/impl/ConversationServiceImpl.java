@@ -39,7 +39,6 @@ public class ConversationServiceImpl implements ConversationService {
         
         conversation = conversationRepository.save(conversation);
         
-        // If there's an initial message, save it
         if (request.getInitialMessage() != null && !request.getInitialMessage().trim().isEmpty()) {
             messageService.saveMessage(conversation.getId(), request.getInitialMessage(), Message.MessageRole.USER);
         }

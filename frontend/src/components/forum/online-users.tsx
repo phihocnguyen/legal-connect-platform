@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Popover,
@@ -6,6 +7,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { parseVietnameseDate } from "@/lib/utils";
 
 type User = {
@@ -63,11 +65,15 @@ function UserPopupContent({ user }: { user: User }) {
         </p>
         <p>ID: {user.userId}</p>
       </div>
+      <Link href={`/profile/${user.userId}`}>
+        <Button className="w-full bg-[#004646] hover:bg-[#005555] text-white">
+          Xem hồ sơ
+        </Button>
+      </Link>
     </div>
   );
 }
 
-// Component cho Lawyer với avatar và card riêng
 function LawyerCard({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,16 +82,16 @@ function LawyerCard({ user }: { user: User }) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    timeoutRef.current = setTimeout(() => {
-      setOpen(true);
-    }, 1000);
+    setOpen(true);
   };
 
   const handleMouseLeave = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setOpen(false);
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 100);
   };
 
   useEffect(() => {
@@ -97,7 +103,11 @@ function LawyerCard({ user }: { user: User }) {
   }, []);
 
   return (
-    <div className="flex items-center gap-4 bg-white transition-all p-2">
+    <div
+      className="flex items-center gap-4 bg-white transition-all p-2"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <Avatar className="w-12 h-12">
         <AvatarImage src={user.avatar} />
         <AvatarFallback className="bg-green-100 text-green-700 text-lg font-semibold">
@@ -106,11 +116,7 @@ function LawyerCard({ user }: { user: User }) {
       </Avatar>
       <div className="flex-1 min-w-0">
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            asChild
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
+          <PopoverTrigger asChild>
             <div className="truncate font-semibold text-gray-800 cursor-pointer hover:text-green-700 transition-colors">
               {user.email || user.userName}
             </div>
@@ -119,7 +125,7 @@ function LawyerCard({ user }: { user: User }) {
           <PopoverContent
             side="right"
             align="start"
-            onMouseEnter={() => setOpen(true)}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className="w-72 p-4 bg-white rounded-xl shadow-lg border border-green-200"
           >
@@ -143,16 +149,16 @@ function UserPopover({ user }: { user: User }) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    timeoutRef.current = setTimeout(() => {
-      setOpen(true);
-    }, 1000);
+    setOpen(true);
   };
 
   const handleMouseLeave = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setOpen(false);
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 100);
   };
 
   useEffect(() => {
@@ -164,28 +170,29 @@ function UserPopover({ user }: { user: User }) {
   }, []);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        asChild
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <span className="text-blue-600 cursor-pointer hover:text-blue-800 transition-colors font-medium">
-          {user.email || user.userName}
-        </span>
-      </PopoverTrigger>
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <span className="text-blue-600 cursor-pointer hover:text-blue-800 transition-colors font-medium">
+            {user.email || user.userName}
+          </span>
+        </PopoverTrigger>
 
-      <PopoverContent
-        side="top"
-        align="center"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={handleMouseLeave}
-        className="max-w-md p-4 bg-white rounded-md shadow-lg"
-        style={{ minWidth: 300 }}
-      >
-        <UserPopupContent user={user} />
-      </PopoverContent>
-    </Popover>
+        <PopoverContent
+          side="top"
+          align="center"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className="max-w-md p-4 bg-white rounded-md shadow-lg"
+          style={{ minWidth: 300 }}
+        >
+          <UserPopupContent user={user} />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 

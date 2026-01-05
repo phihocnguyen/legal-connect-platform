@@ -28,7 +28,6 @@ interface HourlyActivityData {
   activeUsers: number;
 }
 
-// API response format
 interface ApiHourlyData {
   hour: number;
   activity: number;
@@ -39,13 +38,10 @@ interface HourlyActivityReportProps {
 }
 
 export function HourlyActivityReport({ data }: HourlyActivityReportProps) {
-  // Handle empty or invalid data
   const rawData = Array.isArray(data) && data.length > 0 ? data : [];
 
-  // Transform API data to expected format
   const validData: HourlyActivityData[] = rawData.map(
     (item: HourlyActivityData | ApiHourlyData) => {
-      // If data is from API (has hour and activity)
       if ("activity" in item && typeof item.hour === "number") {
         return {
           hour: `${item.hour}:00`,
@@ -55,12 +51,10 @@ export function HourlyActivityReport({ data }: HourlyActivityReportProps) {
           activeUsers: Math.floor(item.activity * 0.1) || 1, // 10% of activity, min 1
         };
       }
-      // If data is already in correct format
       return item as HourlyActivityData;
     }
   );
 
-  // Show message if no data
   if (validData.length === 0) {
     return (
       <Card>
@@ -81,7 +75,6 @@ export function HourlyActivityReport({ data }: HourlyActivityReportProps) {
     );
   }
 
-  // Find peak hours
   const peakPostsHour = validData.reduce(
     (prev, current) => (current.posts > prev.posts ? current : prev),
     validData[0]

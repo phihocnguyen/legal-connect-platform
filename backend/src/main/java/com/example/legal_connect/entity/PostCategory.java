@@ -9,16 +9,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "post_categories", indexes = {
-    // Index on slug for faster slug-based lookups
     @Index(name = "idx_post_categories_slug", columnList = "slug"),
     
-    // Index on is_active for filtering active categories
     @Index(name = "idx_post_categories_is_active", columnList = "is_active"),
     
-    // Index on display_order for sorting
     @Index(name = "idx_post_categories_display_order", columnList = "display_order"),
     
-    // Composite index for common query pattern
     @Index(name = "idx_post_categories_active_order", columnList = "is_active, display_order")
 })
 @Data
@@ -53,11 +49,9 @@ public class PostCategory {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    // Relationship with Posts
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> posts;
     
-    // Relationship with Labels
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PostLabel> labels;
     
@@ -72,7 +66,6 @@ public class PostCategory {
         updatedAt = LocalDateTime.now();
     }
     
-    // Statistics methods (will be calculated)
     public int getThreadsCount() {
         return posts != null ? posts.size() : 0;
     }

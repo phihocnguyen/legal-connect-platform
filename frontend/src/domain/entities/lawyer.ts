@@ -1,4 +1,3 @@
-// Lawyer Application entities
 export interface LawyerApplication {
   id: number;
   user: {

@@ -56,10 +56,8 @@ public class PostDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastReplyAt;
     
-    // Last reply information
     private LastReplyDto lastReply;
     
-    // Include replies for detailed view
     private List<PostReplyDto> replies;
     
     @Data

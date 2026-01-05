@@ -4,7 +4,6 @@ import { apiClient } from "@/lib/axiosInstance";
 
 export class MessagingRepositoryImpl implements MessagingRepository {
   async getConversations(): Promise<UserConversation[]> {
-    // userId not used - endpoint returns conversations for current authenticated user
     const response = await apiClient.get("/user-conversations");
     return response.data as UserConversation[];
   }
@@ -22,7 +21,6 @@ export class MessagingRepositoryImpl implements MessagingRepository {
     conversationId: string,
     content: string
   ): Promise<UserMessage> {
-    // senderId not used - backend infers from authenticated user
     const response = await apiClient.post("/user-conversations/messages", {
       conversationId: parseInt(conversationId),
       content,
@@ -51,7 +49,6 @@ export class MessagingRepositoryImpl implements MessagingRepository {
   }
 
   async markMessagesAsRead(conversationId: string): Promise<void> {
-    // userId not used - backend infers from authenticated user
     await apiClient.put(`/user-conversations/${conversationId}/read`);
   }
 }

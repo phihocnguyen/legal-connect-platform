@@ -89,7 +89,6 @@ public class ApiKeyController {
         } catch (RuntimeException e) {
             log.error("Error using API key: {}", e.getMessage());
             
-            // Return 429 if limit exceeded
             if (e.getMessage().contains("limit exceeded") || e.getMessage().contains("expired")) {
                 return ResponseEntity.status(429)
                         .body(ApiResponse.<ApiKeyDto>builder()

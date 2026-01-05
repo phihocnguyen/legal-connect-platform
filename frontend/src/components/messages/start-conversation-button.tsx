@@ -39,13 +39,11 @@ export function StartConversationButton({
 
     setLoading(true);
     try {
-      // Create or get existing conversation
       const conversation = await getOrCreateConversation(currentUserId, selectedUserId);
       
       toast.success('Conversation started successfully!');
       setOpen(false);
       
-      // Navigate to messages page with conversation selected
       router.push(`/messages?conversation=${conversation.id}`);
     } catch (error) {
       console.error('Error starting conversation:', error);

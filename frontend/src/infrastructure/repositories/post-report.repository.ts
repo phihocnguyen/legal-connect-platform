@@ -61,7 +61,6 @@ export class PostReportRepository {
     return response.data.data;
   }
   
-  // Admin methods
   async getAllReports(page: number = 0, size: number = 20): Promise<{
     content: PostReportResponse[];
     totalElements: number;

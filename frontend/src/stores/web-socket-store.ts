@@ -1,4 +1,3 @@
-// 📁 src/stores/web-socket-store.ts
 import { create } from 'zustand';
 import { Client, IMessage, StompHeaders, StompSubscription } from '@stomp/stompjs';
 import { useEffect, useRef } from 'react';
@@ -79,7 +78,6 @@ export function useSyncWebSocket(
   });
 
   useEffect(() => {
-    // Chỉ khởi tạo một lần hoặc khi có thay đổi quan trọng
     const hasUrlChanged = lastUrl.current !== url;
     const hasOnMessageChanged = lastOnMessage.current !== onMessage;
     const hasHeadersChanged = JSON.stringify(lastHeaders.current || {}) !== JSON.stringify(headers || {});

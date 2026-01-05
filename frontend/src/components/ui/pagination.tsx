@@ -17,7 +17,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalElements,
   pageSize,
 }) => {
-  // Fix edge cases
   const safeTotalElements = Math.max(0, totalElements);
   const safeTotalPages = Math.max(1, totalPages);
   const safeCurrentPage = Math.max(
@@ -66,7 +65,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <div className="flex items-center justify-between px-2 py-4 border-t">
       <div className="flex-1 flex justify-between sm:hidden">
         <Button
           variant="outline"
@@ -93,9 +92,9 @@ export const Pagination: React.FC<PaginationProps> = ({
           </p>
         </div>
 
-        <div>
+        <div className="flex justify-center">
           <nav
-            className="relative z-0 inline-flex rounded-md shadow-sm"
+            className="inline-flex items-center gap-1"
             aria-label="Pagination"
           >
             <Button
@@ -103,7 +102,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               size="sm"
               onClick={() => onPageChange(safeCurrentPage - 1)}
               disabled={safeCurrentPage === 0}
-              className="relative inline-flex items-center px-2 py-2 rounded-l-md mx-1"
+              className="px-3 py-2"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -112,15 +111,15 @@ export const Pagination: React.FC<PaginationProps> = ({
               getVisiblePages().map((page, index) => (
                 <React.Fragment key={index}>
                   {page === "..." ? (
-                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 mx-1 rounded">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <span className="px-2 py-2">
+                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
                     </span>
                   ) : (
                     <Button
                       variant={page === safeCurrentPage ? "default" : "outline"}
                       size="sm"
                       onClick={() => onPageChange(page as number)}
-                      className="relative inline-flex items-center px-4 py-2 mx-1 rounded"
+                      className="px-3 py-2 min-w-[40px]"
                     >
                       {(page as number) + 1}
                     </Button>
@@ -131,7 +130,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               <Button
                 variant="default"
                 size="sm"
-                className="relative inline-flex items-center px-4 py-2 mx-1 rounded"
+                className="px-3 py-2 min-w-[40px]"
                 disabled
               >
                 1
@@ -143,7 +142,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               size="sm"
               onClick={() => onPageChange(safeCurrentPage + 1)}
               disabled={safeCurrentPage === safeTotalPages - 1}
-              className="relative inline-flex items-center px-2 py-2 rounded-r-md mx-1"
+              className="px-3 py-2"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

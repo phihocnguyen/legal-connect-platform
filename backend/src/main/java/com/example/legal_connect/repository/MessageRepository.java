@@ -37,4 +37,18 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * Delete all messages by conversation ID
      */
     void deleteByConversationId(Long conversationId);
+
+    @Query("SELECT DATE(m.createdAt) as date, COUNT(m) as count " +
+           "FROM Message m " +
+           "WHERE m.createdAt >= :startDate " +
+           "GROUP BY DATE(m.createdAt) " +
+           "ORDER BY date")
+    List<Object[]> countMessagesGroupedByDate(@Param("startDate") java.time.LocalDateTime startDate);
+
+    @Query("SELECT HOUR(m.createdAt) as hour, COUNT(m) as count " +
+           "FROM Message m " +
+           "WHERE m.createdAt >= :startDate " +
+           "GROUP BY HOUR(m.createdAt) " +
+           "ORDER BY hour")
+    List<Object[]> countMessagesGroupedByHour(@Param("startDate") java.time.LocalDateTime startDate);
 }

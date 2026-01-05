@@ -117,7 +117,6 @@ export default function LawyerApplicationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!form.licenseNumber.trim()) {
       toast.error('Vui lòng nhập số giấy phép hành nghề');
       return;

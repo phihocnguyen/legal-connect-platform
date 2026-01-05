@@ -46,7 +46,6 @@ export function VoteButtons({
     isDownvoteHighlighted: userVote === "DOWNVOTE",
   });
 
-  // Sync state with props when they change
   useEffect(() => {
     console.log("VoteButtons useEffect - syncing with props:", {
       initialUpvoteCount,
@@ -65,19 +64,16 @@ export function VoteButtons({
 
     setIsVoting(true);
 
-    // Optimistic update
     const previousUpvoteCount = upvoteCount;
     const previousDownvoteCount = downvoteCount;
     const previousUserVote = userVote;
 
     try {
-      // Calculate new counts optimistically
       let newUpvoteCount = upvoteCount;
       let newDownvoteCount = downvoteCount;
       let newUserVote: string | null = voteType;
 
       if (userVote === voteType) {
-        // User is removing their vote
         newUserVote = null;
         if (voteType === "UPVOTE") {
           newUpvoteCount = Math.max(0, upvoteCount - 1);
@@ -85,14 +81,12 @@ export function VoteButtons({
           newDownvoteCount = Math.max(0, downvoteCount - 1);
         }
       } else if (userVote === null) {
-        // User is adding a new vote
         if (voteType === "UPVOTE") {
           newUpvoteCount = upvoteCount + 1;
         } else {
           newDownvoteCount = downvoteCount + 1;
         }
       } else {
-        // User is switching vote
         if (voteType === "UPVOTE") {
           newUpvoteCount = upvoteCount + 1;
           newDownvoteCount = Math.max(0, downvoteCount - 1);
@@ -102,12 +96,10 @@ export function VoteButtons({
         }
       }
 
-      // Update UI immediately
       setUpvoteCount(newUpvoteCount);
       setDownvoteCount(newDownvoteCount);
       setUserVote(newUserVote);
 
-      // Send request to server
       const finalVoteType = userVote === voteType ? "NONE" : voteType;
       if (entityType === "post") {
         await voteOnPost(entityId, finalVoteType);
@@ -116,7 +108,6 @@ export function VoteButtons({
       }
     } catch (error) {
       console.error("Failed to vote:", error);
-      // Revert optimistic update on error
       setUpvoteCount(previousUpvoteCount);
       setDownvoteCount(previousDownvoteCount);
       setUserVote(previousUserVote);

@@ -19,7 +19,6 @@ export class PostReportUseCases {
     return await this.repository.getUserReports();
   }
 
-  // Admin methods
   async getAllReports(page: number = 0, size: number = 20) {
     return await this.repository.getAllReports(page, size);
   }

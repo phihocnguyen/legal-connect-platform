@@ -54,7 +54,6 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
             .orElseThrow(() -> new RuntimeException("Notification not found"));
         
-        // Verify the notification belongs to the user
         if (!notification.getUser().getId().equals(userId)) {
             throw new RuntimeException("Unauthorized access to notification");
         }

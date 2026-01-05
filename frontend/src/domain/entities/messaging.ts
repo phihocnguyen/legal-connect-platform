@@ -1,6 +1,5 @@
 import type { UserRole } from "./user";
 
-// Messaging entities for user-to-user messages
 export interface UserMessage {
   id: number;
   conversationId: number;

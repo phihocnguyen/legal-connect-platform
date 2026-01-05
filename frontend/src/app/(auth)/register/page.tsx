@@ -55,7 +55,6 @@ export default function RegisterPage() {
       };
 
       const res = await apiClient.post("/auth/register", payload);
-      // backend uses ApiResponse wrapper { success, message, data }
       const apiResponse = res.data as ApiResponse<unknown>;
       if (!apiResponse?.success) {
         setError("root", {
@@ -65,11 +64,9 @@ export default function RegisterPage() {
         return;
       }
 
-      // success - redirect to login with success message
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       router.push(`/login?registered=true`);
     } catch (err: unknown) {
-      // axios errors contain response data with message; try to extract
       let errMsg = "Lỗi mạng";
       if (axios.isAxiosError(err)) {
         const respData = err.response?.data as { message?: string } | undefined;

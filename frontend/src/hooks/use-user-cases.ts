@@ -12,7 +12,6 @@ export const useUserProfile = () => {
     try {
       const profile = await userRepository.getUserProfile(userId);
       return profile;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch user profile');
       return null;
@@ -27,7 +26,6 @@ export const useUserProfile = () => {
     try {
       const posts = await userRepository.getUserPosts(userId, page);
       return posts;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch user posts');
       return null;
@@ -57,7 +55,6 @@ export const useApiKey = () => {
       setApiKey(key);
       return key;
     
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create API key');
       return null;
@@ -73,7 +70,6 @@ export const useApiKey = () => {
       const key = await apiKeyRepository.getMyApiKey();
       setApiKey(key);
       return key;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 400 && err.response?.data?.message?.includes('not found')) {
         return null;
@@ -92,7 +88,6 @@ export const useApiKey = () => {
       const key = await apiKeyRepository.useApiKey(type);
       setApiKey(key);
       return key;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 429) {
         setError('API key limit exceeded. You have used all your available calls.');

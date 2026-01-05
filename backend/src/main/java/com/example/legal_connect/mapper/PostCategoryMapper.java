@@ -31,15 +31,12 @@ public class PostCategoryMapper {
                 .createdAt(category.getCreatedAt())
                 .updatedAt(category.getUpdatedAt());
 
-        // Include labels if available
         if (category.getLabels() != null && !category.getLabels().isEmpty()) {
             builder.labels(category.getLabels().stream()
                     .map(postLabelMapper::toDto)
                     .collect(Collectors.toList()));
         }
 
-        // Don't load posts collection here to avoid N+1 queries
-        // Statistics should be calculated separately if needed
         builder.threadsCount(0).postsCount(0);
 
         return builder.build();

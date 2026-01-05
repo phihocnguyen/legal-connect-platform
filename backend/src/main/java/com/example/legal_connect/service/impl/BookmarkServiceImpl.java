@@ -32,28 +32,40 @@ public class BookmarkServiceImpl implements BookmarkService {
     @Override
     @Transactional
     public BookmarkDto toggleBookmark(Long postId, Long userId) {
-        Post post = forumRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        Optional<PostBookmark> existingBookmark = bookmarkRepository.findByPostIdAndUserId(postId, userId);
-        
-        if (existingBookmark.isPresent()) {
-            // Remove bookmark
-            bookmarkRepository.delete(existingBookmark.get());
-            log.info("Removed bookmark for post {} by user {}", postId, userId);
-        } else {
-            // Add bookmark
-            PostBookmark bookmark = PostBookmark.builder()
-                    .post(post)
-                    .user(user)
-                    .build();
-            bookmarkRepository.save(bookmark);
-            log.info("Added bookmark for post {} by user {}", postId, userId);
+        try {
+            log.info("toggleBookmark - postId: {}, userId: {}", postId, userId);
+            
+            Post post = forumRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("Post not found"));
+            log.info("Post found: {}", post.getId());
+            
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            log.info("User found: {}", user.getId());
+            
+            Optional<PostBookmark> existingBookmark = bookmarkRepository.findByPostIdAndUserId(postId, userId);
+            
+            if (existingBookmark.isPresent()) {
+                // Remove bookmark
+                bookmarkRepository.delete(existingBookmark.get());
+                log.info("Removed bookmark for post {} by user {}", postId, userId);
+            } else {
+                // Add bookmark
+                PostBookmark bookmark = PostBookmark.builder()
+                        .post(post)
+                        .user(user)
+                        .build();
+                bookmarkRepository.save(bookmark);
+                log.info("Added bookmark for post {} by user {}", postId, userId);
+            }
+            
+            BookmarkDto result = getBookmarkStatus(postId, userId);
+            log.info("toggleBookmark result: isBookmarked={}, count={}", result.getIsBookmarked(), result.getBookmarkCount());
+            return result;
+        } catch (Exception e) {
+            log.error("Error in toggleBookmark: {}", e.getMessage(), e);
+            throw e;
         }
-        
-        return getBookmarkStatus(postId, userId);
     }
     
     @Override

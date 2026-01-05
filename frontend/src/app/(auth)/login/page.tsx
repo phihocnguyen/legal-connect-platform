@@ -44,7 +44,8 @@ export default function LoginPage() {
           router.push("/forum");
       }
     }
-  }, [isAuthenticated, authLoading, user, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading, user]);
 
   const {
     register,
@@ -53,6 +54,7 @@ export default function LoginPage() {
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: "onSubmit",
     defaultValues: {
       email: "",
       password: "",
@@ -63,6 +65,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const user = await login(data.email, data.password);
+
+      if (!user) {
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại!");
+        return;
+      }
 
       toast.success("Đăng nhập thành công!");
 
@@ -75,21 +82,16 @@ export default function LoginPage() {
       let targetUrl = "/";
       if (returnUrl) {
         targetUrl = returnUrl;
-      } else if (user) {
-        // Redirect based on role directly - no need to go through homepage
+      } else {
+        // Default redirect based on role
         const role = user.role?.toLowerCase();
-        if (role === "admin") {
-          targetUrl = "/admin";
-        } else {
-          targetUrl = "/forum";
-        }
+        targetUrl = role === "admin" ? "/admin" : "/forum";
       }
 
-      // Small delay to show success message before navigation
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Navigate
-      router.push(targetUrl);
+      // Navigate after showing success message
+      setTimeout(() => {
+        router.push(targetUrl);
+      }, 500);
     } catch (error) {
       console.error("Login error:", error);
 
@@ -98,8 +100,6 @@ export default function LoginPage() {
       };
 
       if (axiosError.response?.status === 401) {
-        setError("email", { message: "Email hoặc mật khẩu không đúng" });
-        setError("password", { message: "Email hoặc mật khẩu không đúng" });
         toast.error("Email hoặc mật khẩu không đúng");
       } else if (axiosError.response?.status === 400) {
         toast.error("Thông tin đăng nhập không hợp lệ");
@@ -159,7 +159,10 @@ export default function LoginPage() {
               {/* Form */}
               <form
                 id="login-form"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit(onSubmit)(e);
+                }}
                 className="space-y-5"
               >
                 <div className="space-y-2">

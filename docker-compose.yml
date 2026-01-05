@@ -96,48 +96,13 @@ services:
     networks:
       - legal-connect-network
 
-  python-ml:
-    build:
-      context: ./python-ml-service
-      dockerfile: Dockerfile
-    platform: linux/arm64
-    container_name: legal-connect-python-ml
-    ports:
-      - "8000:8000"
-    environment:
-      # Google Gemini API Key (required)
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      # ChromaDB settings
-      - CHROMA_PERSIST_DIR=/app/data/vector_stores
-      - COLLECTION_NAME=legal_documents
-      # Model settings
-      - EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
-      - LLM_MODEL=gemini-pro
-      - TEMPERATURE=0.3
-      - MAX_TOKENS=2048
-      # RAG settings
-      - TOP_K=5
-      - CHUNK_SIZE=1000
-      - CHUNK_OVERLAP=200
-    volumes:
-      - ./python-ml-service/app:/app/app
-      - ml_vector_stores:/app/data/vector_stores
-    networks:
-      - legal-connect-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       platforms:
         - linux/arm64
-      target: deps
+      target: development
     platform: linux/arm64
     container_name: legal-connect-frontend
     env_file:
@@ -145,30 +110,19 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/package-lock.json:/app/package-lock.json
-      - ./frontend/next.config.ts:/app/next.config.ts
-      - ./frontend/tsconfig.json:/app/tsconfig.json
-      - ./frontend/tailwind.config.js:/app/tailwind.config.js
-      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
-      - ./frontend/components.json:/app/components.json
-      - ./frontend/.env.local:/app/.env.local
-      - frontend_node_modules:/app/node_modules
-      - frontend_next:/app/.next
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     environment:
       - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - CHOKIDAR_USEPOLLING=true
       # Override API URL để gọi backend trong Docker network
       - NEXT_PUBLIC_API_URL=http://backend:8080/api
-      # Python ML service URL
-      - NEXT_PUBLIC_PYTHON_API_URL=http://python-ml:8000
-
-    command: sh -c "npm install && npm run dev"
+    command: npm run dev
     working_dir: /app
     depends_on:
       - backend
-      - python-ml
     networks:
       - legal-connect-network
 
@@ -178,7 +132,6 @@ volumes:
   rabbitmq_data:
   frontend_node_modules:
   frontend_next:
-  ml_vector_stores:
 
 networks:
   legal-connect-network:

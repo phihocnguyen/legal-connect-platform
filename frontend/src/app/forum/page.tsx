@@ -8,6 +8,7 @@ import { ForumSidebar } from "@/components/forum/forum-sidebar";
 import { RecentPosts } from "@/components/forum/recent-posts";
 import { usePostUseCases } from "@/hooks/use-post-cases";
 import { PostCategoryDto, PostDto } from "@/domain/entities";
+import axiosInstance from "@/lib/axiosInstance";
 
 export default function ForumPage() {
   const router = useRouter();
@@ -19,27 +20,54 @@ export default function ForumPage() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get("page") || "0")
-  );
+  const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [pageSize, setPageSize] = useState(
-    parseInt(searchParams.get("size") || "5")
-  );
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(
-    searchParams.get("categoryId")
-      ? parseInt(searchParams.get("categoryId")!)
-      : null
-  );
-  const [sortBy, setSortBy] = useState(
-    decodeURIComponent(searchParams.get("sort") || "createdAt,desc")
-  );
-  const [timeFilter, setTimeFilter] = useState(
-    searchParams.get("time") || "all"
-  );
+  const [pageSize, setPageSize] = useState(5);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState("createdAt,desc");
+  const [timeFilter, setTimeFilter] = useState("all");
 
-  const { getAllCategories, getAllPosts } = usePostUseCases();
+  // Sync state from URL params on initial load
+  useEffect(() => {
+    // Convert from 1-indexed URL to 0-indexed state
+    const urlPage = parseInt(searchParams.get("page") || "1");
+    setCurrentPage(Math.max(0, urlPage - 1));
+    setPageSize(parseInt(searchParams.get("size") || "5"));
+    setSelectedCategory(
+      searchParams.get("categoryId")
+        ? parseInt(searchParams.get("categoryId")!)
+        : null
+    );
+    setSortBy(
+      decodeURIComponent(searchParams.get("sort") || "createdAt,desc")
+    );
+    setTimeFilter(searchParams.get("time") || "all");
+  }, [searchParams]);
+
+  const { getAllCategories } = usePostUseCases();
+
+  // Load categories only once on mount
+  useEffect(() => {
+    let mounted = true;
+    const loadCategories = async () => {
+      try {
+        const data = await getAllCategories();
+        if (mounted) {
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      } finally {
+        if (mounted) {
+          setCategoriesLoading(false);
+        }
+      }
+    };
+    loadCategories();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateURL = useCallback(
     (params: {
@@ -51,8 +79,9 @@ export default function ForumPage() {
     }) => {
       const urlParams = new URLSearchParams();
 
-      if (params.page !== undefined && params.page > 0) {
-        urlParams.set("page", params.page.toString());
+      // Always set page param (convert 0-indexed to 1-indexed for URL)
+      if (params.page !== undefined) {
+        urlParams.set("page", (params.page + 1).toString());
       }
       if (params.size !== undefined) {
         urlParams.set("size", params.size.toString());
@@ -78,24 +107,17 @@ export default function ForumPage() {
   // Không cần loading context cho initial load - chỉ dùng skeleton
 
   const loadPosts = useCallback(
-    async (page: number = 0, showLoading: boolean = false) => {
+    async (page: number = 0) => {
       try {
-        if (showLoading) {
-          setPostsLoading(true);
-        }
+        setPostsLoading(true);
 
-        const params: {
-          page: number;
-          size: number;
-          sort: string;
-          categoryId?: number;
-          timeFilter?: string;
-        } = {
+        const params: Record<string, string | number> = {
           page,
           size: pageSize,
           sort: sortBy,
         };
-
+        console.log("[FORUM] Loading posts - page:", page, "sort:", sortBy, "category:", selectedCategory, "time:", timeFilter);
+        
         if (selectedCategory) {
           params.categoryId = selectedCategory;
         }
@@ -104,65 +126,32 @@ export default function ForumPage() {
           params.timeFilter = timeFilter;
         }
 
-        const data = await getAllPosts(params);
-
-        const posts = data.content || data || [];
-        const total = data.totalElements || posts.length || 0;
-        const pages =
-          data.totalPages || (total > 0 ? Math.ceil(total / pageSize) : 1);
-        const currentPageNum = data.number !== undefined ? data.number : page;
+        const response = await axiosInstance.get("/forum/posts", { params });
+        const data = response.data;
+        
+        // API returns {content: [...], page: {totalPages, totalElements, number, size}}
+        const posts = data.content || [];
+        const pageInfo = data.page || {};
+        const total = pageInfo.totalElements || posts.length || 0;
+        const pages = pageInfo.totalPages || (total > 0 ? Math.ceil(total / pageSize) : 1);
 
         setRecentPosts(posts);
         setTotalPages(pages);
         setTotalElements(total);
-        setCurrentPage(currentPageNum);
+        setPostsLoading(false);
       } catch (err) {
         console.error("Error loading posts:", err);
         setError("Không thể tải bài viết. Vui lòng thử lại sau.");
-      } finally {
-        if (showLoading) {
-          setPostsLoading(false);
-        }
+        setPostsLoading(false);
       }
     },
-    [getAllPosts, pageSize, sortBy, selectedCategory, timeFilter]
+    [pageSize, sortBy, selectedCategory, timeFilter]
   );
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setError(null);
-        setPostsLoading(true);
-
-        const [categoriesData] = await Promise.all([
-          getAllCategories().catch((err) => {
-            console.error("Error loading categories:", err);
-            return [];
-          }),
-          loadPosts(currentPage, false),
-        ]);
-
-        setCategories(categoriesData);
-        setCategoriesLoading(false);
-        setPostsLoading(false);
-      } catch (err) {
-        console.error("Error loading forum data:", err);
-        setError("Không thể tải dữ liệu diễn đàn. Vui lòng thử lại sau.");
-        setPostsLoading(false);
-        setCategoriesLoading(false);
-      }
-    };
-
-    loadData();
-  }, [
-    selectedCategory,
-    sortBy,
-    timeFilter,
-    pageSize,
-    currentPage,
-    getAllCategories,
-    loadPosts,
-  ]);
+    loadPosts(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedCategory, sortBy, timeFilter]);
 
   // Filter handlers
   const handlePageChange = (page: number) => {

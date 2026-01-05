@@ -126,7 +126,7 @@ export function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/my-conversations" className="w-full flex items-center">
+          <Link href="/messages" className="w-full flex items-center">
             <MessageSquare className="mr-2 h-4 w-4" />
             Cuộc trò chuyện
           </Link>

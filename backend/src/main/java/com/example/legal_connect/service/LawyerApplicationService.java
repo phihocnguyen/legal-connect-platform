@@ -63,7 +63,6 @@ public class LawyerApplicationService {
                 .status(LawyerApplication.ApplicationStatus.PENDING)
                 .build();
 
-            // Set document URLs using the setter method
             application.setDocumentUrls(request.getDocumentUrls());
 
             LawyerApplication savedApplication = lawyerApplicationRepository.save(application);
@@ -113,7 +112,6 @@ public class LawyerApplicationService {
         log.info("User {} canApply check: role={}, hasApplication={}", 
                 user.getEmail(), currentRole, hasApplication);
 
-        // User can apply if they are not already a lawyer and haven't submitted an application
         boolean canApply = currentRole != User.Role.LAWYER && !hasApplication;
         log.info("Final canApply result: {}", canApply);
         
@@ -122,23 +120,19 @@ public class LawyerApplicationService {
 
     @Transactional
     public LawyerApplicationDto updateApplicationDocuments(Long applicationId, java.util.List<String> newDocumentUrls) {
-        // Get current user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         
         User user = userRepository.findByEmail(userPrincipal.getEmail())
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Find the application
         LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
             .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        // Verify ownership
         if (!application.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("You can only update your own application");
         }
 
-        // Clean up old documents from Cloudinary if they exist
         if (application.getDocumentUrls() != null && !application.getDocumentUrls().isEmpty()) {
             for (String oldUrl : application.getDocumentUrls()) {
                 String publicId = cloudinaryService.extractPublicId(oldUrl);
@@ -148,7 +142,6 @@ public class LawyerApplicationService {
             }
         }
 
-        // Update with new document URLs
         application.setDocumentUrls(newDocumentUrls);
         LawyerApplication savedApplication = lawyerApplicationRepository.save(application);
         
@@ -158,23 +151,19 @@ public class LawyerApplicationService {
     }
 
     public void deleteApplication(Long applicationId) {
-        // Get current user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         
         User user = userRepository.findByEmail(userPrincipal.getEmail())
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Find the application
         LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
             .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        // Verify ownership
         if (!application.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("You can only delete your own application");
         }
 
-        // Clean up documents from Cloudinary
         if (application.getDocumentUrls() != null && !application.getDocumentUrls().isEmpty()) {
             for (String url : application.getDocumentUrls()) {
                 String publicId = cloudinaryService.extractPublicId(url);

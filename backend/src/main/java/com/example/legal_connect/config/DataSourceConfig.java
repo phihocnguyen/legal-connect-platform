@@ -25,7 +25,6 @@ public class DataSourceConfig {
 
     @Bean
     public DataSource dataSource(Environment env) {
-        // 1) If full JDBC URL provided explicitly
         String springUrl = env.getProperty("SPRING_DATASOURCE_URL");
         if (springUrl != null && !springUrl.isBlank()) {
             HikariDataSource ds = new HikariDataSource();
@@ -35,11 +34,9 @@ public class DataSourceConfig {
             return ds;
         }
 
-        // 2) If DATABASE_URL (common in hosted DBs) is present, parse it
         String databaseUrl = env.getProperty("DATABASE_URL");
         if (databaseUrl != null && !databaseUrl.isBlank()) {
             try {
-                // Accept both "postgres://..." and "postgresql://..."
                 String normalized = databaseUrl.startsWith("jdbc:") ? databaseUrl : databaseUrl;
                 URI uri = new URI(normalized);
 
@@ -65,12 +62,10 @@ public class DataSourceConfig {
                 if (password != null) ds.setPassword(password);
                 return ds;
             } catch (URISyntaxException e) {
-                // Fall through to the final fallback below
                 System.err.println("Failed to parse DATABASE_URL: " + e.getMessage());
             }
         }
 
-        // 3) Final fallback: use DB_HOST/DB_PORT/DB_NAME (defaults to localhost/5432/legal_connect)
         String host = env.getProperty("DB_HOST", "localhost");
         String port = env.getProperty("DB_PORT", "5432");
         String dbName = env.getProperty("DB_NAME", "legal_connect");

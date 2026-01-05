@@ -20,7 +20,6 @@ export class HttpLawyerRepository implements LawyerRepository {
       },
     });
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -52,7 +51,6 @@ export class HttpLawyerRepository implements LawyerRepository {
     
     const response = await apiClient.post('/lawyer/apply', application);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -69,7 +67,6 @@ export class HttpLawyerRepository implements LawyerRepository {
     try {
       const response = await apiClient.get('/lawyer/application');
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -78,7 +75,6 @@ export class HttpLawyerRepository implements LawyerRepository {
       
       return null;
     } catch {
-      // If no application found, return null instead of throwing error
       return null;
     }
   }
@@ -89,7 +85,6 @@ export class HttpLawyerRepository implements LawyerRepository {
   async canUserApply(): Promise<boolean> {
     const response = await apiClient.get('/lawyer/can-apply');
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success) {
@@ -105,7 +100,6 @@ export class HttpLawyerRepository implements LawyerRepository {
   async hasUserApplied(): Promise<boolean> {
     const response = await apiClient.get('/lawyer/has-applied');
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success) {
@@ -121,7 +115,6 @@ export class HttpLawyerRepository implements LawyerRepository {
   async updateApplicationDocuments(applicationId: number, documentUrls: string[]): Promise<LawyerApplication> {
     const response = await apiClient.put(`/lawyer/application/${applicationId}/documents`, documentUrls);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -137,7 +130,6 @@ export class HttpLawyerRepository implements LawyerRepository {
   async deleteApplication(applicationId: number): Promise<void> {
     const response = await apiClient.delete(`/lawyer/application/${applicationId}`);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (!apiResponse.success) {

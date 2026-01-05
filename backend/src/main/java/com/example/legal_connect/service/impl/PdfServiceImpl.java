@@ -44,12 +44,10 @@ public class PdfServiceImpl implements PdfService {
         log.info("Uploading PDF file for user: {}, title: {}, pythonFileId: {}", userId, title, pythonFileId);
         
         try {
-            // Validate file
             if (!isValidPdfFile(file)) {
                 return PdfUploadResponse.error("Invalid PDF file");
             }
 
-            // Create conversation first with summary and pythonFileId
             Conversation conversation = Conversation.builder()
                     .userId(userId)
                     .type(Conversation.ConversationType.PDF_QA)
@@ -60,11 +58,9 @@ public class PdfServiceImpl implements PdfService {
             
             conversation = conversationRepository.save(conversation);
 
-            // Save file to storage
             String fileName = generateUniqueFileName(file.getOriginalFilename());
             Path filePath = saveFileToStorage(file, fileName);
 
-            // Save PDF document info to database
             PdfDocument pdfDocument = PdfDocument.builder()
                     .conversationId(conversation.getId())
                     .originalFileName(file.getOriginalFilename())
@@ -75,7 +71,6 @@ public class PdfServiceImpl implements PdfService {
 
             pdfDocument = pdfDocumentRepository.save(pdfDocument);
 
-            // Convert to DTOs
             ConversationDto conversationDto = conversationMapper.toDto(conversation);
             PdfDocumentDto pdfDocumentDto = conversationMapper.toPdfDocumentDto(pdfDocument);
 
@@ -92,7 +87,6 @@ public class PdfServiceImpl implements PdfService {
     public byte[] getPdfContent(Long conversationId, Long userId) {
         log.info("Getting PDF content for conversation: {} by user: {}", conversationId, userId);
         
-        // Verify user has access to the conversation
         conversationRepository.findByIdAndUserId(conversationId, userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
 
@@ -130,20 +124,17 @@ public class PdfServiceImpl implements PdfService {
             return false;
         }
 
-        // Check file size
         if (file.getSize() > maxFileSize) {
             log.warn("File size exceeds maximum allowed: {} bytes", file.getSize());
             return false;
         }
 
-        // Check content type
         String contentType = file.getContentType();
         if (contentType == null || !contentType.equals("application/pdf")) {
             log.warn("Invalid content type: {}", contentType);
             return false;
         }
 
-        // Check file extension
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
             log.warn("Invalid file extension: {}", originalFilename);
@@ -162,13 +153,11 @@ public class PdfServiceImpl implements PdfService {
     }
 
     private Path saveFileToStorage(MultipartFile file, String fileName) throws IOException {
-        // Create upload directory if it doesn't exist
         Path uploadPath = Paths.get(uploadDir);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        // Save file
         Path filePath = uploadPath.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         

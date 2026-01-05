@@ -35,7 +35,6 @@ export const usePdfCases = () => {
       "DeletePdfConversationUseCase"
     );
 
-  // Python API use cases
   const uploadPdfToPythonUseCase =
     container.getUseCase<UploadPdfToPythonUseCase>("UploadPdfToPythonUseCase");
   const getPdfSummaryUseCase = container.getUseCase<GetPdfSummaryUseCase>(
@@ -76,8 +75,12 @@ export const usePdfCases = () => {
   );
 
   const sendMessage = useCallback(
-    async (conversationId: number, content: string) => {
-      return sendPdfMessageUseCase.execute(conversationId, content);
+    async (
+      conversationId: number,
+      content: string,
+      role: "USER" | "ASSISTANT" = "USER"
+    ) => {
+      return sendPdfMessageUseCase.execute(conversationId, content, role);
     },
     [sendPdfMessageUseCase]
   );
@@ -103,7 +106,6 @@ export const usePdfCases = () => {
     return pdfRepo.getPdfViewUrl(conversationId);
   }, []);
 
-  // Python API methods
   const uploadPdfToPython = useCallback(
     async (file: File) => {
       return uploadPdfToPythonUseCase.execute(file);
@@ -135,7 +137,6 @@ export const usePdfCases = () => {
     deleteConversation,
     getPdfViewUrl,
 
-    // Python API methods
     uploadPdfToPython,
     getPdfSummary,
     askPdfQuestion,

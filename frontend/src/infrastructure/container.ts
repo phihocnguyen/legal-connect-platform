@@ -157,7 +157,6 @@ class Container {
       "ChatQARepository"
     ) as ChatQARepository;
 
-    // Chat use cases
     this.useCases.set("SendMessageUseCase", new SendMessageUseCase(chatRepo));
     this.useCases.set(
       "GetConversationHistoryUseCase",
@@ -180,7 +179,6 @@ class Container {
       new ChatDeleteConversationUseCase(chatRepo)
     );
 
-    // Auth use cases
     this.useCases.set("LoginUseCase", new LoginUseCase(authRepo));
     this.useCases.set("RegisterUseCase", new RegisterUseCase(authRepo));
     this.useCases.set("LogoutUseCase", new LogoutUseCase(authRepo));
@@ -189,12 +187,10 @@ class Container {
       new GetCurrentUserUseCase(authRepo)
     );
 
-    // Post use cases
     this.useCases.set("CreatePostUseCase", new CreatePostUseCase(postRepo));
     this.useCases.set("GetPostsUseCase", new GetPostsUseCase(postRepo));
     this.useCases.set("VotePostUseCase", new VotePostUseCase(postRepo));
 
-    // New Forum use cases
     this.useCases.set(
       "GetAllCategoriesUseCase",
       new GetAllCategoriesUseCase(postRepo)
@@ -231,7 +227,6 @@ class Container {
     this.useCases.set("AddReplyUseCase", new AddReplyUseCase(postRepo));
     this.useCases.set("DeleteReplyUseCase", new DeleteReplyUseCase(postRepo));
 
-    // PDF use cases
     this.useCases.set("UploadPdfUseCase", new UploadPdfUseCase(pdfRepo));
     this.useCases.set(
       "GetPdfConversationsUseCase",
@@ -255,7 +250,6 @@ class Container {
       new DeleteConversationUseCase(pdfRepo)
     );
 
-    // Python API Use Cases
     this.useCases.set(
       "UploadPdfToPythonUseCase",
       new UploadPdfToPythonUseCase(pdfRepo)
@@ -269,7 +263,6 @@ class Container {
       new AskPdfQuestionUseCase(pdfRepo)
     );
 
-    // Messaging use cases
     this.useCases.set(
       "MessagingGetConversationsUseCase",
       new MessagingGetConversationsUseCase(messagingRepo)
@@ -295,7 +288,6 @@ class Container {
       new MarkMessagesAsReadUseCase(messagingRepo)
     );
 
-    // Forum statistics use cases
     this.useCases.set(
       "GetForumStatsUseCase",
       new GetForumStatsUseCase(forumRepo)
@@ -313,10 +305,8 @@ class Container {
       new GetPopularTagsUseCase(forumRepo)
     );
 
-    // Chat Q/A use cases
     this.useCases.set("AskQuestionUseCase", new AskQuestionUseCase(chatQARepo));
 
-    // Label use cases
     const labelRepo = this.repositories.get(
       "LabelRepository"
     ) as ILabelRepository;

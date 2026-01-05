@@ -49,7 +49,6 @@ export function DocumentUpload({
       return;
     }
 
-    // Create a URL for the file
     const url = URL.createObjectURL(file);
     onFileSelect(url, file);
   };

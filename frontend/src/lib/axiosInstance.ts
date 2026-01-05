@@ -44,14 +44,12 @@ axiosInstance.interceptors.response.use(
     );
     if (error.response?.status === 401) {
       console.log("[AXIOS] 401 Unauthorized");
-      // Don't redirect for auth check endpoints - let the component handle 401
       const url = error.config?.url || "";
       const isAuthCheckEndpoint =
         url.includes("/auth/me") || url.includes("/auth/status");
 
       if (!isAuthCheckEndpoint) {
         console.log("[AXIOS] 401 on non-auth endpoint - redirecting to /login");
-        // Use setTimeout to avoid redirect during component init
         setTimeout(() => {
           window.location.href = "/login";
         }, 500);

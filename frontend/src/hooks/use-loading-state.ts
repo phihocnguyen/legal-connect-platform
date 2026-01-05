@@ -12,7 +12,6 @@ export function useLoadingState() {
     setLoading(false);
   }, [setLoading]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearLoading();
@@ -26,7 +25,6 @@ export function useLoadingState() {
   };
 }
 
-// Hook for async operations
 export function useAsyncOperation() {
   const { setLoading } = useLoading();
   

@@ -38,15 +38,12 @@ public class PostCategoryDto implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     
-    // Statistics
     private Integer threadsCount;
     
     private Integer postsCount;
     
-    // Labels associated with this category
     private List<PostLabelDto> labels;
     
-    // Last post information
     private PostSummaryDto lastPost;
     
     @Data

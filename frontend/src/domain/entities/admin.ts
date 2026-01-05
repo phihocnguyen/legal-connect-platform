@@ -1,7 +1,6 @@
 import type { UserRole } from "./user";
 import type { PostCategoryDto } from "./post";
 
-// Admin entities
 export interface AdminUser {
   id: number;
   email: string;

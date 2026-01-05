@@ -22,7 +22,6 @@ export function TableSkeleton({ rows, columns }: TableSkeletonProps) {
   );
 }
 
-// Pagination Skeleton Component
 export function PaginationSkeleton() {
   return (
     <div className="p-4 border-t">

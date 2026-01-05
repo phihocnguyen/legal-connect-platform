@@ -23,11 +23,9 @@ export function ForumSidebar() {
   const getOnlineUsers = useWebSocketStore((s) => s.getOnlineUsers);
   const router = useRouter();
 
-  // Forum statistics hooks
   const { getForumStats, getPopularTopics, getCategoryStats, getPopularTags } =
     useForumUseCases();
 
-  // State for forum data
   const [stats, setStats] = useState<ForumStatsDto | null>(null);
   const [popularTopics, setPopularTopics] = useState<PopularTopicDto[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStatsDto[]>([]);

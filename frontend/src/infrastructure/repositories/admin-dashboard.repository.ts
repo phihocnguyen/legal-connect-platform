@@ -8,7 +8,6 @@ export class AdminDashboardRepository {
   async getDashboardStats(): Promise<AdminDashboardStats> {
     const response = await apiClient.get('/admin/dashboard/stats');
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {

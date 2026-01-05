@@ -274,7 +274,6 @@ function LegalDocumentSearchPage() {
   
   const ITEMS_PER_PAGE = 10;
 
-  // Get unique filter options
   const [filterOptions, setFilterOptions] = useState({
     loai_van_ban: [] as string[],
     noi_ban_hanh: [] as string[],
@@ -287,7 +286,6 @@ function LegalDocumentSearchPage() {
       const documents = await loadLegalDocuments();
       setAllDocuments(documents);
       
-      // Extract unique filter options
       const loaiVanBan = [...new Set(documents.map(doc => doc.loai_van_ban).filter(Boolean))];
       const noiBanHanh = [...new Set(documents.map(doc => doc.noi_ban_hanh).filter(Boolean))];
       const tinhTrang = [...new Set(documents.map(doc => doc.tinh_trang).filter(Boolean))];
@@ -316,7 +314,6 @@ function LegalDocumentSearchPage() {
   const performSearch = useCallback(() => {
     let results = allDocuments;
 
-    // Text search
     if (query.trim()) {
       const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
       results = results.filter(doc => {
@@ -325,7 +322,6 @@ function LegalDocumentSearchPage() {
       });
     }
 
-    // Apply filters
     if (filters.loai_van_ban) {
       results = results.filter(doc => doc.loai_van_ban === filters.loai_van_ban);
     }
@@ -336,7 +332,6 @@ function LegalDocumentSearchPage() {
       results = results.filter(doc => doc.tinh_trang === filters.tinh_trang);
     }
 
-    // Date filtering
     if (filters.date_from || filters.date_to) {
       results = results.filter(doc => {
         const docDate = parseVietnameseDate(doc.ngay_ban_hanh);
@@ -357,7 +352,6 @@ function LegalDocumentSearchPage() {
     setFilteredDocuments(results);
   }, [allDocuments, query, filters]);
 
-  // Debounced search effect
   useEffect(() => {
     if (allDocuments.length > 0) {
       setSearchLoading(true);
@@ -426,7 +420,6 @@ function LegalDocumentSearchPage() {
     return { __html: highlightedText };
   };
 
-  // Check if text contains any search terms (for highlighting validation)
   const hasHighlight = (text: string, query: string): boolean => {
     if (!query.trim()) return false;
     
@@ -614,7 +607,6 @@ function LegalDocumentSearchPage() {
                 </Card>
               ) : (
                 currentPageDocuments.map((doc) => {
-                  // Check if document has any visible highlights
                   const hasAnyHighlight = query.trim() && (
                     hasHighlight(doc.title, query) ||
                     hasHighlight(doc.cleaned_content || '', query) ||
@@ -622,7 +614,6 @@ function LegalDocumentSearchPage() {
                     hasHighlight(doc.noi_ban_hanh, query)
                   );
 
-                  // If searching but no highlights, skip this document
                   if (query.trim() && !hasAnyHighlight) {
                     return null;
                   }

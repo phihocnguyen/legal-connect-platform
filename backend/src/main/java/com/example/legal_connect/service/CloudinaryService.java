@@ -44,7 +44,6 @@ public class CloudinaryService {
                 "fetch_format", "auto"
             );
 
-            // Upload file to Cloudinary
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
             
             String secureUrl = (String) uploadResult.get("secure_url");
@@ -111,15 +110,12 @@ public class CloudinaryService {
         }
         
         try {
-            // Extract the public ID from the URL
             // URL format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{public_id}.{format}
             String[] parts = cloudinaryUrl.split("/");
             String fileNameWithExtension = parts[parts.length - 1];
             
-            // Remove the file extension and version if present
             String publicId = fileNameWithExtension.substring(0, fileNameWithExtension.lastIndexOf('.'));
             
-            // Include the folder path
             if (parts.length > 8) {
                 StringBuilder fullPublicId = new StringBuilder();
                 for (int i = 8; i < parts.length - 1; i++) {
@@ -149,13 +145,11 @@ public class CloudinaryService {
             throw new IllegalArgumentException("File content type cannot be determined");
         }
 
-        // Allow common document types for lawyer applications
         if (!isValidFileType(contentType, originalFilename)) {
             throw new IllegalArgumentException(
                 "Invalid file type. Allowed types: PDF, DOC, DOCX, JPG, JPEG, PNG");
         }
 
-        // Check file size (max 10MB)
         long maxSize = 10 * 1024 * 1024; // 10MB
         if (file.getSize() > maxSize) {
             throw new IllegalArgumentException("File size must not exceed 10MB");
@@ -166,7 +160,6 @@ public class CloudinaryService {
      * Check if file type is valid for upload
      */
     private boolean isValidFileType(String contentType, String filename) {
-        // Allowed MIME types
         return contentType.equals("application/pdf") ||
                contentType.equals("application/msword") ||
                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||

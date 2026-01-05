@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,7 +25,11 @@ import {
   Shield,
 } from "lucide-react";
 
-export function UserMenu() {
+interface UserMenuProps {
+  showName?: boolean;
+}
+
+export function UserMenu({ showName }: UserMenuProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -69,11 +74,14 @@ export function UserMenu() {
   };
 
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 rounded-full cursor-pointer"
+          className={cn(
+            "relative h-10 rounded-full cursor-pointer focus-visible:ring-0 focus-visible:ring-offset-0",
+            showName ? "w-auto px-2 space-x-2" : "w-10"
+          )}
         >
           <Avatar className="h-10 w-10">
             <AvatarImage src={user.avatar} alt={user.fullName} />
@@ -81,6 +89,11 @@ export function UserMenu() {
               {getInitials(user.fullName)}
             </AvatarFallback>
           </Avatar>
+          {showName && (
+            <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+              {user.fullName}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
 
@@ -89,7 +102,6 @@ export function UserMenu() {
         align="end"
         side="bottom"
         sideOffset={4}
-        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">

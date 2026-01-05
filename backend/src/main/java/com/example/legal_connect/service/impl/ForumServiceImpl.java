@@ -32,11 +32,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.example.legal_connect.config.RabbitMQConfig;
+import com.example.legal_connect.dto.messaging.SentimentAnalysisMessage;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ForumServiceImpl implements ForumService {
+    private final RabbitTemplate rabbitTemplate;
     private final ForumRepository postRepository;
     private final PostCategoryRepository postCategoryRepository;
     private final PostReplyRepository postReplyRepository;
@@ -48,7 +53,6 @@ public class ForumServiceImpl implements ForumService {
     private final PostCategoryMapper categoryMapper;
     private final PostReplyMapper replyMapper;
 
-    // Category
     @Override
     @Transactional(readOnly = true)
     public List<PostCategoryDto> getAllCategories() {
@@ -56,10 +60,8 @@ public class ForumServiceImpl implements ForumService {
 
         List<PostCategory> categories = postCategoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         
-        // Get latest posts for all categories in one query
         List<Post> latestPosts = postRepository.findLatestPostByCategory();
         
-        // Eagerly initialize authors to avoid lazy loading issues
         latestPosts.forEach(post -> {
             if (post.getAuthor() != null) {
                 post.getAuthor().getEmail(); // Touch to initialize
@@ -69,7 +71,6 @@ public class ForumServiceImpl implements ForumService {
             }
         });
         
-        // Create a map for quick lookup: categoryId -> latest post
         Map<Long, Post> latestPostMap = latestPosts.stream()
             .collect(Collectors.toMap(
                 post -> post.getCategory().getId(),
@@ -77,12 +78,10 @@ public class ForumServiceImpl implements ForumService {
                 (existing, replacement) -> existing // Keep first if duplicates
             ));
         
-        // Map categories to DTOs and enrich with latest post
         List<PostCategoryDto> result = categories.stream()
             .map(category -> {
                 PostCategoryDto dto = categoryMapper.toDto(category);
                 
-                // Add latest post if exists
                 Post latestPost = latestPostMap.get(category.getId());
                 if (latestPost != null && latestPost.getAuthor() != null) {
                     PostCategoryDto.PostSummaryDto lastPost = PostCategoryDto.PostSummaryDto.builder()
@@ -98,11 +97,9 @@ public class ForumServiceImpl implements ForumService {
                     dto.setLastPost(lastPost);
                 }
                 
-                // threadsCount = number of posts/topics in this category
                 long threadsCount = postRepository.countByCategoryIdAndIsActiveTrue(category.getId());
                 dto.setThreadsCount((int) threadsCount);
                 
-                // postsCount = total messages = posts + replies in this category
                 long repliesCount = postReplyRepository.countByCategoryId(category.getId());
                 dto.setPostsCount((int) (threadsCount + repliesCount));
                 
@@ -113,7 +110,6 @@ public class ForumServiceImpl implements ForumService {
         return result;
     }
     
-    // Helper methods for user display
     private String getDisplayName(User user) {
         if (user.getFullName() != null && !user.getFullName().isEmpty()) {
             return user.getFullName();
@@ -135,7 +131,6 @@ public class ForumServiceImpl implements ForumService {
         return categoryMapper.toDto(category);
     }
 
-    // Post
     @Override
     @Transactional(readOnly = true)
     public Page<PostDto> getAllPosts(Pageable pageable) {
@@ -147,7 +142,6 @@ public class ForumServiceImpl implements ForumService {
     @Transactional(readOnly = true)
     public Page<PostDto> getAllPosts(Pageable pageable, Long categoryId, String timeFilter) {
         if (categoryId != null) {
-            // Filter by category with eager loading
             return postRepository.findByCategoryIdAndIsActiveTrue(categoryId, pageable)
                     .map(postMapper::toDto);
         }
@@ -177,7 +171,6 @@ public class ForumServiceImpl implements ForumService {
             }
         }
         
-        // Default: return all posts with eager loading
         return getAllPosts(pageable);
     }
 
@@ -220,8 +213,22 @@ public class ForumServiceImpl implements ForumService {
     @Override
     @Transactional(readOnly = true)
     public PostDto getPostById(Long id, Long currentUserId) {
-        Post post = postRepository.findByIdWithCategoryAndAuthor(id)
+        Post post = postRepository.findByIdWithCategoryAndAuthorIncludingInactive(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (!post.getIsActive()) {
+            boolean isAuthor = currentUserId != null && post.getAuthor().getId().equals(currentUserId);
+            boolean isAdmin = false;
+            if (currentUserId != null) {
+                User currentUser = userRepository.findById(currentUserId).orElse(null);
+                isAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
+            }
+            
+            if (!isAuthor && !isAdmin) {
+                throw new RuntimeException("Post not found");
+            }
+        }
+        
         post.incrementViews();
         postRepository.save(post);
         
@@ -249,7 +256,6 @@ public class ForumServiceImpl implements ForumService {
         postRepository.save(post);
     }
     
-    // Helper method to get current user ID from security context
     private Long getCurrentUserId() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -272,7 +278,6 @@ public class ForumServiceImpl implements ForumService {
         return null;
     }
     
-    // Enrich PostDto with user's vote
     private void enrichWithUserVote(PostDto dto, Long userId) {
         System.out.println("Enriching post " + dto.getId() + " with user vote. UserId: " + userId);
         if (userId != null && dto != null) {
@@ -284,7 +289,6 @@ public class ForumServiceImpl implements ForumService {
                 dto.setUserVote(voteType);
             }
             
-            // Also enrich replies if present
             if (dto.getReplies() != null) {
                 for (PostReplyDto reply : dto.getReplies()) {
                     enrichReplyWithUserVote(reply, userId);
@@ -293,7 +297,6 @@ public class ForumServiceImpl implements ForumService {
         }
     }
     
-    // Enrich PostReplyDto with user's vote
     private void enrichReplyWithUserVote(PostReplyDto dto, Long userId) {
         if (userId != null && dto != null) {
             Optional<ReplyVote> vote = replyVoteRepository.findByReplyIdAndUserId(dto.getId(), userId);
@@ -301,7 +304,6 @@ public class ForumServiceImpl implements ForumService {
                 dto.setUserVote(vote.get().getVoteType().name());
             }
             
-            // Also enrich children if present
             if (dto.getChildren() != null) {
                 for (PostReplyDto child : dto.getChildren()) {
                     enrichReplyWithUserVote(child, userId);
@@ -320,7 +322,6 @@ public class ForumServiceImpl implements ForumService {
         
         Post post = postMapper.toEntity(postCreateDto, category, author);
         
-        // Handle labels
         if (postCreateDto.getLabelIds() != null && !postCreateDto.getLabelIds().isEmpty()) {
             List<PostLabel> labels = postLabelRepository.findAllById(postCreateDto.getLabelIds());
             if (labels.size() != postCreateDto.getLabelIds().size()) {
@@ -330,6 +331,21 @@ public class ForumServiceImpl implements ForumService {
         }
         
         post = postRepository.save(post);
+        
+        try {
+            SentimentAnalysisMessage message = SentimentAnalysisMessage.builder()
+                .entityId(post.getId())
+                .entityType("POST")
+                .content(post.getContent())
+                .title(post.getTitle())
+                .authorId(authorId)
+                .build();
+            rabbitTemplate.convertAndSend(RabbitMQConfig.SENTIMENT_EXCHANGE, RabbitMQConfig.SENTIMENT_ROUTING_KEY, message);
+            log.info("Sent post {} for async sentiment analysis", post.getId());
+        } catch (Exception e) {
+            log.error("Failed to send post for sentiment analysis: {}", e.getMessage());
+        }
+        
         return postMapper.toDto(post);
     }
 
@@ -351,7 +367,6 @@ public class ForumServiceImpl implements ForumService {
         
         postMapper.updateEntity(post, postUpdateDto, category);
         
-        // Handle labels update
         if (postUpdateDto.getLabelIds() != null) {
             if (postUpdateDto.getLabelIds().isEmpty()) {
                 post.getLabels().clear();
@@ -382,7 +397,6 @@ public class ForumServiceImpl implements ForumService {
         postRepository.save(post);
     }
 
-    // Reply
     @Override
     public List<PostReplyDto> getRepliesByPost(Long postId) {
         return getRepliesByPost(postId, getCurrentUserId());
@@ -393,8 +407,20 @@ public class ForumServiceImpl implements ForumService {
     public List<PostReplyDto> getRepliesByPost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
-        List<PostReplyDto> replies = postReplyRepository.findByPostAndParentIsNullAndIsActiveTrueOrderByCreatedAtAsc(post)
+                
+        boolean isAdmin = false;
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId).orElse(null);
+            isAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
+        }
+        final boolean finalIsAdmin = isAdmin;
+        
+        List<PostReplyDto> replies = postReplyRepository.findByPostAndParentIsNullOrderByCreatedAtAsc(post)
                 .stream()
+                .filter(reply -> {
+                    if (reply.getIsActive()) return true;
+                    return (currentUserId != null && reply.getAuthor().getId().equals(currentUserId)) || finalIsAdmin;
+                })
                 .map(replyMapper::toDto)
                 .collect(Collectors.toList());
         
@@ -428,7 +454,19 @@ public class ForumServiceImpl implements ForumService {
         
         reply = postReplyRepository.save(reply);
         
-        // Update post statistics
+        try {
+            SentimentAnalysisMessage message = SentimentAnalysisMessage.builder()
+                .entityId(reply.getId())
+                .entityType("REPLY")
+                .content(reply.getContent())
+                .authorId(authorId)
+                .build();
+            rabbitTemplate.convertAndSend(RabbitMQConfig.SENTIMENT_EXCHANGE, RabbitMQConfig.SENTIMENT_ROUTING_KEY, message);
+            log.info("Sent reply {} for async sentiment analysis", reply.getId());
+        } catch (Exception e) {
+            log.error("Failed to send reply for sentiment analysis: {}", e.getMessage());
+        }
+        
         postRepository.updateReplyCount(postId);
         postRepository.updateLastReplyTime(postId, reply.getCreatedAt());
         
@@ -448,11 +486,9 @@ public class ForumServiceImpl implements ForumService {
         reply.setIsActive(false);
         postReplyRepository.save(reply);
         
-        // Update post reply count
         postRepository.updateReplyCount(reply.getPost().getId());
     }
     
-    // Statistics
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "forumStats")
@@ -522,7 +558,6 @@ public class ForumServiceImpl implements ForumService {
                     long topicsToday = postRepository.countByCategoryIdAndIsActiveTrueAndCreatedAtAfter(
                             category.getId(), startOfToday);
                     
-                    // Count total posts (topics + replies) for this category
                     long totalPostCount = topicCount; // This is simplified, you might want to add reply count
                     
                     return CategoryStatsDto.builder()

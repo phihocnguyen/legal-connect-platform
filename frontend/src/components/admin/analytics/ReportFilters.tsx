@@ -24,7 +24,9 @@ export type ReportType =
   | "content-stats"
   | "engagement"
   | "category-distribution"
-  | "hourly-activity";
+  | "hourly-activity"
+  | "ai"
+  | "sentiment";
 
 interface ReportFiltersProps {
   timeRange: TimeRange;
@@ -101,6 +103,12 @@ export function ReportFilters({
                   </SelectItem>
                   <SelectItem value="hourly-activity">
                     Hoạt động theo giờ
+                  </SelectItem>
+                  <SelectItem value="ai">
+                    Thống kê AI
+                  </SelectItem>
+                  <SelectItem value="sentiment">
+                    Phân tích cảm xúc
                   </SelectItem>
                 </SelectContent>
               </Select>

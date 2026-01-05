@@ -20,32 +20,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  useEffect(() => {
-    // Only redirect if authLoading is complete and user is authenticated
-    // This prevents redirect loop during auth initialization
-    console.log(
-      "[LOGIN PAGE] authLoading:",
-      authLoading,
-      "isAuthenticated:",
-      isAuthenticated,
-      "user role:",
-      user?.role
-    );
-    if (authLoading === false && isAuthenticated === true && user) {
-      console.log(
-        "[LOGIN PAGE] User already authenticated, redirecting based on role"
-      );
-      const role = user.role?.toLowerCase();
-      switch (role) {
-        case "admin":
-          router.push("/admin");
-          break;
-        default:
-          router.push("/forum");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, authLoading, user]);
 
   const {
     register,
@@ -73,25 +47,10 @@ export default function LoginPage() {
 
       toast.success("Đăng nhập thành công!");
 
-      // Check for returnUrl first
-      const returnUrl = new URLSearchParams(window.location.search).get(
-        "returnUrl"
-      );
+      const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+      const targetUrl = returnUrl || "/";
 
-      // Determine target URL
-      let targetUrl = "/";
-      if (returnUrl) {
-        targetUrl = returnUrl;
-      } else {
-        // Default redirect based on role
-        const role = user.role?.toLowerCase();
-        targetUrl = role === "admin" ? "/admin" : "/forum";
-      }
-
-      // Navigate after showing success message
-      setTimeout(() => {
-        router.push(targetUrl);
-      }, 500);
+      window.location.href = targetUrl;
     } catch (error) {
       console.error("Login error:", error);
 

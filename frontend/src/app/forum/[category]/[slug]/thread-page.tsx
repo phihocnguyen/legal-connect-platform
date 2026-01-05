@@ -121,7 +121,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
   const handleQuoteReply = (reply: PostReplyDto) => {
     setQuotedReply(reply);
 
-    // Strip HTML tags for the quote preview
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = reply.content;
     const textContent = tempDiv.textContent || tempDiv.innerText || "";
@@ -136,7 +135,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
 
     setReplyContent(quoteHtml);
 
-    // Scroll to reply form
     setTimeout(() => {
       document
         .getElementById("reply-form")
@@ -153,7 +151,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
     return new Date(dateString).toLocaleString("vi-VN");
   };
 
-  // Smart related posts sorting: prioritize same labels/tags
   const sortedRelatedPosts = useMemo(() => {
     if (!post || relatedPosts.length === 0) return [];
 
@@ -162,22 +159,18 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
 
     return relatedPosts
       .map((p) => {
-        // Calculate relevance score
         let score = 0;
 
-        // Same label bonus (high priority)
         const matchingLabels = (p.labels || []).filter((l) =>
           currentLabels.has(l.id)
         ).length;
         score += matchingLabels * 10;
 
-        // Same tag bonus
         const matchingTags = (p.tags || []).filter((t) =>
           currentTags.has(t)
         ).length;
         score += matchingTags * 5;
 
-        // Recent activity bonus
         if (p.lastReplyAt) {
           const hoursSinceReply =
             (Date.now() - new Date(p.lastReplyAt).getTime()) / (1000 * 60 * 60);
@@ -367,10 +360,18 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
               className={`bg-white rounded-lg shadow ${
                 reply.author.role === "lawyer"
                   ? "ring-2 ring-[#004646]/20 shadow-lg shadow-emerald-50"
+                  : reply.author.role === "admin"
+                  ? "ring-2 ring-red-600/20 shadow-lg shadow-red-50"
                   : ""
-              }`}
+              } ${!reply.isActive ? "opacity-75 border-l-4 border-red-500 bg-red-50" : ""}`}
             >
               <div className="p-6">
+                {!reply.isActive && (
+                  <div className="mb-4 text-xs font-semibold text-red-600 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                    Nội dung này đã bị ẩn với người dùng khác
+                  </div>
+                )}
                 <div className="flex gap-6">
                   <div className="w-48 flex flex-col items-center text-center bg-gray-100 p-4 rounded-lg">
                     <Link href={`/profile/${reply.author.id}`} className="flex flex-col items-center w-full hover:opacity-80 transition-opacity">

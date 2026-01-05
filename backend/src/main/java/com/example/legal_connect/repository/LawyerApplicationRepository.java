@@ -34,6 +34,5 @@ public interface LawyerApplicationRepository extends JpaRepository<LawyerApplica
     
     Long countByStatus(LawyerApplication.ApplicationStatus status);
     
-    // Dashboard statistics methods  
     long countByStatusAndReviewedAtAfter(LawyerApplication.ApplicationStatus status, LocalDateTime since);
 }

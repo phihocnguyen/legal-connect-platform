@@ -32,10 +32,6 @@ export function NotificationBell() {
       await markAsRead(notification.id);
       setIsOpen(false);
 
-      // For now, just mark as read - can extend later with related entity navigation
-      // if (notification.relatedEntityType === 'POST') {
-      //   router.push(`/forum/post/${notification.relatedEntityId}`);
-      // }
     } catch (error) {
       console.error("Failed to handle notification click:", error);
     }
@@ -91,16 +87,6 @@ export function NotificationBell() {
                 </div>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer text-center text-blue-600"
-              onClick={() => {
-                setIsOpen(false);
-                router.push("/notifications");
-              }}
-            >
-              Xem tất cả thông báo
-            </DropdownMenuItem>
           </>
         ) : (
           <div className="p-4 text-center text-gray-500 text-sm">

@@ -56,12 +56,10 @@ public class UserServiceImpl implements UserService {
         
         if (existingUser.isPresent()) {
             User user = existingUser.get();
-            // Update provider info if user exists but was created via local registration
             userMapper.updateUserFromOAuth2(user, name, providerId, picture);
             return userRepository.save(user);
         }
 
-        // Create new user for OAuth2
         User newUser = userMapper.createOAuth2User(email, name, providerId, picture);
         newUser.setPassword(passwordEncoder.encode("oauth2-user-" + System.currentTimeMillis()));
 
@@ -82,7 +80,6 @@ public class UserServiceImpl implements UserService {
         long postCount = forumRepository.countByAuthorAndIsActiveTrue(user);
         long replyCount = postReplyRepository.countByAuthorAndIsActiveTrue(user);
 
-        // Parse legalExpertise from comma-separated string to List
         List<String> legalExpertiseList = new java.util.ArrayList<>();
         if (user.getLegalExpertise() != null && !user.getLegalExpertise().isEmpty()) {
             legalExpertiseList = Arrays.asList(user.getLegalExpertise().split(","));
@@ -109,7 +106,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Update fields if provided
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
         }
@@ -117,11 +113,9 @@ public class UserServiceImpl implements UserService {
             user.setBio(request.getBio());
         }
         if (request.getLegalExpertise() != null) {
-            // Validate legal expertise list
             if (request.getLegalExpertise().size() > 10) {
                 throw new RuntimeException("Legal expertise list cannot exceed 10 items");
             }
-            // Validate each expertise item
             for (String expertise : request.getLegalExpertise()) {
                 if (expertise == null || expertise.trim().isEmpty()) {
                     throw new RuntimeException("Legal expertise items cannot be empty");
@@ -130,7 +124,6 @@ public class UserServiceImpl implements UserService {
                     throw new RuntimeException("Each legal expertise must not exceed 50 characters");
                 }
             }
-            // Convert List to comma-separated string, or empty string if list is empty
             String legalExpertiseStr = request.getLegalExpertise().isEmpty() 
                     ? "" 
                     : String.join(",", request.getLegalExpertise());
@@ -145,7 +138,6 @@ public class UserServiceImpl implements UserService {
         
         User updatedUser = userRepository.save(user);
         
-        // Return updated profile
         return getUserProfile(updatedUser.getId());
     }
     

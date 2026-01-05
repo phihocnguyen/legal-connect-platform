@@ -96,20 +96,39 @@ class RAGService:
         """Create QA chain with custom Vietnamese legal prompt"""
         
         # Custom prompt template for Vietnamese legal Q&A
-        prompt_template = """Bạn là một trợ lý AI chuyên về tư vấn pháp luật Việt Nam. 
-Nhiệm vụ của bạn là trả lời câu hỏi dựa trên các văn bản pháp luật được cung cấp.
+        prompt_template = """Bạn là một trợ lý AI chuyên về tư vấn pháp luật Việt Nam với khả năng phân tích văn bản pháp luật chính xác.
 
-Ngữ cảnh từ văn bản pháp luật:
+QUAN TRỌNG: Bạn PHẢI dựa vào CHÍNH XÁC thông tin từ các văn bản pháp luật được cung cấp bên dưới. KHÔNG được tự suy luận hoặc thêm thông tin không có trong văn bản.
+
+=== VĂN BẢN PHÁP LUẬT ĐƯỢC CUNG CẤP ===
 {context}
+=== KẾT THÚC VĂN BẢN ===
 
-Câu hỏi: {question}
+Câu hỏi của người dùng: {question}
 
-Hướng dẫn trả lời:
-1. Trả lời bằng tiếng Việt một cách rõ ràng, chuyên nghiệp
-2. Dựa trên thông tin từ văn bản pháp luật được cung cấp
-3. Nếu không có thông tin trong văn bản, hãy nói rõ điều đó
-4. Trích dẫn tên văn bản, số hiệu, điều khoản nếu có
-5. Cung cấp giải thích dễ hiểu cho người không chuyên
+HƯỚNG DẪN TRẢ LỜI (BẮT BUỘC):
+
+1. **Đọc kỹ và phân tích** tất cả các văn bản pháp luật được cung cấp ở trên
+2. **Trích xuất thông tin chính xác** từ văn bản:
+   - Mức phạt (nếu có)
+   - Tên văn bản, số hiệu
+   - Điều, khoản cụ thể
+   - Ngày ban hành, hiệu lực
+3. **Trả lời theo cấu trúc**:
+   - Câu trả lời trực tiếp cho câu hỏi
+   - Trích dẫn cụ thể: "Theo [Tên văn bản], Điều X, Khoản Y..."
+   - Giải thích chi tiết nếu cần
+4. **Nếu KHÔNG tìm thấy thông tin** trong văn bản được cung cấp:
+   - Nói rõ: "Trong các văn bản pháp luật được cung cấp, tôi không tìm thấy thông tin về..."
+   - KHÔNG đưa ra thông tin từ kiến thức chung
+   - Gợi ý người dùng tìm kiếm thêm văn bản khác nếu cần
+
+5. **Định dạng câu trả lời**:
+   - Sử dụng markdown để format rõ ràng
+   - Đánh số thứ tự nếu có nhiều điểm
+   - In đậm các thông tin quan trọng (mức phạt, tên văn bản)
+
+LƯU Ý: Ưu tiên độ chính xác hơn là đầy đủ. Nếu không chắc chắn, hãy nói rõ.
 
 Trả lời:"""
 
@@ -131,13 +150,14 @@ Trả lời:"""
         
         logger.info("✅ QA Chain created successfully")
     
-    async def ask_question(self, question: str, top_k: Optional[int] = None) -> dict:
+    async def ask_question(self, question: str, top_k: Optional[int] = None, chat_history: Optional[List[dict]] = None) -> dict:
         """
         Ask a question and get an answer from the RAG system
         
         Args:
             question: User's question
             top_k: Number of documents to retrieve (optional)
+            chat_history: Previous chat messages for context (optional)
         
         Returns:
             dict with answer, sources, and metadata
@@ -158,8 +178,21 @@ Trả lời:"""
             
             logger.info(f"Processing question: {question[:100]}...")
             
+            # Build context from chat history
+            history_context = ""
+            if chat_history and len(chat_history) > 0:
+                logger.info(f"Including {len(chat_history)} previous messages for context")
+                history_context = "\n\n=== LỊCH SỬ HỘI THOẠI TRƯỚC ĐÓ ===\n"
+                for msg in chat_history[-4:]:  # Only last 4 messages to avoid token limit
+                    role = "Người dùng" if msg["role"].lower() in ["user", "USER"] else "Trợ lý AI"
+                    history_context += f"{role}: {msg['content']}\n"
+                history_context += "=== KẾT THÚC LỊCH SỬ ===\n\n"
+            
+            # Combine history with current question
+            full_query = history_context + question if history_context else question
+            
             # Get answer from QA chain
-            result = await self.qa_chain.ainvoke({"query": question})
+            result = await self.qa_chain.ainvoke({"query": full_query})
             
             # Extract answer and sources
             answer = result.get("result", "")
@@ -285,6 +318,47 @@ Trả lời:"""
             logger.error(f"Error getting status: {e}")
             return {
                 "status": "error",
+                "error": str(e)
+            }
+    
+    async def get_sample_documents(self, limit: int = 10) -> dict:
+        """Get sample documents to show what topics are available"""
+        try:
+            collection = self.vectorstore._collection
+            
+            # Get sample documents
+            results = collection.get(
+                limit=limit,
+                include=["metadatas", "documents"]
+            )
+            
+            # Extract unique document titles/sources
+            documents_info = []
+            seen_titles = set()
+            
+            for i, metadata in enumerate(results.get("metadatas", [])):
+                title = metadata.get("title", metadata.get("source", "Unknown"))
+                
+                if title not in seen_titles:
+                    seen_titles.add(title)
+                    documents_info.append({
+                        "title": title,
+                        "source": metadata.get("source", ""),
+                        "metadata": metadata,
+                        "preview": results["documents"][i][:200] + "..." if len(results["documents"][i]) > 200 else results["documents"][i]
+                    })
+            
+            return {
+                "success": True,
+                "total_documents": collection.count(),
+                "sample_documents": documents_info[:limit],
+                "message": f"Showing {len(documents_info[:limit])} sample documents"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting sample documents: {e}")
+            return {
+                "success": False,
                 "error": str(e)
             }
 

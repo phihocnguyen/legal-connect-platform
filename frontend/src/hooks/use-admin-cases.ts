@@ -51,7 +51,6 @@ export function useAdminCases() {
     }
   }, [adminRepository]);
 
-  // Posts Management
   const getPosts = useCallback(async (params: {
     page?: number;
     size?: number;
@@ -87,7 +86,6 @@ export function useAdminCases() {
     }
   }, [adminRepository]);
 
-  // Lawyer Applications Management
   const getLawyerApplications = useCallback(async (params: {
     page?: number;
     size?: number;
@@ -138,7 +136,6 @@ export function useAdminCases() {
     }
   }, [adminRepository]);
 
-  // Dashboard Stats
   const getDashboardStats = useCallback(async () => {
     try {
       setLoading(true);
@@ -154,17 +151,13 @@ export function useAdminCases() {
 
   return {
     loading,
-    // Users
     getUsers,
     updateUserStatus,
-    // Posts
     getPosts,
     updatePostStatus,
-    // Lawyer Applications
     getLawyerApplications,
     approveLawyerApplication,
     rejectLawyerApplication,
-    // Dashboard
     getDashboardStats,
   };
 }

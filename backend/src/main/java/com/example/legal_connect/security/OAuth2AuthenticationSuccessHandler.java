@@ -46,8 +46,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, 
                            SecurityContextHolder.getContext());
 
-        // SESSIONID cookie is automatically set by Spring Security
-    // After successful OAuth2 login, redirect to local frontend during development
     String targetUrl = "http://localhost:3000/";
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

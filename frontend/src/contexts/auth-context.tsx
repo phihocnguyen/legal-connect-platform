@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loginUseCase(email, password);
     console.log("[AUTH CONTEXT] Login use case completed");
 
-    // Get current user and return it (don't redirect here - let caller handle it)
     try {
       const currentUser = await getCurrentUser();
       console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
@@ -59,7 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Logout error:", error);
     } finally {
       setUser(null);
-      // Backend will clear SESSIONID cookie via logout endpoint
       router.push("/login");
     }
   };
@@ -78,7 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      // Don't fetch user data on public paths (login, register, auth)
       const currentPath =
         typeof window !== "undefined" ? window.location.pathname : "";
       const publicPaths = ["/login", "/register", "/auth"];
@@ -99,13 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // SESSIONID is HttpOnly so we can't check via document.cookie
-      // Instead, we try to fetch current user - if it works, user is authenticated
       console.log(
         "[AUTH CONTEXT] Initializing auth by fetching current user..."
       );
 
-      // Safety timeout to ensure isLoading is always set to false
       const timeoutId = setTimeout(() => {
         if (isMounted) {
           console.log(
@@ -157,7 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy lần đầu mount
 
   const value: AuthContextType = {

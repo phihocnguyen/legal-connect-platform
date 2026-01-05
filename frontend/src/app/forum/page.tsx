@@ -28,9 +28,7 @@ export default function ForumPage() {
   const [sortBy, setSortBy] = useState("createdAt,desc");
   const [timeFilter, setTimeFilter] = useState("all");
 
-  // Sync state from URL params on initial load
   useEffect(() => {
-    // Convert from 1-indexed URL to 0-indexed state
     const urlPage = parseInt(searchParams.get("page") || "1");
     setCurrentPage(Math.max(0, urlPage - 1));
     setPageSize(parseInt(searchParams.get("size") || "5"));
@@ -47,7 +45,6 @@ export default function ForumPage() {
 
   const { getAllCategories } = usePostUseCases();
 
-  // Load categories only once on mount
   useEffect(() => {
     let mounted = true;
     const loadCategories = async () => {
@@ -66,7 +63,6 @@ export default function ForumPage() {
     };
     loadCategories();
     return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateURL = useCallback(
@@ -79,7 +75,6 @@ export default function ForumPage() {
     }) => {
       const urlParams = new URLSearchParams();
 
-      // Always set page param (convert 0-indexed to 1-indexed for URL)
       if (params.page !== undefined) {
         urlParams.set("page", (params.page + 1).toString());
       }
@@ -104,7 +99,6 @@ export default function ForumPage() {
     [router]
   );
 
-  // Không cần loading context cho initial load - chỉ dùng skeleton
 
   const loadPosts = useCallback(
     async (page: number = 0) => {
@@ -129,7 +123,6 @@ export default function ForumPage() {
         const response = await axiosInstance.get("/forum/posts", { params });
         const data = response.data;
         
-        // API returns {content: [...], page: {totalPages, totalElements, number, size}}
         const posts = data.content || [];
         const pageInfo = data.page || {};
         const total = pageInfo.totalElements || posts.length || 0;
@@ -150,10 +143,8 @@ export default function ForumPage() {
 
   useEffect(() => {
     loadPosts(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, selectedCategory, sortBy, timeFilter]);
 
-  // Filter handlers
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     updateURL({
@@ -271,7 +262,6 @@ export default function ForumPage() {
             </h2>
             <div className="grid grid-cols-1 gap-6">
               {categoriesLoading ? (
-                // Skeleton loading for categories
                 <>
                   {[1, 2, 3].map((i) => (
                     <div

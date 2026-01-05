@@ -26,11 +26,9 @@ export interface PostModerationDto {
 }
 
 interface UseAdminPostsReturn {
-  // State
   loading: boolean;
   error: string | null;
   
-  // Actions
   getAllPosts: (params?: {
     page?: number;
     size?: number;
@@ -79,8 +77,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.get(`/admin/posts?${queryParams.toString()}`);
 
-      // The backend returns ApiResponse<Page<PostModerationDto>>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -110,8 +106,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.get(`/admin/posts/${id}`);
 
-      // The backend returns ApiResponse<PostModerationDto>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -135,8 +129,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.put(`/admin/posts/${id}/status?isActive=${isActive}`);
 
-      // The backend returns ApiResponse<String>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {
@@ -158,8 +150,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.delete(`/admin/posts/${id}`);
 
-      // The backend returns ApiResponse<String>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {
@@ -181,8 +171,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.put(`/admin/posts/${id}/pin?isPinned=${isPinned}`);
 
-      // The backend returns ApiResponse<String>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {
@@ -204,8 +192,6 @@ export function useAdminPosts(): UseAdminPostsReturn {
 
       const response = await apiClient.put(`/admin/posts/${id}/hot?isHot=${isHot}`);
 
-      // The backend returns ApiResponse<String>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {

@@ -54,7 +54,6 @@ export default function LawyerApplicationStatusPage() {
     try {
       setLoading(true);
       
-      // First check if user can apply
       const canApplyResponse = await fetch('/api/lawyer/can-apply', {
         credentials: 'include'
       });
@@ -62,7 +61,6 @@ export default function LawyerApplicationStatusPage() {
       console.log('Can apply result:', canApplyResult);
       setCanApply(canApplyResult.data);
 
-      // Then try to get existing application
       const response = await fetch('/api/lawyer/application', {
         credentials: 'include'
       });
@@ -130,7 +128,6 @@ export default function LawyerApplicationStatusPage() {
     );
   }
 
-  // User can apply (hasn't applied yet)
   if (canApply && !application) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -156,7 +153,6 @@ export default function LawyerApplicationStatusPage() {
     );
   }
 
-  // User has no application and cannot apply (probably already a lawyer)
   if (!application && !canApply) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">

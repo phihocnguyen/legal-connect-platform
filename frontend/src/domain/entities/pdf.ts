@@ -56,7 +56,6 @@ export interface PdfSummaryResult {
   timestamp: string;
 }
 
-// PDF Q/A entities for Python backend
 export interface PdfQARequest {
   file_id: string;
   question: string;

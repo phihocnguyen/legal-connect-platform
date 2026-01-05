@@ -31,7 +31,6 @@ public class MentionService {
             return mentions;
         }
         
-        // Remove HTML tags first to get clean text
         String cleanContent = content.replaceAll("<[^>]*>", " ");
         
         Matcher matcher = MENTION_PATTERN.matcher(cleanContent);
@@ -78,7 +77,6 @@ public class MentionService {
         User author = userRepository.findById(authorId)
             .orElseThrow(() -> new RuntimeException("Author not found"));
         
-        // Update mentioned user IDs in reply
         List<Long> mentionedUserIds = new ArrayList<>();
         for (String name : mentionedNames) {
             Optional<User> user = userRepository.findByFullName(name);
@@ -102,7 +100,6 @@ public class MentionService {
             if (mentionedUser.isPresent() && !mentionedUser.get().getId().equals(author.getId())) {
                 User mentioned = mentionedUser.get();
                 
-                // Create mention entity
                 Mention mention = Mention.builder()
                     .mentionedUser(mentioned)
                     .mentioningUser(author)
@@ -113,7 +110,6 @@ public class MentionService {
                 
                 mentionRepository.save(mention);
                 
-                // Create notification
                 String message = author.getFullName() + " đã nhắc đến bạn trong " + 
                     (post != null ? "bài viết" : "câu trả lời");
                 Long entityId = post != null ? post.getId() : reply.getId();

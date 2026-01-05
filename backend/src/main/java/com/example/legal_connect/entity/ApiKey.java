@@ -57,7 +57,6 @@ public class ApiKey {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         if (expiresAt == null) {
-            // Default expiration: 30 days
             expiresAt = LocalDateTime.now().plusDays(30);
         }
     }

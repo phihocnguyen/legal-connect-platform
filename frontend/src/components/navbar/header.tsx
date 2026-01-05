@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-// search removed from header because home page has the primary search
 import { UserMenu } from "./user-menu";
 import { MobileNav } from "./mobile-nav";
 import { NotificationBell } from "@/components/notifications/notification-bell";

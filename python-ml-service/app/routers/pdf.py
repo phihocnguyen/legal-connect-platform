@@ -68,6 +68,43 @@ async def summarize_pdf(file: UploadFile = File(...)):
         )
 
 
+@router.post("/summarize-id", response_model=PDFResponse)
+async def summarize_pdf_by_id(
+    file_id: str = Form(...),
+    max_length: int = Form(200)
+):
+    try:
+        pdf_service = get_pdf_service()
+        content = pdf_service.get_pdf_content(file_id)
+        
+        if not content:
+            raise HTTPException(
+                status_code=404,
+                detail=f"PDF with ID {file_id} not found"
+            )
+            
+        result = await pdf_service.summarize_pdf(content)
+        
+        return PDFResponse(
+            success=True,
+            message="Tóm tắt PDF thành công",
+            data={
+                "pdf_id": file_id,
+                **result
+            }
+        )
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error summarizing PDF: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi tóm tắt PDF: {str(e)}"
+        )
+
+
 @router.post("/upload", response_model=PDFResponse)
 async def upload_pdf_for_qa(file: UploadFile = File(...)):
     try:
@@ -100,6 +137,7 @@ async def upload_pdf_for_qa(file: UploadFile = File(...)):
             message="Upload PDF thành công. Bạn có thể bắt đầu đặt câu hỏi.",
             data={
                 "filename": file.filename,
+                "file_id": pdf_id,
                 **result
             }
         )

@@ -66,10 +66,10 @@ public class PostReport {
     }
     
     public enum ReportStatus {
-        PENDING,      // Đang chờ xử lý
-        REVIEWING,    // Đang xem xét
-        RESOLVED,     // Đã giải quyết
-        REJECTED      // Từ chối báo cáo
+        PENDING,
+        REVIEWING,
+        RESOLVED,
+        REJECTED
     }
 }
 

@@ -15,7 +15,9 @@ export type ReportType =
   | "content-stats"
   | "engagement"
   | "category-distribution"
-  | "hourly-activity";
+  | "hourly-activity"
+  | "ai"
+  | "sentiment";
 
 interface ReportData {
   data?: unknown;
@@ -46,7 +48,6 @@ export function useAnalyticsReports() {
     try {
       const params: Record<string, string> = { timeRange };
 
-      // If custom time range, add fromDate and toDate
       if (timeRange === "custom") {
         if (fromDate) {
           params.fromDate = format(fromDate, "yyyy-MM-dd");
@@ -88,7 +89,6 @@ export function useAnalyticsReports() {
         format: exportFormat,
       };
 
-      // If custom time range, add fromDate and toDate
       if (timeRange === "custom") {
         if (fromDate) {
           params.fromDate = format(fromDate, "yyyy-MM-dd");
@@ -106,7 +106,6 @@ export function useAnalyticsReports() {
         }
       );
 
-      // Create download link
       const blob = new Blob([response.data as BlobPart]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");

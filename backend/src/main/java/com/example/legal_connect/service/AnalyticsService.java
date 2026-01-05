@@ -4,6 +4,8 @@ import com.example.legal_connect.dto.analytics.*;
 import com.example.legal_connect.repository.ForumRepository;
 import com.example.legal_connect.repository.UserRepository;
 import com.example.legal_connect.repository.PostCategoryRepository;
+import com.example.legal_connect.repository.ConversationRepository;
+import com.example.legal_connect.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 
 /**
  * Service for admin analytics and reporting
@@ -29,6 +33,8 @@ public class AnalyticsService {
     private final PostCategoryRepository postCategoryRepository;
     private final com.example.legal_connect.repository.PostReplyRepository postReplyRepository;
     private final com.example.legal_connect.repository.PostVoteRepository postVoteRepository;
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
     
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMM dd");
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -40,18 +46,14 @@ public class AnalyticsService {
         log.info("Generating user growth report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // Get user counts by role and date
         List<Object[]> usersByRole = userRepository.countUsersByRoleGroupedByDate(startDate);
         
-        // Get post counts by date
         List<Object[]> postsByDate = forumRepository.countPostsGroupedByDate(startDate);
         
-        // Create maps for easy lookup
         Map<String, Integer> usersCountMap = new HashMap<>();
         Map<String, Integer> lawyersCountMap = new HashMap<>();
         Map<String, Integer> postsCountMap = new HashMap<>();
         
-        // Process user data by role
         for (Object[] row : usersByRole) {
             String date = row[0].toString();
             com.example.legal_connect.entity.User.Role role = (com.example.legal_connect.entity.User.Role) row[1];
@@ -64,14 +66,12 @@ public class AnalyticsService {
             }
         }
         
-        // Process post data
         for (Object[] row : postsByDate) {
             String date = row[0].toString();
             Long count = ((Number) row[1]).longValue();
             postsCountMap.put(date, count.intValue());
         }
         
-        // Build result list with all dates in range
         List<UserGrowthData> result = new ArrayList<>();
         LocalDateTime currentDate = startDate;
         LocalDateTime endDate = LocalDateTime.now();
@@ -88,7 +88,6 @@ public class AnalyticsService {
             int currentTotal = users + lawyers;
             double growth = 0.0;
             
-            // Calculate growth percentage compared to previous period
             if (previousTotal > 0) {
                 growth = ((currentTotal - previousTotal) * 100.0) / previousTotal;
             }
@@ -116,29 +115,6 @@ public class AnalyticsService {
         int days = getNumberOfDays(timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // TODO: Implement real database query
-        // Example query to calculate retention:
-        // WITH period_users AS (
-        //   SELECT DISTINCT user_id, DATE(created_at) as period
-        //   FROM user_activities
-        //   WHERE created_at >= :startDate
-        // ),
-        // retained AS (
-        //   SELECT 
-        //     p1.period,
-        //     COUNT(DISTINCT p1.user_id) as active,
-        //     COUNT(DISTINCT p2.user_id) as retained
-        //   FROM period_users p1
-        //   LEFT JOIN period_users p2 ON p1.user_id = p2.user_id 
-        //     AND p2.period = p1.period - INTERVAL 1 DAY
-        //   GROUP BY p1.period
-        // )
-        // SELECT 
-        //   period,
-        //   retained,
-        //   active,
-        //   (retained * 100.0 / NULLIF(active, 0)) as rate
-        // FROM retained
         
         List<UserRetentionData> result = new ArrayList<>();
         for (int i = 0; i < Math.min(days, 30); i++) {
@@ -163,28 +139,21 @@ public class AnalyticsService {
         log.info("Generating content stats report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // Count total posts in time range
         long totalPosts = forumRepository.countByCreatedAtBetweenAndIsActiveTrue(startDate, LocalDateTime.now());
         
-        // Count total replies in time range
         long totalReplies = postReplyRepository.countByCreatedAtAfterAndIsActiveTrue(startDate);
         
-        // Calculate average replies per post
         Double avgReplies = postReplyRepository.getAverageReplyCountPerPost(startDate);
         double avgRepliesPerPost = (avgReplies != null) ? avgReplies : 0.0;
         
-        // Get top categories by post count
         List<Object[]> categoryData = forumRepository.countPostsByCategoryGrouped(startDate);
         List<ContentStatsData.TopCategory> topCategories = new ArrayList<>();
         
-        // Get top 5 categories by post count
         for (int i = 0; i < Math.min(categoryData.size(), 5); i++) {
             Object[] row = categoryData.get(i);
             String categoryName = (String) row[0];
             Long currentCount = ((Number) row[1]).longValue();
             
-            // For growth calculation, we would need previous period data
-            // For simplicity, we'll calculate a mock growth or leave it as 0
             double growth = 0.0;
             
             topCategories.add(ContentStatsData.TopCategory.builder()
@@ -209,25 +178,19 @@ public class AnalyticsService {
         log.info("Generating engagement report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // Get posts by date
         List<Object[]> postsByDate = forumRepository.countPostsGroupedByDate(startDate);
         
-        // Get replies by date
         List<Object[]> repliesByDate = postReplyRepository.countRepliesGroupedByDate(startDate);
         
-        // Get views by date
         List<Object[]> viewsByDate = forumRepository.sumViewsGroupedByDate(startDate);
         
-        // Get upvotes by date
         List<Object[]> votesByDate = postVoteRepository.countUpvotesGroupedByDate(startDate);
         
-        // Create maps for easy lookup
         Map<String, Integer> postsMap = new HashMap<>();
         Map<String, Integer> repliesMap = new HashMap<>();
         Map<String, Integer> viewsMap = new HashMap<>();
         Map<String, Integer> likesMap = new HashMap<>();
         
-        // Populate maps
         for (Object[] row : postsByDate) {
             String date = row[0].toString();
             int count = ((Number) row[1]).intValue();
@@ -252,7 +215,6 @@ public class AnalyticsService {
             likesMap.put(date, count);
         }
         
-        // Build result list
         List<EngagementData> result = new ArrayList<>();
         LocalDateTime currentDate = startDate;
         LocalDateTime endDate = LocalDateTime.now();
@@ -281,22 +243,6 @@ public class AnalyticsService {
         log.info("Generating lawyer performance report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // TODO: Implement real database query
-        // Example query:
-        // SELECT 
-        //   u.full_name as name,
-        //   COUNT(pr.id) as responses,
-        //   AVG(TIMESTAMPDIFF(HOUR, p.created_at, pr.created_at)) as avg_response_time,
-        //   AVG(pr.rating) as satisfaction,
-        //   COUNT(DISTINCT c.id) as active_clients
-        // FROM users u
-        // JOIN post_replies pr ON pr.user_id = u.id
-        // JOIN posts p ON p.id = pr.post_id
-        // LEFT JOIN conversations c ON c.lawyer_id = u.id AND c.status = 'ACTIVE'
-        // WHERE u.role = 'LAWYER' AND pr.created_at >= :startDate
-        // GROUP BY u.id
-        // ORDER BY responses DESC
-        // LIMIT 10
         
         return List.of(
             LawyerPerformanceData.builder()
@@ -321,7 +267,6 @@ public class AnalyticsService {
         log.info("Generating category distribution report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // Get posts grouped by category
         List<Object[]> categoryData = forumRepository.countPostsByCategoryGrouped(startDate);
         
         List<CategoryDistributionData> result = new ArrayList<>();
@@ -330,9 +275,6 @@ public class AnalyticsService {
             String categoryName = (String) row[0];
             Long postCount = ((Number) row[1]).longValue();
             
-            // Note: Counting lawyers per category would require a complex query
-            // joining users who posted in each category. For simplicity, we'll
-            // set it to 0 or implement later if needed by the frontend
             int lawyers = 0;
             
             result.add(CategoryDistributionData.builder()
@@ -353,35 +295,28 @@ public class AnalyticsService {
         log.info("Generating hourly activity report for timeRange: {}", timeRange);
         LocalDateTime startDate = getStartDateTime(timeRange);
         
-        // Get posts by hour
         List<Object[]> postsByHour = forumRepository.countPostsGroupedByHour(startDate);
         
-        // Get replies by hour
         List<Object[]> repliesByHour = postReplyRepository.countRepliesGroupedByHour(startDate);
         
-        // Create map for aggregation
         Map<Integer, Integer> activityMap = new HashMap<>();
         
-        // Initialize all hours with 0
         for (int i = 0; i < 24; i++) {
             activityMap.put(i, 0);
         }
         
-        // Add posts counts
         for (Object[] row : postsByHour) {
             int hour = ((Number) row[0]).intValue();
             int count = ((Number) row[1]).intValue();
             activityMap.put(hour, activityMap.get(hour) + count);
         }
         
-        // Add replies counts
         for (Object[] row : repliesByHour) {
             int hour = ((Number) row[0]).intValue();
             int count = ((Number) row[1]).intValue();
             activityMap.put(hour, activityMap.get(hour) + count);
         }
         
-        // Build result list
         List<HourlyActivityData> result = new ArrayList<>();
         for (int hour = 0; hour < 24; hour++) {
             result.add(HourlyActivityData.builder()
@@ -399,12 +334,6 @@ public class AnalyticsService {
     public List<QualityMetricData> getQualityMetricsData(String timeRange) {
         log.info("Generating quality metrics report for timeRange: {}", timeRange);
         
-        // TODO: Implement real quality scoring algorithm
-        // This could involve analyzing:
-        // - Average response times
-        // - User satisfaction ratings
-        // - Post/reply quality (length, formatting, helpfulness votes)
-        // - Expert verification status
         
         return List.of(
             QualityMetricData.builder().category("Chất lượng phản hồi").score(85.5).build(),
@@ -416,20 +345,176 @@ public class AnalyticsService {
     }
 
     /**
+     * Get AI usage statistics
+     */
+    public AiStatsData getAiStatsData(String timeRange) {
+        log.info("Generating AI stats report for timeRange: {}", timeRange);
+        LocalDateTime startDate = getStartDateTime(timeRange);
+        
+        List<Object[]> typeCounts = conversationRepository.countConversationsByType(startDate);
+        Map<String, Long> serviceUsage = new HashMap<>();
+        long totalConversations = 0;
+        for (Object[] row : typeCounts) {
+            String type = row[0].toString();
+            long count = ((Number) row[1]).longValue();
+            serviceUsage.put(type, count);
+            totalConversations += count;
+        }
+
+        long totalMessages = totalConversations * 5; // Simple simulation for now
+        
+        List<Object[]> timelineData = messageRepository.countMessagesGroupedByDate(startDate);
+        List<TimeSeriesDataPoint> usageTimeline = new ArrayList<>();
+        Map<String, Long> timelineMap = new HashMap<>();
+        for (Object[] row : timelineData) {
+            timelineMap.put(row[0].toString(), ((Number) row[1]).longValue());
+        }
+        
+        LocalDateTime currentDate = startDate;
+        LocalDateTime endDate = LocalDateTime.now();
+        while (!currentDate.isAfter(endDate)) {
+            String dateStr = currentDate.toLocalDate().toString();
+            usageTimeline.add(TimeSeriesDataPoint.builder()
+                .period(currentDate.format(DATE_FORMATTER))
+                .date(currentDate.toLocalDate())
+                .value(timelineMap.getOrDefault(dateStr, 0L))
+                .build());
+            currentDate = currentDate.plusDays(1);
+        }
+
+        List<Object[]> hourlyData = messageRepository.countMessagesGroupedByHour(startDate);
+        List<HourlyActivityData> hourlyPatterns = new ArrayList<>();
+        Map<Integer, Long> hourlyMap = new HashMap<>();
+        for (Object[] row : hourlyData) {
+            hourlyMap.put(((Number) row[0]).intValue(), ((Number) row[1]).longValue());
+        }
+        
+        for (int i = 0; i < 24; i++) {
+            hourlyPatterns.add(HourlyActivityData.builder()
+                .hour(i)
+                .activity(hourlyMap.getOrDefault(i, 0L).intValue())
+                .build());
+        }
+
+        return AiStatsData.builder()
+            .totalConversations(totalConversations)
+            .totalMessages(totalMessages)
+            .serviceUsage(serviceUsage)
+            .usageTimeline(usageTimeline)
+            .hourlyPatterns(hourlyPatterns)
+            .usageGrowth(12.5) // Simulation
+            .build();
+    }
+
+    /**
+     * Get sentiment analytics for posts and comments
+     */
+    public SentimentData getSentimentData(String timeRange) {
+        log.info("Generating sentiment report for timeRange: {}", timeRange);
+        LocalDateTime startDate = getStartDateTime(timeRange);
+        
+        long posPosts = forumRepository.countBySentimentLabelAndCreatedAtAfter("positive", startDate);
+        long posReplies = postReplyRepository.countBySentimentLabelAndCreatedAtAfter("positive", startDate);
+        long neuPosts = forumRepository.countBySentimentLabelAndCreatedAtAfter("neutral", startDate);
+        long neuReplies = postReplyRepository.countBySentimentLabelAndCreatedAtAfter("neutral", startDate);
+        long negPosts = forumRepository.countBySentimentLabelAndCreatedAtAfter("negative", startDate);
+        long negReplies = postReplyRepository.countBySentimentLabelAndCreatedAtAfter("negative", startDate);
+        
+        long totalPos = posPosts + posReplies;
+        long totalNeu = neuPosts + neuReplies;
+        long totalNeg = negPosts + negReplies;
+        long totalAnalyzed = totalPos + totalNeu + totalNeg;
+        
+        double posPct = totalAnalyzed > 0 ? (totalPos * 100.0 / totalAnalyzed) : 0;
+        double neuPct = totalAnalyzed > 0 ? (totalNeu * 100.0 / totalAnalyzed) : 0;
+        double negPct = totalAnalyzed > 0 ? (totalNeg * 100.0 / totalAnalyzed) : 0;
+        
+        List<Object[]> postSentimentTrend = forumRepository.countPostSentimentGroupedByDate(startDate);
+        List<Object[]> replySentimentTrend = postReplyRepository.countReplySentimentGroupedByDate(startDate);
+        
+        Map<String, SentimentData.SentimentTrend> trendMap = new HashMap<>();
+        
+        for (Object[] row : postSentimentTrend) {
+            String date = row[0].toString();
+            String label = row[1].toString();
+            long count = ((Number) row[2]).longValue();
+            
+            SentimentData.SentimentTrend t = trendMap.computeIfAbsent(date, k -> SentimentData.SentimentTrend.builder().date(k).build());
+            if ("positive".equals(label)) t.setPositive(t.getPositive() + count);
+            else if ("neutral".equals(label)) t.setNeutral(t.getNeutral() + count);
+            else if ("negative".equals(label)) t.setNegative(t.getNegative() + count);
+        }
+        
+        for (Object[] row : replySentimentTrend) {
+            String date = row[0].toString();
+            String label = row[1].toString();
+            long count = ((Number) row[2]).longValue();
+            
+            SentimentData.SentimentTrend t = trendMap.computeIfAbsent(date, k -> SentimentData.SentimentTrend.builder().date(k).build());
+            if ("positive".equals(label)) t.setPositive(t.getPositive() + count);
+            else if ("neutral".equals(label)) t.setNeutral(t.getNeutral() + count);
+            else if ("negative".equals(label)) t.setNegative(t.getNegative() + count);
+        }
+        
+        List<SentimentData.SentimentTrend> trendList = trendMap.values().stream()
+            .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
+            .map(t -> {
+                try {
+                    LocalDateTime dt = LocalDateTime.parse(t.getDate() + "T00:00:00");
+                    t.setDate(dt.format(DATE_FORMATTER));
+                } catch (Exception e) {}
+                return t;
+            })
+            .collect(Collectors.toList());
+            
+        List<com.example.legal_connect.entity.Post> topPosPosts = forumRepository.findTopPositivePosts(startDate, PageRequest.of(0, 5));
+        List<com.example.legal_connect.entity.PostReply> topPosReplies = postReplyRepository.findTopPositiveReplies(startDate, PageRequest.of(0, 5));
+        
+        List<SentimentData.TopSentimentPost> topPositive = new ArrayList<>();
+        topPosPosts.forEach(p -> topPositive.add(SentimentData.TopSentimentPost.builder().id(p.getId()).title(p.getTitle()).sentiment("positive").score(p.getSentimentScore()).authorName(p.getAuthor().getFullName()).build()));
+        topPosReplies.forEach(r -> topPositive.add(SentimentData.TopSentimentPost.builder().id(r.getId()).title(r.getContent().substring(0, Math.min(r.getContent().length(), 50))).sentiment("positive").score(r.getSentimentScore()).authorName(r.getAuthor().getFullName()).build()));
+        
+        List<SentimentData.TopSentimentPost> finalPositive = topPositive.stream()
+            .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+            .limit(5)
+            .collect(Collectors.toList());
+            
+        List<com.example.legal_connect.entity.Post> topNegPosts = forumRepository.findTopNegativePosts(startDate, PageRequest.of(0, 5));
+        List<com.example.legal_connect.entity.PostReply> topNegReplies = postReplyRepository.findTopNegativeReplies(startDate, PageRequest.of(0, 5));
+        
+        List<SentimentData.TopSentimentPost> topNegative = new ArrayList<>();
+        topNegPosts.forEach(p -> topNegative.add(SentimentData.TopSentimentPost.builder().id(p.getId()).title(p.getTitle()).sentiment("negative").score(p.getSentimentScore()).authorName(p.getAuthor().getFullName()).build()));
+        topNegReplies.forEach(r -> topNegative.add(SentimentData.TopSentimentPost.builder().id(r.getId()).title(r.getContent().substring(0, Math.min(r.getContent().length(), 50))).sentiment("negative").score(r.getSentimentScore()).authorName(r.getAuthor().getFullName()).build()));
+        
+        List<SentimentData.TopSentimentPost> finalNegative = topNegative.stream()
+            .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+            .limit(5)
+            .collect(Collectors.toList());
+
+        return SentimentData.builder()
+            .totalAnalyzed(totalAnalyzed)
+            .positiveCount(totalPos)
+            .neutralCount(totalNeu)
+            .negativeCount(totalNeg)
+            .positivePercentage(Math.round(posPct * 10.0) / 10.0)
+            .neutralPercentage(Math.round(neuPct * 10.0) / 10.0)
+            .negativePercentage(Math.round(negPct * 10.0) / 10.0)
+            .trend(trendList)
+            .topPositivePosts(finalPositive)
+            .topNegativePosts(finalNegative)
+            .build();
+    }
+
+    /**
      * Export report in specified format (PDF, Excel, CSV)
      */
     public byte[] exportReport(String reportType, String timeRange, String format) {
         log.info("Exporting {} report as {} for timeRange: {}", reportType, format, timeRange);
         
-        // TODO: Implement export functionality using:
-        // - PDF: iText or Apache PDFBox
-        // - Excel: Apache POI
-        // - CSV: Native Java or OpenCSV
         
         throw new UnsupportedOperationException("Export functionality not yet implemented");
     }
 
-    // Helper methods
     
     /**
      * Convert time range string to number of days

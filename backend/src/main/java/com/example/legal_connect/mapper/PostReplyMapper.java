@@ -25,7 +25,6 @@ public class PostReplyMapper {
             return null;
         }
 
-        // Parse mentioned user IDs
         List<Long> mentionedUserIds = new ArrayList<>();
         if (reply.getMentionedUserIds() != null && !reply.getMentionedUserIds().trim().isEmpty()) {
             mentionedUserIds = Arrays.stream(reply.getMentionedUserIds().split(","))
@@ -51,12 +50,10 @@ public class PostReplyMapper {
                 .isTopLevel(reply.isTopLevel())
                 .childrenCount(reply.getChildrenCount());
 
-        // Map author if available
         if (reply.getAuthor() != null) {
             builder.author(toUserSummaryDto(reply.getAuthor()));
         }
 
-        // Map children if available
         if (reply.getChildren() != null && !reply.getChildren().isEmpty()) {
             List<PostReplyDto> childrenDtos = reply.getChildren().stream()
                 .filter(PostReply::getIsActive)

@@ -4,7 +4,6 @@ import { apiClient } from "../../lib/axiosInstance";
 
 export class HttpAuthRepository implements AuthRepository {
   async login(email: string, password: string): Promise<{ user: User }> {
-    // Response format: { success: boolean, message: string, data: AuthResponse }
     const response = await apiClient.post<{
       success: boolean;
       message: string;
@@ -17,7 +16,6 @@ export class HttpAuthRepository implements AuthRepository {
 
     const user = response.data.data;
     if (user) {
-      // Normalize role to lowercase (backend returns UPPERCASE enum values)
       user.role = (user.role as string).toLowerCase() as typeof user.role;
     }
 
@@ -30,7 +28,6 @@ export class HttpAuthRepository implements AuthRepository {
     password: string;
     fullName: string;
   }): Promise<{ user: User }> {
-    // Response format: { success: boolean, message: string, data: AuthResponse }
     const response = await apiClient.post<{
       success: boolean;
       message: string;
@@ -40,7 +37,6 @@ export class HttpAuthRepository implements AuthRepository {
 
     const user = response.data.data;
     if (user) {
-      // Normalize role to lowercase (backend returns UPPERCASE enum values)
       user.role = (user.role as string).toLowerCase() as typeof user.role;
     }
 
@@ -59,7 +55,6 @@ export class HttpAuthRepository implements AuthRepository {
   async getCurrentUser(): Promise<User | null> {
     try {
       console.log("[AUTH REPO] Fetching current user...");
-      // Response format: { success: boolean, message: string, data: User }
       const response = await apiClient.get<{
         success: boolean;
         message: string;
@@ -69,7 +64,6 @@ export class HttpAuthRepository implements AuthRepository {
 
       const user = response.data.data;
       if (user) {
-        // Normalize role to lowercase (backend returns UPPERCASE enum values)
         user.role = (user.role as string).toLowerCase() as typeof user.role;
         console.log("[AUTH REPO] Normalized user role to lowercase:", user);
       }
@@ -78,8 +72,6 @@ export class HttpAuthRepository implements AuthRepository {
       return user;
     } catch (error) {
       console.error("[AUTH REPO] getCurrentUser error:", error);
-      // Session expired or user not authenticated
-      // Backend will clear SESSIONID cookie via 401 response headers
       return null;
     }
   }

@@ -21,11 +21,9 @@ interface CategoryUpdateData extends CategoryFormData {
 }
 
 interface UseAdminCategoriesReturn {
-  // State
   loading: boolean;
   error: string | null;
   
-  // Actions
   getAllCategories: (params?: {
     page?: number;
     size?: number;
@@ -70,8 +68,6 @@ export function useAdminCategories(): UseAdminCategoriesReturn {
 
       const response = await apiClient.get(`/admin/categories?${queryParams.toString()}`);
 
-      // The backend returns ApiResponse<Page<PostCategoryDto>>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -101,8 +97,6 @@ export function useAdminCategories(): UseAdminCategoriesReturn {
 
       const response = await apiClient.post('/admin/categories', data);
 
-      // The backend returns ApiResponse<PostCategoryDto>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -126,7 +120,6 @@ export function useAdminCategories(): UseAdminCategoriesReturn {
 
       const response = await apiClient.put(`/admin/categories/${id}`, data);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (apiResponse.success && apiResponse.data) {
@@ -150,7 +143,6 @@ export function useAdminCategories(): UseAdminCategoriesReturn {
 
       const response = await apiClient.delete(`/admin/categories/${id}`);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {
@@ -172,7 +164,6 @@ export function useAdminCategories(): UseAdminCategoriesReturn {
 
       const response = await apiClient.put(`/admin/categories/${id}/status?isActive=${isActive}`);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {

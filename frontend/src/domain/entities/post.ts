@@ -43,6 +43,7 @@ export interface PostDto {
   updatedAt: string;
   lastReply?: null;
   lastReplyAt?: string;
+  isActive: boolean;
   replies: PostReplyDto[];
 }
 

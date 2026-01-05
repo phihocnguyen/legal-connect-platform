@@ -13,13 +13,10 @@ import java.time.LocalDateTime;
         @UniqueConstraint(columnNames = {"post_id", "user_id"})
     },
     indexes = {
-        // Index on post_id for faster vote counting
         @Index(name = "idx_post_votes_post_id", columnList = "post_id"),
         
-        // Index on user_id for user's voting history
         @Index(name = "idx_post_votes_user_id", columnList = "user_id"),
         
-        // Composite index for finding user's vote on a post
         @Index(name = "idx_post_votes_post_user", columnList = "post_id, user_id")
     }
 )

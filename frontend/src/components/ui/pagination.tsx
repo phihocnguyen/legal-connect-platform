@@ -17,7 +17,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalElements,
   pageSize,
 }) => {
-  // Fix edge cases
   const safeTotalElements = Math.max(0, totalElements);
   const safeTotalPages = Math.max(1, totalPages);
   const safeCurrentPage = Math.max(

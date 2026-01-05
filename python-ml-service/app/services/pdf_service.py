@@ -42,6 +42,10 @@ class PDFService:
         # Store for PDF sessions
         self.pdf_stores: Dict[str, Chroma] = {}
         
+        # Setup upload directory
+        self.pdf_upload_dir = Path("data/uploads/pdfs")
+        self.pdf_upload_dir.mkdir(parents=True, exist_ok=True)
+        
         logger.info("✅ PDF Service initialized successfully")
     
     def extract_text_from_pdf(self, pdf_content: bytes) -> str:
@@ -81,11 +85,19 @@ class PDFService:
         return hashlib.md5(pdf_content).hexdigest()
     
     def save_pdf_file(self, pdf_content: bytes, pdf_id: str, filename: str) -> Path:
-        file_path = self.pdf_upload_dir / f"{pdf_id}_{filename}"
+        # Save with just pdf_id to make retrieval easier
+        file_path = self.pdf_upload_dir / f"{pdf_id}.pdf"
         with open(file_path, 'wb') as f:
             f.write(pdf_content)
         logger.info(f"Saved PDF to {file_path}")
         return file_path
+    
+    def get_pdf_content(self, pdf_id: str) -> Optional[bytes]:
+        file_path = self.pdf_upload_dir / f"{pdf_id}.pdf"
+        if file_path.exists():
+            with open(file_path, 'rb') as f:
+                return f.read()
+        return None
     
     async def call_llama(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         try:

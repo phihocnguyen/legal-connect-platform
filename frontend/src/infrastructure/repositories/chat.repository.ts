@@ -6,7 +6,7 @@ export class HttpChatRepository implements ChatRepository {
 
   async getConversations(): Promise<ChatConversation[]> {
     try {
-      const response = await apiClient.get('/conversations');
+      const response = await apiClient.get('/conversations?type=QA');
       return response.data as ChatConversation[];
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
@@ -68,13 +68,28 @@ export class HttpChatRepository implements ChatRepository {
 
   async sendMessage(conversationId: string, content: string, role: 'USER' | 'ASSISTANT'): Promise<Message> {
     try {
+      console.log('📤 Sending message:', {
+        conversationId,
+        conversationIdType: typeof conversationId,
+        conversationIdNumber: Number(conversationId),
+        content: content.substring(0, 50),
+        role
+      });
+
+      if (!conversationId) {
+        throw new Error('Conversation ID is required');
+      }
+
       const response = await apiClient.post('/conversations/messages', {
         conversationId: Number(conversationId),
         content,
         role,
       });
+      
+      console.log('✅ Message sent successfully:', response.data);
       return response.data as Message;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[AXIOS ERROR] POST /conversations/messages:', error.response?.status, error.response?.data);
       console.error('Failed to send message:', error);
       throw new Error('Failed to send message');
     }

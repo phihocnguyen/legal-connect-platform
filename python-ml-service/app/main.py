@@ -5,10 +5,11 @@ from contextlib import asynccontextmanager
 import time
 from loguru import logger
 
-from app.routers import rag, pdf
+from app.routers import rag, pdf, sentiment
 from app.config import get_settings
 from app.services.rag_service import get_rag_service
 from app.services.pdf_service import get_pdf_service
+from app.services.sentiment_service import get_sentiment_service
 
 
 # Lifespan events
@@ -37,6 +38,14 @@ async def lifespan(app: FastAPI):
         logger.info("✅ PDF service pre-loaded successfully")
     except Exception as e:
         logger.error(f"❌ Failed to pre-load PDF service: {e}")
+    
+    # Pre-load Sentiment service
+    logger.info("🔄 Pre-loading Sentiment service...")
+    try:
+        sentiment_service = get_sentiment_service()
+        logger.info("✅ Sentiment service pre-loaded successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to pre-load Sentiment service: {e}")
     
     yield
     
@@ -94,6 +103,10 @@ async def root():
                 "upload": "/pdf/upload",
                 "ask": "/pdf/ask",
                 "health": "/pdf/health"
+            },
+            "sentiment": {
+                "analyze": "/sentiment/analyze",
+                "analyze_batch": "/sentiment/analyze-batch"
             }
         }
     }
@@ -102,6 +115,7 @@ async def root():
 # Include routers
 app.include_router(rag.router, prefix="/rag", tags=["RAG"])
 app.include_router(pdf.router)
+app.include_router(sentiment.router)
 
 
 if __name__ == "__main__":

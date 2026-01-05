@@ -29,7 +29,6 @@ export function LoadingOverlay({
     "flex items-center justify-center",
     overlay && "absolute inset-0 bg-white/80 backdrop-blur-sm",
     !overlay && "py-8",
-    // Z-index based on priority
     priority === "high" && "z-50",
     priority === "medium" && "z-30", 
     priority === "low" && "z-10"

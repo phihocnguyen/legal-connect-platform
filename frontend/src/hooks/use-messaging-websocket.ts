@@ -56,23 +56,19 @@ export function useMessagingWebSocket({
   }, [connected, otherUserId, send]);
 
   useEffect(() => {
-    // keep refs up to date so we don't need to recreate subscriptions when handlers change
     onMessageReceivedRef.current = onMessageReceived;
     onUserTypingRef.current = onUserTyping;
 
-    // Only subscribe after STOMP is fully connected
     if (!connected) {
       console.log('❌ Not connected, skip subscribing');
       return;
     }
 
-    // Dedupe: If already subscribed for this conversation, skip
     if (subscribedRef.current && lastConversationRef.current === conversationId && subscriptionsRef.current.length > 0) {
       console.log('ℹ️ Already subscribed for this conversation, skip subscribing');
       return;
     }
 
-    // Clean up previous subscriptions
     subscriptionsRef.current.forEach(sub => {
       if (sub?.unsubscribe) {
         try {
@@ -84,7 +80,6 @@ export function useMessagingWebSocket({
     });
     subscriptionsRef.current = [];
 
-    // Subscribe to private and typing queues
     const privateMessageSubscription = subscribe('/user/queue/private', (message) => {
       try {
         const messageData = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;

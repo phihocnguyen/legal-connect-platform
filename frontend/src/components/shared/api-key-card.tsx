@@ -14,12 +14,10 @@ export function ApiKeyCard() {
 
   useEffect(() => {
     loadApiKey();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadApiKey = async () => {
     await getMyApiKey();
-    // Don't auto-create, let user click button to create
   };
 
   const copyToClipboard = () => {

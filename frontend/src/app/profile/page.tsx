@@ -11,10 +11,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      // Redirect to user's own profile
       router.push(`/profile/${user.id}`);
     } else if (!isLoading && !user) {
-      // Redirect to login if not authenticated
       router.push("/login");
     }
   }, [user, isLoading, router]);

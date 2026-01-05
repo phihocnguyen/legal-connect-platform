@@ -13,7 +13,6 @@ interface UserListForMessagingProps {
   currentUserId: number;
 }
 
-// Mock users data - in real app this would come from API
 const mockUsers: UserType[] = [
   {
     id: 2,
@@ -59,11 +58,9 @@ export function UserListForMessaging({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call to fetch users
     const fetchUsers = async () => {
       setLoading(true);
 
-      // Filter out current user and simulate delay
       setTimeout(() => {
         const filteredUsers = mockUsers.filter(
           (user) => user.id !== currentUserId
@@ -72,15 +69,6 @@ export function UserListForMessaging({
         setLoading(false);
       }, 500);
 
-      // In real app:
-      // try {
-      //   const response = await apiClient.get('/api/users/available-for-messaging');
-      //   setUsers(response.data.filter(user => user.id !== currentUserId));
-      // } catch (error) {
-      //   console.error('Error fetching users:', error);
-      // } finally {
-      //   setLoading(false);
-      // }
     };
 
     fetchUsers();
@@ -224,5 +212,3 @@ export function UserListForMessaging({
   );
 }
 
-// Usage:
-// <UserListForMessaging currentUserId={1} />

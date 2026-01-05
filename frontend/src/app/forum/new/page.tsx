@@ -21,7 +21,6 @@ export default function NewThreadPage() {
   const { getAllCategories, createPostNew } = usePostUseCases();
   const searchParams = useSearchParams();
   console.log(searchParams);
-  // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedLabelId, setSelectedLabelId] = useState<string>("");
@@ -31,7 +30,6 @@ export default function NewThreadPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
-  // UI states
   const [categories, setCategories] = useState<PostCategoryDto[]>([]);
   const [availableLabels, setAvailableLabels] = useState<PostLabelDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +50,6 @@ export default function NewThreadPage() {
           );
           if (foundCategory) {
             setSelectedCategoryId(foundCategory.id);
-            // Set available labels from the selected category
             setAvailableLabels(foundCategory.labels || []);
           }
         }
@@ -67,7 +64,6 @@ export default function NewThreadPage() {
     loadCategories();
   }, [getAllCategories, searchParams]);
 
-  // Update available labels when category changes
   useEffect(() => {
     if (selectedCategoryId) {
       const selectedCategory = categories.find(
@@ -114,7 +110,6 @@ export default function NewThreadPage() {
       return;
     }
 
-    // Validate content length (strip HTML tags for validation)
     const plainTextContent = stripHtmlTags(content);
     if (plainTextContent.trim().length < 30) {
       setError("Nội dung phải có ít nhất 30 ký tự");
@@ -134,7 +129,6 @@ export default function NewThreadPage() {
 
       const newPost = await createPostNew(postData);
 
-      // Navigate to the new post
       const category = categories.find((c) => c.id === selectedCategoryId);
       if (category && newPost) {
         router.push(`/forum/${category.slug}/${newPost.slug}`);
@@ -184,14 +178,12 @@ export default function NewThreadPage() {
             <div className="space-y-2">
               <Label htmlFor="category">Chuyên mục</Label>
               {searchParams.get("category") ? (
-                // Read-only display when category is pre-selected from URL
                 <div className="w-full rounded-md border border-gray-300 bg-gray-50 p-2 text-gray-700">
                   {categories.find((cat) => cat.id === selectedCategoryId)
                     ?.name || "Đang tải..."}
                   <input type="hidden" value={selectedCategoryId || ""} />
                 </div>
               ) : (
-                // Normal dropdown when no category specified
                 <select
                   id="category"
                   value={selectedCategoryId || ""}

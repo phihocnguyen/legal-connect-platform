@@ -45,7 +45,7 @@ export function ConversationSidebar({
   const getDisplayDate = (conversation: Conversation) => {
     const date = conversation.updatedAt || conversation.timestamp;
     if (!date) return '';
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toLocaleDateString('vi-VN');
   };
 
   return (
@@ -58,7 +58,10 @@ export function ConversationSidebar({
         )}
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <div className={cn(
+          "p-4 border-b border-gray-200 flex items-center",
+          isCollapsed ? "justify-center" : "justify-between"
+        )}>
           {!isCollapsed && (
             <h2 className="text-sm font-semibold text-gray-900">
               Cuộc trò chuyện
@@ -70,7 +73,7 @@ export function ConversationSidebar({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onNew}
-                    className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+                    className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 cursor-pointer"
                   >
                     <PlusCircle className="w-5 h-5" />
                   </button>
@@ -83,7 +86,7 @@ export function ConversationSidebar({
             {onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
-                className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+                className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 cursor-pointer"
               >
                 <ChevronLeft className={cn(
                   "w-5 h-5 transition-transform",
@@ -100,9 +103,9 @@ export function ConversationSidebar({
             <div
               key={conversation.id}
               className={cn(
-                "group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors",
+                "group flex items-center cursor-pointer hover:bg-gray-50 transition-colors",
                 activeId == conversation.id && "bg-gray-100",
-                isCollapsed && "justify-center"
+                isCollapsed ? "justify-center px-4 py-3" : "gap-3 px-4 py-3"
               )}
               onClick={() => onSelect(conversation.id)}
             >
@@ -131,7 +134,7 @@ export function ConversationSidebar({
                           e.stopPropagation();
                           onRename(conversation);
                         }}
-                        className="p-1 text-gray-400 hover:text-teal-600 rounded"
+                        className="p-1 text-gray-400 hover:text-teal-600 rounded cursor-pointer"
                         title="Đổi tên"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -142,7 +145,7 @@ export function ConversationSidebar({
                         e.stopPropagation();
                         onDelete(conversation);
                       }}
-                      className="p-1 text-gray-400 hover:text-red-600 rounded"
+                      className="p-1 text-gray-400 hover:text-red-600 rounded cursor-pointer"
                       title="Xóa"
                     >
                       <Trash2 className="w-4 h-4" />

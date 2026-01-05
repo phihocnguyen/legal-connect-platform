@@ -92,7 +92,7 @@ export default function PdfQAPage() {
         // Persist ASSISTANT response to backend
         if (conversationId) {
           try {
-            const assistantMsg = await sendMessage(conversationId, answerText);
+            const assistantMsg = await sendMessage( conversationId, answerText, "ASSISTANT" );
             // Return the persisted assistant message
             return assistantMsg;
           } catch (err) {
@@ -365,6 +365,7 @@ export default function PdfQAPage() {
       if (activeConversationId === conversationToDelete) {
         setPdfFile(null);
         setActiveConversationId(undefined);
+        router.push("/pdf-qa");
       }
     } catch (error) {
       console.error("Error deleting conversation:", error);

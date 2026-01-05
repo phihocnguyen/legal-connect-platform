@@ -194,14 +194,15 @@ export class HttpPdfRepository implements PdfRepository {
 
   async sendMessage(
     conversationId: number,
-    content: string
+    content: string,
+    role: "USER" | "ASSISTANT" = "USER"
   ): Promise<PdfMessage> {
     const response = await apiClient.post<ApiMessageResponse>(
       "/conversations/messages",
       {
         conversationId,
         content,
-        role: "USER",
+        role: role,
       }
     );
 
@@ -247,11 +248,13 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   getPdfViewUrl(conversationId: number): string {
-    return `${this.baseURL}/pdf/view/${conversationId}`;
+    const url = this.baseURL.replace("http://backend:8080", "http://localhost:8080");
+    return `${url}/pdf/view/${conversationId}`;
   }
 
   getPdfDownloadUrl(conversationId: number): string {
-    return `${this.baseURL}/pdf/download/${conversationId}`;
+    const url = this.baseURL.replace("http://backend:8080", "http://localhost:8080");
+    return `${url}/pdf/download/${conversationId}`;
   }
 
   // Python API methods
@@ -268,7 +271,8 @@ export class HttpPdfRepository implements PdfRepository {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data.data;
   }
 
   async getPdfSummary(
@@ -280,12 +284,12 @@ export class HttpPdfRepository implements PdfRepository {
     formData.append("max_length", maxLength.toString());
 
     console.log("Sending PDF summary request:", {
-      url: `${this.pythonApiURL}/pdf/summarize`,
+      url: `${this.pythonApiURL}/pdf/summarize-id`,
       fileId: fileId,
       maxLength: maxLength,
     });
 
-    const response = await fetch(`${this.pythonApiURL}/pdf/summarize`, {
+    const response = await fetch(`${this.pythonApiURL}/pdf/summarize-id`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -307,7 +311,7 @@ export class HttpPdfRepository implements PdfRepository {
 
     const result = await response.json();
     console.log("PDF summary result:", result);
-    return result;
+    return result.data;
   }
 
   async askPdfQuestion(
@@ -316,17 +320,17 @@ export class HttpPdfRepository implements PdfRepository {
     topK: number = 3
   ): Promise<import("../../domain/entities").PdfQAResponse> {
     const payload = {
-      file_id: fileId,
+      pdf_id: fileId,
       question,
       top_k: topK,
     };
 
     console.log("Sending PDF Q/A request to Python API:", {
-      url: `${this.pythonApiURL}/pdf/qa`,
+      url: `${this.pythonApiURL}/pdf/ask`,
       payload,
     });
 
-    const response = await fetch(`${this.pythonApiURL}/pdf/qa`, {
+    const response = await fetch(`${this.pythonApiURL}/pdf/ask`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -348,6 +352,6 @@ export class HttpPdfRepository implements PdfRepository {
 
     const result = await response.json();
     console.log("PDF QA result:", result);
-    return result;
+    return result.data;
   }
 }

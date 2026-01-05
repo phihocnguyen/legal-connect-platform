@@ -1,7 +1,38 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "../styles/chat-design-tokens.css";
 @custom-variant dark (&:is(.dark *));
+
+/* Chat Utilities moved from chat-design-tokens.css */
+.chat-smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+.chat-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chat-custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.chat-custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 9999px;
+}
+
+.chat-custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
 
 /* Prevent horizontal scrollbar globally */
 html,

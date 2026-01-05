@@ -38,12 +38,9 @@ export function NotebookChat({
     if (!isLoadingMessages) {
       if (initialMessages && initialMessages.length > 0) {
         setMessages(initialMessages);
-      } else if (!isProcessing) {
-        // Only clear if not processing a new message
-        setMessages([]);
       }
     }
-  }, [initialMessages, conversationId, isLoadingMessages, isProcessing]);
+  }, [initialMessages, conversationId, isLoadingMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

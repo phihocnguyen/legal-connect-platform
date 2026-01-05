@@ -76,8 +76,12 @@ export const usePdfCases = () => {
   );
 
   const sendMessage = useCallback(
-    async (conversationId: number, content: string) => {
-      return sendPdfMessageUseCase.execute(conversationId, content);
+    async (
+      conversationId: number,
+      content: string,
+      role: "USER" | "ASSISTANT" = "USER"
+    ) => {
+      return sendPdfMessageUseCase.execute(conversationId, content, role);
     },
     [sendPdfMessageUseCase]
   );

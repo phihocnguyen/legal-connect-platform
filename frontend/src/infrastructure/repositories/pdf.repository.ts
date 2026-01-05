@@ -111,7 +111,6 @@ export class HttpPdfRepository implements PdfRepository {
 
     const data = response.data;
 
-    // Convert and return properly typed result
     const result: PdfUploadResult = {
       success: data.success,
       message: data.message,
@@ -257,7 +256,6 @@ export class HttpPdfRepository implements PdfRepository {
     return `${url}/pdf/download/${conversationId}`;
   }
 
-  // Python API methods
   async uploadPdfToPython(file: File): Promise<PythonPdfUploadResult> {
     const formData = new FormData();
     formData.append("file", file);

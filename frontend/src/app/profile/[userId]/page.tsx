@@ -76,10 +76,8 @@ export default function ProfilePage() {
     loadProfile();
   }, [userId, startLoading, stopLoading, getUserProfile]);
 
-  // Track profile views
   useEffect(() => {
     if (profile) {
-      // Initialize views from localStorage or start at 1
       const key = `profile_views_${profile.id}`;
       const currentViews = parseInt(localStorage.getItem(key) || "1") + 1;
       setProfileViews(currentViews);
@@ -87,11 +85,9 @@ export default function ProfilePage() {
     }
   }, [profile?.id]);
 
-  // Detect if coming from forum and set back button
   useEffect(() => {
     if (typeof window !== "undefined") {
       const referrer = document.referrer;
-      // Check if referrer is from forum post
       if (referrer.includes("/forum/")) {
         setBackUrl(referrer);
         setBackLabel("← Quay lại bài viết");
@@ -108,14 +104,12 @@ export default function ProfilePage() {
       
       try {
         setPostsLoading(true);
-        // Use getAllPosts with pagination to get 1 most recent post
         const response = await getAllPosts({
           page: 0,
           size: 1,
           sort: "createdAt,desc"
         });
         if (response && response.content) {
-          // Filter posts by author
           const authorPosts = response.content.filter(
             (post: PostDto) => post.author.id === parseInt(userId)
           );
@@ -145,7 +139,6 @@ export default function ProfilePage() {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Reset form if canceling
       setEditForm({
         fullName: profile?.fullName || "",
         phoneNumber: profile?.phoneNumber || "",
@@ -159,12 +152,9 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     try {
-      // TODO: Call API to update profile with avatar
-      // If avatarFile exists, upload it first
       toast.success("Cập nhật profile thành công!");
       setIsEditing(false);
       
-      // Update local profile state
       if (profile) {
         setProfile({
           ...profile,
@@ -194,7 +184,6 @@ export default function ProfilePage() {
     return date.toLocaleDateString("vi-VN");
   };
 
-  // Helper to get role display name (case-insensitive)
   const getRoleDisplayName = (role: string | undefined): string => {
     const roleStr = role?.toLowerCase() || "user";
     if (roleStr === "lawyer") return "Luật sư";
@@ -202,7 +191,6 @@ export default function ProfilePage() {
     return "Thành viên";
   };
 
-  // If role is lawyer, they are automatically verified
   const isLawyer = profile?.role?.toLowerCase() === "lawyer";
   const verifiedStatus = isLawyer || profile?.lawyerVerified;
 

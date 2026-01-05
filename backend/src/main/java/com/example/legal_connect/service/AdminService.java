@@ -11,11 +11,13 @@ import com.example.legal_connect.entity.User;
 import com.example.legal_connect.entity.Post;
 import com.example.legal_connect.entity.PostCategory;
 import com.example.legal_connect.entity.LawyerApplication;
+import com.example.legal_connect.entity.PostReply;
 import com.example.legal_connect.repository.UserRepository;
 import com.example.legal_connect.repository.ForumRepository;
 import com.example.legal_connect.repository.PostCategoryRepository;
 import com.example.legal_connect.repository.LawyerApplicationRepository;
 import com.example.legal_connect.repository.PostReportRepository;
+import com.example.legal_connect.repository.PostReplyRepository;
 import com.example.legal_connect.mapper.PostCategoryMapper;
 import com.example.legal_connect.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +35,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import java.util.Arrays;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +49,7 @@ public class AdminService {
     private final LawyerApplicationRepository lawyerApplicationRepository;
     private final PostCategoryMapper postCategoryMapper;
     private final PostReportRepository postReportRepository;
+    private final PostReplyRepository postReplyRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserManagementDto> getAllUsers(String search, String role, Pageable pageable) {
@@ -89,7 +92,6 @@ public class AdminService {
     public Page<PostModerationDto> getViolationPosts(String search, Boolean isActive, Pageable pageable) {
         Page<Post> posts;
         
-        // Base query - only get reported posts (reportCount > 0)
         if (search != null && !search.trim().isEmpty()) {
             if (isActive != null) {
                 posts = forumRepository.findReportedPostsBySearchTermAndStatus(
@@ -107,6 +109,70 @@ public class AdminService {
         }
 
         return posts.map(this::convertToPostModerationDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<PostModerationDto> getViolationReplies(String search, Boolean isActive, Pageable pageable) {
+        Page<PostReply> replies;
+        
+        if (search != null && !search.trim().isEmpty() || isActive != null) {
+            replies = postReplyRepository.findBySentimentLabelAndFilters("negative", isActive, search, pageable);
+        } else {
+            replies = postReplyRepository.findBySentimentLabel("negative", pageable);
+        }
+
+        return replies.map(reply -> convertToPostModerationDto(reply));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void updateReplyStatus(Long replyId, Boolean isActive) {
+        PostReply reply = postReplyRepository.findById(replyId)
+            .orElseThrow(() -> new RuntimeException("Reply not found"));
+        
+        reply.setIsActive(isActive);
+        postReplyRepository.save(reply);
+        
+        log.info("Reply {} status updated to: {}", replyId, isActive ? "active" : "inactive");
+    }
+
+    private PostModerationDto convertToPostModerationDto(PostReply reply) {
+        PostModerationDto.AuthorDto authorDto;
+        if (reply.getAuthor() == null) {
+            authorDto = PostModerationDto.AuthorDto.builder()
+                .id(0L)
+                .fullName("Unknown")
+                .email("unknown@example.com")
+                .role("USER")
+                .build();
+        } else {
+            authorDto = PostModerationDto.AuthorDto.builder()
+                .id(reply.getAuthor().getId())
+                .fullName(reply.getAuthor().getFullName())
+                .email(reply.getAuthor().getEmail())
+                .avatar(reply.getAuthor().getAvatar())
+                .role(reply.getAuthor().getRole().toString())
+                .build();
+        }
+
+        return PostModerationDto.builder()
+            .id(reply.getId())
+            .title(reply.getPost() != null ? "Bình luận trong: " + reply.getPost().getTitle() : "Bình luận (Bài viết đã xóa)")
+            .content(reply.getContent())
+            .categoryName(reply.getPost() != null && reply.getPost().getCategory() != null ? reply.getPost().getCategory().getName() : "Không có danh mục")
+            .author(authorDto)
+            .views(0)
+            .replyCount(0)
+            .isActive(reply.getIsActive())
+            .isPinned(false)
+            .isHot(false)
+            .createdAt(reply.getCreatedAt())
+            .updatedAt(reply.getUpdatedAt())
+            .violationReason(null)
+            .isReported(true)
+            .reportCount(1)
+            .reportReasons(Collections.singletonList("AI: Nội dung tiêu cực (" + reply.getSentimentLabel() + ")"))
+            .build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -157,17 +223,14 @@ public class AdminService {
         LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
             .orElseThrow(() -> new RuntimeException("Application not found"));
         
-        // Get current admin user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         
-        // Update application status
         application.setStatus(LawyerApplication.ApplicationStatus.APPROVED);
         application.setAdminNotes(adminNotes);
         application.setReviewedBy(userPrincipal.getId());
         application.setReviewedAt(LocalDateTime.now());
         
-        // Update user role to lawyer
         User user = application.getUser();
         user.setRole(User.Role.LAWYER);
         
@@ -183,11 +246,9 @@ public class AdminService {
         LawyerApplication application = lawyerApplicationRepository.findById(applicationId)
             .orElseThrow(() -> new RuntimeException("Application not found"));
         
-        // Get current admin user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         
-        // Update application status
         application.setStatus(LawyerApplication.ApplicationStatus.REJECTED);
         application.setAdminNotes(adminNotes);
         application.setReviewedBy(userPrincipal.getId());
@@ -217,15 +278,24 @@ public class AdminService {
     }
 
     private PostModerationDto convertToPostModerationDto(Post post) {
-        PostModerationDto.AuthorDto authorDto = PostModerationDto.AuthorDto.builder()
-            .id(post.getAuthor().getId())
-            .fullName(post.getAuthor().getFullName())
-            .email(post.getAuthor().getEmail())
-            .avatar(post.getAuthor().getAvatar())
-            .role(post.getAuthor().getRole().toString())
-            .build();
+        PostModerationDto.AuthorDto authorDto;
+        if (post.getAuthor() == null) {
+            authorDto = PostModerationDto.AuthorDto.builder()
+                .id(0L)
+                .fullName("Unknown")
+                .email("unknown@example.com")
+                .role("USER")
+                .build();
+        } else {
+            authorDto = PostModerationDto.AuthorDto.builder()
+                .id(post.getAuthor().getId())
+                .fullName(post.getAuthor().getFullName())
+                .email(post.getAuthor().getEmail())
+                .avatar(post.getAuthor().getAvatar())
+                .role(post.getAuthor().getRole().toString())
+                .build();
+        }
 
-        // Get report reasons from PostReport entities
         List<String> reportReasons = postReportRepository.findByPostIdOrderByCreatedAtDesc(post.getId())
             .stream()
             .map(com.example.legal_connect.entity.PostReport::getReason)
@@ -236,7 +306,7 @@ public class AdminService {
             .id(post.getId())
             .title(post.getTitle())
             .content(post.getContent())
-            .categoryName(post.getCategory().getName())
+            .categoryName(post.getCategory() != null ? post.getCategory().getName() : "Không có danh mục")
             .author(authorDto)
             .views(post.getViews())
             .replyCount(post.getReplyCount())
@@ -290,24 +360,20 @@ public class AdminService {
         LocalDateTime thirtyDaysAgo = now.minus(30, ChronoUnit.DAYS);
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         
-        // Basic counts
         long totalUsers = userRepository.count();
         long totalPosts = forumRepository.count();
         long totalLawyers = userRepository.countByRole(User.Role.LAWYER);
         long totalCategories = forumRepository.countDistinctCategories();
         
-        // Pending/Active items
         long pendingApplications = lawyerApplicationRepository.countByStatus(LawyerApplication.ApplicationStatus.PENDING);
         long activeUsers = userRepository.count(); // Temporarily use total count instead of lastLogin
         long reportedPosts = forumRepository.countByIsReportedTrue();
         
-        // Growth metrics
         long newUsersThisMonth = userRepository.countByCreatedAtAfter(startOfMonth);
         long newPostsThisMonth = forumRepository.countByCreatedAtAfter(startOfMonth);
         long newLawyersThisMonth = lawyerApplicationRepository.countByStatusAndReviewedAtAfter(
             LawyerApplication.ApplicationStatus.APPROVED, startOfMonth);
         
-        // User statistics by role
         List<AdminDashboardStatsDto.UserRoleStatsDto> usersByRole = new ArrayList<>();
         for (User.Role role : User.Role.values()) {
             long count = userRepository.countByRole(role);
@@ -320,7 +386,6 @@ public class AdminService {
                 .build());
         }
         
-        // Popular posts (top 5 by views in last 30 days)
         List<Post> popularPostsEntities = forumRepository.findTopPostsByViews(thirtyDaysAgo, 5);
         List<AdminDashboardStatsDto.PopularContentDto> popularPosts = popularPostsEntities.stream()
             .map(post -> AdminDashboardStatsDto.PopularContentDto.builder()
@@ -333,10 +398,8 @@ public class AdminService {
                 .build())
             .collect(Collectors.toList());
         
-        // Recent activities (last 10)
         List<AdminDashboardStatsDto.RecentActivityDto> recentActivities = new ArrayList<>();
         
-        // Add recent user registrations
         List<User> recentUsers = userRepository.findTop5ByOrderByCreatedAtDesc();
         for (User user : recentUsers) {
             recentActivities.add(AdminDashboardStatsDto.RecentActivityDto.builder()
@@ -348,7 +411,6 @@ public class AdminService {
                 .build());
         }
         
-        // Add recent posts
         List<Post> recentPosts = forumRepository.findTop5ByOrderByCreatedAtDesc();
         for (Post post : recentPosts) {
             recentActivities.add(AdminDashboardStatsDto.RecentActivityDto.builder()
@@ -360,16 +422,13 @@ public class AdminService {
                 .build());
         }
         
-        // Sort by timestamp descending and limit to 10
         recentActivities = recentActivities.stream()
             .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
             .limit(10)
             .collect(Collectors.toList());
 
-        // Monthly growth data (last 6 months)
         List<AdminDashboardStatsDto.MonthlyGrowthDto> monthlyGrowth = generateMonthlyGrowthData();
         
-        // Weekly activity data (last 7 days)
         List<AdminDashboardStatsDto.WeeklyActivityDto> weeklyActivity = generateWeeklyActivityData();
         
         return AdminDashboardStatsDto.builder()
@@ -405,7 +464,6 @@ public class AdminService {
             
             String monthLabel = monthStart.format(java.time.format.DateTimeFormatter.ofPattern("MM/yyyy"));
             
-            // Count users/posts created within this specific month
             long users = userRepository.countByCreatedAtBetween(monthStart, monthEnd);
             long lawyers = userRepository.countByRoleAndCreatedAtBetween(User.Role.LAWYER, monthStart, monthEnd);
             long posts = forumRepository.countByCreatedAtBetween(monthStart, monthEnd);
@@ -425,17 +483,14 @@ public class AdminService {
         List<AdminDashboardStatsDto.WeeklyActivityDto> weeklyData = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
         
-        // Get Monday of current week
         LocalDateTime monday = now.with(java.time.DayOfWeek.MONDAY);
         
-        // If today is before Monday, get Monday of previous week
         if (now.isBefore(monday)) {
             monday = monday.minusWeeks(1);
         }
         
         String[] dayNames = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"};
         
-        // Loop from Monday to Sunday
         for (int i = 0; i < 7; i++) {
             LocalDateTime dayStart = monday.plusDays(i).withHour(0).withMinute(0).withSecond(0);
             LocalDateTime dayEnd = dayStart.plusDays(1).minusSeconds(1);
@@ -455,16 +510,13 @@ public class AdminService {
         return weeklyData;
     }
 
-    // ========== CATEGORY MANAGEMENT ==========
 
     @PreAuthorize("hasRole('ADMIN')")
     public Page<PostCategoryDto> getAllCategoriesForAdmin(String search, Pageable pageable) {
         Page<PostCategory> categories;
         
         if (search != null && !search.trim().isEmpty()) {
-            // For now, get all and filter (can be optimized with custom repository method later)
             categories = postCategoryRepository.findAll(pageable);
-            // TODO: Add custom repository method for search functionality
         } else {
             categories = postCategoryRepository.findAll(pageable);
         }
@@ -477,12 +529,10 @@ public class AdminService {
     public PostCategoryDto createCategory(CategoryCreateDto categoryCreateDto) {
         log.info("Creating category: {}", categoryCreateDto.getName());
         
-        // Check if slug already exists
         if (postCategoryRepository.existsBySlug(categoryCreateDto.getSlug())) {
             throw new IllegalArgumentException("Category slug already exists: " + categoryCreateDto.getSlug());
         }
         
-        // Check if name already exists (case insensitive)
         if (postCategoryRepository.findByNameIgnoreCase(categoryCreateDto.getName()).isPresent()) {
             throw new IllegalArgumentException("Category name already exists: " + categoryCreateDto.getName());
         }
@@ -509,12 +559,10 @@ public class AdminService {
         PostCategory existingCategory = postCategoryRepository.findById(categoryId)
             .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
         
-        // Check if slug already exists for different category
         if (postCategoryRepository.existsBySlugAndIdNot(categoryUpdateDto.getSlug(), categoryId)) {
             throw new IllegalArgumentException("Category slug already exists: " + categoryUpdateDto.getSlug());
         }
         
-        // Update category fields
         existingCategory.setName(categoryUpdateDto.getName());
         existingCategory.setSlug(categoryUpdateDto.getSlug());
         existingCategory.setDescription(categoryUpdateDto.getDescription());
@@ -536,16 +584,13 @@ public class AdminService {
         PostCategory category = postCategoryRepository.findById(categoryId)
             .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
         
-        // Check if category has associated posts
         if (category.getPosts() != null && !category.getPosts().isEmpty()) {
             log.warn("Category ID: {} has {} associated posts. Deactivating instead of deleting.", 
                 categoryId, category.getPosts().size());
             
-            // Instead of deleting, deactivate the category
             category.setIsActive(false);
             postCategoryRepository.save(category);
         } else {
-            // Safe to delete if no posts
             postCategoryRepository.delete(category);
             log.info("Category deleted successfully: {}", category.getName());
         }
@@ -565,7 +610,6 @@ public class AdminService {
         log.info("Category status updated successfully: {} -> {}", category.getName(), isActive);
     }
 
-    // ========== ADDITIONAL POST MANAGEMENT METHODS ==========
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
@@ -575,7 +619,6 @@ public class AdminService {
         Post post = forumRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
         
-        // Delete the post (this will cascade to replies if configured)
         forumRepository.delete(post);
         
         log.info("Post deleted successfully: {}", post.getTitle());
@@ -619,7 +662,6 @@ public class AdminService {
         return mapToPostModerationDto(post);
     }
 
-    // Helper method to map Post entity to PostModerationDto
     private PostModerationDto mapToPostModerationDto(Post post) {
         return PostModerationDto.builder()
             .id(post.getId())

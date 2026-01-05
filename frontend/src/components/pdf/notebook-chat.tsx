@@ -26,15 +26,12 @@ export function NotebookChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevConversationIdRef = useRef<number | undefined>(conversationId);
 
-  // Load initial messages from conversation when provided
   useEffect(() => {
-    // If conversation changed, clear messages first to prevent showing old messages
     if (prevConversationIdRef.current !== conversationId) {
       setMessages([]);
       prevConversationIdRef.current = conversationId;
     }
 
-    // Then load new messages when they arrive
     if (!isLoadingMessages) {
       if (initialMessages && initialMessages.length > 0) {
         setMessages(initialMessages);
@@ -46,7 +43,6 @@ export function NotebookChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages, isProcessing]);
@@ -54,7 +50,6 @@ export function NotebookChat({
   const handleSend = async (content: string) => {
     if (!conversationId || !onSendMessage) return;
 
-    // Create temporary user message
     const tempUserMessage: PdfMessage = {
       id: Date.now(),
       conversationId: conversationId,
@@ -67,15 +62,12 @@ export function NotebookChat({
     setIsProcessing(true);
 
     try {
-      // Send message and get assistant response
       const response = await onSendMessage(conversationId, content);
 
-      // Add AI response
       setMessages((prev) => [...prev, response]);
     } catch (error) {
       console.error("Error sending message:", error);
 
-      // Add error message
       const errorMessage: PdfMessage = {
         id: Date.now() + 1,
         conversationId: conversationId,

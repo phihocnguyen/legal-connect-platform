@@ -1,6 +1,5 @@
 import type { User } from "./user";
 
-// Keep legacy interfaces for compatibility
 export interface Post {
   id: number;
   title: string;

@@ -19,6 +19,8 @@ import { EngagementReport } from "@/components/admin/analytics/EngagementReport"
 import { CategoryReport } from "@/components/admin/analytics/CategoryReport";
 import { ContentStatsReport } from "@/components/admin/analytics/ContentStatsReport";
 import { HourlyActivityReport } from "@/components/admin/analytics/HourlyActivityReport";
+import { AIUsageReport } from "@/components/admin/analytics/AIUsageReport";
+import { SentimentReport } from "@/components/admin/analytics/SentimentReport";
 import {
   Card,
   CardContent,
@@ -47,7 +49,6 @@ export default function AnalyticsPage() {
     exportReport,
   } = useAnalyticsReports();
 
-  // Initialize state from URL query parameters
   const [timeRange, setTimeRange] = useState<TimeRange>(() => {
     const param = searchParams.get("timeRange");
     return (param as TimeRange) || "30days";
@@ -82,7 +83,6 @@ export default function AnalyticsPage() {
     return undefined;
   });
 
-  // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
     params.set("timeRange", timeRange);
@@ -100,20 +100,12 @@ export default function AnalyticsPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   }, [timeRange, reportType, fromDate, toDate, router]);
 
-  // Remove auto-generate - only generate on button click
-  // useEffect(() => {
-  //   if (reportType) {
-  //     handleGenerateReport();
-  //   }
-  // }, [reportType, timeRange, fromDate, toDate]);
 
-  // Removed handleGenerateReport - using generateReport directly from hook
 
   const handleExport = async (exportFormat: "pdf" | "excel" | "csv") => {
     await exportReport(reportType, timeRange, exportFormat, fromDate, toDate);
   };
 
-  // Local state for filters before applying
   const [localReportType, setLocalReportType] =
     useState<ReportType>(reportType);
   const [localTimeRange, setLocalTimeRange] = useState<TimeRange>(timeRange);
@@ -123,13 +115,11 @@ export default function AnalyticsPage() {
   const [localToDate, setLocalToDate] = useState<Date | undefined>(toDate);
 
   const handleApplyFiltersAndGenerate = async () => {
-    // Update state
     setReportType(localReportType);
     setTimeRange(localTimeRange);
     setFromDate(localFromDate);
     setToDate(localToDate);
 
-    // Generate report with NEW values immediately (not waiting for state update)
     await generateReport({
       reportType: localReportType,
       timeRange: localTimeRange,
@@ -138,8 +128,21 @@ export default function AnalyticsPage() {
     });
   };
 
+  const handleRefreshAll = async () => {
+    fetchDashboardStats();
+    
+    if (reportData) {
+      await generateReport({
+        reportType,
+        timeRange,
+        fromDate,
+        toDate,
+      });
+    }
+  };
+
   const renderReport = () => {
-    if (!reportData?.data || !Array.isArray(reportData.data)) {
+    if (!reportData?.data) {
       return null;
     }
 
@@ -156,6 +159,10 @@ export default function AnalyticsPage() {
         return <ContentStatsReport data={data} />;
       case "hourly-activity":
         return <HourlyActivityReport data={data} />;
+      case "ai":
+        return <AIUsageReport data={data} />;
+      case "sentiment":
+        return <SentimentReport data={data} />;
       default:
         return (
           <Card>
@@ -217,12 +224,14 @@ export default function AnalyticsPage() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={fetchDashboardStats}
+              onClick={handleRefreshAll}
               variant="outline"
-              disabled={statsLoading}
+              disabled={statsLoading || reportLoading}
             >
               <RefreshCw
-                className={`h-4 w-4 mr-2 ${statsLoading ? "animate-spin" : ""}`}
+                className={`h-4 w-4 mr-2 ${
+                  statsLoading || reportLoading ? "animate-spin" : ""
+                }`}
               />
               Làm mới
             </Button>

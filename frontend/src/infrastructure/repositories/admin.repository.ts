@@ -32,9 +32,6 @@ export class HttpAdminRepository implements AdminRepository {
 
     const response = await apiClient.get(`/admin/users?${queryParams.toString()}`);
     
-    // The backend returns ApiResponse<Page<UserManagementDto>>
-    // We need to extract the data.content which contains UserManagementDto[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -78,9 +75,6 @@ export class HttpAdminRepository implements AdminRepository {
 
     const response = await apiClient.get(`/admin/posts?${queryParams.toString()}`);
     
-    // The backend returns ApiResponse<Page<PostModerationDto>>
-    // We need to extract the data.content which contains PostModerationDto[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -124,7 +118,6 @@ export class HttpAdminRepository implements AdminRepository {
 
     const response = await apiClient.get(`/admin/lawyer-applications?${queryParams.toString()}`);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {
@@ -146,7 +139,6 @@ export class HttpAdminRepository implements AdminRepository {
   async getDashboardStats(): Promise<AdminDashboardStats> {
     const response = await apiClient.get('/admin/dashboard/stats');
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiResponse = response.data as any;
     
     if (apiResponse.success && apiResponse.data) {

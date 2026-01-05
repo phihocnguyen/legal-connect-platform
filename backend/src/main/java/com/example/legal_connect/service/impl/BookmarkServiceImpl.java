@@ -46,11 +46,9 @@ public class BookmarkServiceImpl implements BookmarkService {
             Optional<PostBookmark> existingBookmark = bookmarkRepository.findByPostIdAndUserId(postId, userId);
             
             if (existingBookmark.isPresent()) {
-                // Remove bookmark
                 bookmarkRepository.delete(existingBookmark.get());
                 log.info("Removed bookmark for post {} by user {}", postId, userId);
             } else {
-                // Add bookmark
                 PostBookmark bookmark = PostBookmark.builder()
                         .post(post)
                         .user(user)

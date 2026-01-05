@@ -44,4 +44,21 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
      */
     @Query("SELECT c FROM Conversation c LEFT JOIN FETCH c.messages LEFT JOIN FETCH c.pdfDocument WHERE c.id = :id AND c.userId = :userId")
     Optional<Conversation> findByIdAndUserIdWithDetails(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Query("SELECT c.type, COUNT(c) FROM Conversation c WHERE c.createdAt >= :startDate GROUP BY c.type")
+    List<Object[]> countConversationsByType(@Param("startDate") java.time.LocalDateTime startDate);
+
+    @Query("SELECT DATE(c.createdAt) as date, COUNT(c) as count " +
+           "FROM Conversation c " +
+           "WHERE c.createdAt >= :startDate " +
+           "GROUP BY DATE(c.createdAt) " +
+           "ORDER BY date")
+    List<Object[]> countConversationsGroupedByDate(@Param("startDate") java.time.LocalDateTime startDate);
+
+    @Query("SELECT HOUR(c.createdAt) as hour, COUNT(c) as count " +
+           "FROM Conversation c " +
+           "WHERE c.createdAt >= :startDate " +
+           "GROUP BY HOUR(c.createdAt) " +
+           "ORDER BY hour")
+    List<Object[]> countConversationsGroupedByHour(@Param("startDate") java.time.LocalDateTime startDate);
 }

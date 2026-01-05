@@ -61,14 +61,12 @@ public class PostReportController {
         return ResponseEntity.ok(ApiResponse.success(reports));
     }
     
-    // Admin endpoints
     @GetMapping("/admin/reports")
     @Operation(summary = "[Admin] Lấy tất cả báo cáo", description = "Admin lấy danh sách tất cả báo cáo")
     public ResponseEntity<ApiResponse<Page<PostReportDto>>> getAllReports(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         Page<PostReportDto> reports = reportService.getAllReports(pageable);
         return ResponseEntity.ok(ApiResponse.success(reports));
     }
@@ -79,7 +77,6 @@ public class PostReportController {
             @PathVariable String status,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         List<PostReportDto> reports = reportService.getReportsByStatus(status);
         return ResponseEntity.ok(ApiResponse.success(reports));
     }
@@ -90,7 +87,6 @@ public class PostReportController {
             @PathVariable Long reportId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         PostReportDto report = reportService.getReportById(reportId);
         return ResponseEntity.ok(ApiResponse.success(report));
     }
@@ -103,7 +99,6 @@ public class PostReportController {
             @RequestParam(required = false) String reviewNote,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         PostReportDto report = reportService.updateReportStatus(reportId, status, reviewNote, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success("Đã cập nhật trạng thái báo cáo", report));
     }
@@ -113,7 +108,6 @@ public class PostReportController {
     public ResponseEntity<ApiResponse<Long>> countPendingReports(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         long count = reportService.countPendingReports();
         return ResponseEntity.ok(ApiResponse.success(count));
     }
@@ -124,7 +118,6 @@ public class PostReportController {
             @PathVariable Long postId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // TODO: Add role check for admin
         List<PostReportDto> reports = reportService.getReportsByPostId(postId);
         return ResponseEntity.ok(ApiResponse.success(reports));
     }

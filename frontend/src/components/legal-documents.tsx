@@ -31,7 +31,6 @@ export default function LegalDocuments({
   const [searchTerm, setSearchTerm] = useState("");
   const documentsPerPage = 10;
 
-  // Filter documents (robust to missing fields)
   const filteredDocuments = documents.filter((doc) => {
     const typeValue = (doc.loai_van_ban || "").toString();
     const titleValue = (doc.title || "").toString();
@@ -47,7 +46,6 @@ export default function LegalDocuments({
     return matchesType && matchesSearch;
   });
 
-  // Pagination
   const totalPages = Math.max(
     1,
     Math.ceil(filteredDocuments.length / documentsPerPage)

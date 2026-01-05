@@ -83,7 +83,6 @@ export class HttpPostRepository implements PostRepository {
     });
   }
 
-  // New Forum API methods
   async getAllCategories(): Promise<PostCategoryDto[]> {
     const response = await apiClient.get<PostCategoryDto[]>(
       "/forum/categories"
@@ -132,7 +131,6 @@ export class HttpPostRepository implements PostRepository {
       };
     }>(`/forum/posts?${queryParams.toString()}`);
 
-    // Transform response to expected format
     return {
       content: response.data.content,
       totalElements: response.data.page.totalElements,
@@ -169,7 +167,6 @@ export class HttpPostRepository implements PostRepository {
       };
     }>(`/forum/categories/${categorySlug}/posts?${queryParams.toString()}`);
 
-    // Transform response to expected format
     return {
       content: response.data.content,
       totalElements: response.data.page.totalElements,
@@ -207,7 +204,6 @@ export class HttpPostRepository implements PostRepository {
       };
     }>(`/forum/posts/search?${queryParams.toString()}`);
 
-    // Transform response to expected format
     return {
       content: response.data.content,
       totalElements: response.data.page.totalElements,
@@ -248,7 +244,6 @@ export class HttpPostRepository implements PostRepository {
       `/forum/categories/${categorySlug}/posts/search?${queryParams.toString()}`
     );
 
-    // Transform response to expected format
     return {
       content: response.data.content,
       totalElements: response.data.page.totalElements,
@@ -306,7 +301,6 @@ export class HttpPostRepository implements PostRepository {
     await apiClient.delete(`/forum/replies/${replyId}`);
   }
 
-  // Statistics API methods
   async getForumStats(): Promise<ForumStatsDto> {
     const response = await apiClient.get<ForumStatsDto>("/forum/stats");
     return response.data;

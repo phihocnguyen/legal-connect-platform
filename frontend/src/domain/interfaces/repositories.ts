@@ -54,7 +54,6 @@ export interface AuthRepository {
 }
 
 export interface PostRepository {
-  // Legacy methods for compatibility
   getPosts(params: {
     category?: string;
     page?: number;
@@ -75,7 +74,6 @@ export interface PostRepository {
   deletePost(id: string): Promise<void>;
   votePost(id: string, voteType: 1 | -1): Promise<Post>;
 
-  // New Forum API methods matching backend
   getAllCategories(): Promise<PostCategoryDto[]>;
   getCategoryBySlug(slug: string): Promise<PostCategoryDto>;
 
@@ -131,7 +129,6 @@ export interface PostRepository {
   updatePostNew(id: number, data: PostCreateDto): Promise<PostDto>;
   deletePostNew(id: number): Promise<void>;
 
-  // Replies
   getRepliesByPost(postId: number): Promise<PostReplyDto[]>;
   addReply(postId: number, data: AddReplyDto): Promise<PostReplyDto>;
   deleteReply(replyId: number): Promise<void>;
@@ -154,7 +151,6 @@ export interface PdfRepository {
   getPdfViewUrl(conversationId: number): string;
   getPdfDownloadUrl(conversationId: number): string;
 
-  // Python API methods
   uploadPdfToPython(file: File): Promise<PythonPdfUploadResult>;
   getPdfSummary(fileId: string, maxLength?: number): Promise<PdfSummaryResult>;
   askPdfQuestion(
@@ -195,7 +191,6 @@ export interface ChatQARepository {
 }
 
 export interface AdminRepository {
-  // User management
   getUsers(params: {
     page?: number;
     size?: number;
@@ -213,7 +208,6 @@ export interface AdminRepository {
 
   updateUserStatus(userId: number, isEnabled: boolean): Promise<void>;
 
-  // Post moderation
   getPosts(params: {
     page?: number;
     size?: number;
@@ -231,7 +225,6 @@ export interface AdminRepository {
 
   updatePostStatus(postId: number, isActive: boolean): Promise<void>;
 
-  // Lawyer applications
   getLawyerApplications(params: {
     page?: number;
     size?: number;
@@ -256,7 +249,6 @@ export interface AdminRepository {
     adminNotes?: string
   ): Promise<void>;
 
-  // Dashboard stats
   getDashboardStats(): Promise<AdminDashboardStats>;
 }
 

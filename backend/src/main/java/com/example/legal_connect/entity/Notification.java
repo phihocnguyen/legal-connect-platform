@@ -51,9 +51,10 @@ public class Notification {
     }
     
     public enum NotificationType {
-        MENTION,    // User was mentioned in post/reply
-        REPLY,      // Someone replied to user's post
-        UPVOTE      // User's post/reply was upvoted
+        MENTION,
+        REPLY,
+        UPVOTE,
+        NEGATIVE_CONTENT_ALERT // AI detected negative content
     }
 }
 

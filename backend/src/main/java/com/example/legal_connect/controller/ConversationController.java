@@ -108,7 +108,6 @@ public class ConversationController {
             @Valid @RequestBody SendMessageRequest request,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // Validate and deduct API key for chat
         apiKeyValidationService.validateAndUseApiKey(userPrincipal.getId(), "chat");
         
         MessageDto response = messageService.sendMessage(request, userPrincipal.getId());

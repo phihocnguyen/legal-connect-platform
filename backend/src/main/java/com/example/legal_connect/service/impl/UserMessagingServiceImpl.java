@@ -37,7 +37,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
     @Override
     @Transactional(readOnly = true)
     public List<UserMessageDto> getConversationMessages(Long conversationId, Long userId) {
-        // Verify user has access to this conversation
         userConversationRepository.findByIdAndUserId(conversationId, userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
         
@@ -58,7 +57,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
             throw new IllegalArgumentException("Cannot create conversation with yourself");
         }
         
-        // Check if conversation already exists
         return userConversationRepository.findByUsers(userId, request.getOtherUserId())
                 .map(existing -> mapToConversationDto(existing, userId))
                 .orElseGet(() -> {
@@ -116,7 +114,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
         
         UserMessage savedMessage = userMessageRepository.save(message);
         
-        // Update conversation's last message time
         conversation.setLastMessageAt(savedMessage.getCreatedAt());
         userConversationRepository.save(conversation);
         
@@ -125,7 +122,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
     
     @Override
     public void markMessagesAsRead(Long conversationId, Long userId) {
-        // Verify user has access to this conversation
         userConversationRepository.findByIdAndUserId(conversationId, userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
         
@@ -142,7 +138,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
     }
     
     private UserConversationDto mapToConversationDto(UserConversation conversation, Long currentUserId) {
-        // Determine the other participant
         User otherUser = conversation.getUser1().getId().equals(currentUserId) 
                 ? conversation.getUser2() 
                 : conversation.getUser1();
@@ -156,7 +151,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
                 .online(false) // TODO: Implement online status tracking
                 .build();
         
-        // Get last message info
         List<UserMessage> lastMessages = userMessageRepository.findByConversationIdOrderByCreatedAtDesc(conversation.getId());
         UserConversationDto.LastMessageDto lastMessage = null;
         if (!lastMessages.isEmpty()) {
@@ -168,7 +162,6 @@ public class UserMessagingServiceImpl implements UserMessagingService {
                     .build();
         }
         
-        // Count unread messages
         int unreadCount = (int) userMessageRepository.countUnreadMessages(conversation.getId(), currentUserId);
         
         return UserConversationDto.builder()

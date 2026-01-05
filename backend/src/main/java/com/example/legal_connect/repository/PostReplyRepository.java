@@ -16,6 +16,8 @@ public interface PostReplyRepository extends JpaRepository<PostReply, Long> {
     
 
     List<PostReply> findByPostAndParentIsNullAndIsActiveTrueOrderByCreatedAtAsc(Post post);
+    
+    List<PostReply> findByPostAndParentIsNullOrderByCreatedAtAsc(Post post);
 
     Page<PostReply> findByPostAndParentIsNullAndIsActiveTrueOrderByCreatedAtAsc(Post post, Pageable pageable);
 
@@ -89,4 +91,28 @@ public interface PostReplyRepository extends JpaRepository<PostReply, Long> {
            "GROUP BY HOUR(r.createdAt) " +
            "ORDER BY hour")
     java.util.List<Object[]> countRepliesGroupedByHour(@Param("startDate") java.time.LocalDateTime startDate);
+
+    @Query("SELECT COUNT(r) FROM PostReply r WHERE r.sentimentLabel = :label AND r.createdAt >= :since AND r.isActive = true")
+    long countBySentimentLabelAndCreatedAtAfter(@Param("label") String label, @Param("since") java.time.LocalDateTime since);
+
+    @Query("SELECT r FROM PostReply r WHERE r.sentimentLabel = 'positive' AND r.isActive = true AND r.createdAt >= :since ORDER BY r.sentimentScore DESC")
+    java.util.List<PostReply> findTopPositiveReplies(@Param("since") java.time.LocalDateTime since, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT r FROM PostReply r WHERE r.sentimentLabel = 'negative' AND r.isActive = true AND r.createdAt >= :since ORDER BY r.sentimentScore DESC")
+    java.util.List<PostReply> findTopNegativeReplies(@Param("since") java.time.LocalDateTime since, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT DATE(r.createdAt) as date, r.sentimentLabel as label, COUNT(r) as count " +
+           "FROM PostReply r " +
+           "WHERE r.createdAt >= :since AND r.isActive = true AND r.sentimentLabel IS NOT NULL " +
+           "GROUP BY DATE(r.createdAt), r.sentimentLabel " +
+           "ORDER BY date")
+    java.util.List<Object[]> countReplySentimentGroupedByDate(@Param("since") java.time.LocalDateTime since);
+
+    @Query("SELECT r FROM PostReply r WHERE r.sentimentLabel = :label " +
+           "AND (:isActive IS NULL OR r.isActive = :isActive) " +
+           "AND (:search IS NULL OR :search = '' OR LOWER(CAST(r.content as string)) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<PostReply> findBySentimentLabelAndFilters(@Param("label") String label, @Param("isActive") Boolean isActive, @Param("search") String search, Pageable pageable);
+
+    @Query("SELECT r FROM PostReply r WHERE r.sentimentLabel = :label")
+    Page<PostReply> findBySentimentLabel(@Param("label") String label, Pageable pageable);
 }

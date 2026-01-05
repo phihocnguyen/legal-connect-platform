@@ -29,7 +29,6 @@ public class VotingService {
         
         Optional<PostVote> existingVote = postVoteRepository.findByPostIdAndUserId(postId, userId);
         
-        // Handle NONE - remove vote
         if ("NONE".equals(voteTypeStr)) {
             if (existingVote.isPresent()) {
                 PostVote vote = existingVote.get();
@@ -50,10 +49,8 @@ public class VotingService {
         PostVote.VoteType voteType = PostVote.VoteType.valueOf(voteTypeStr);
         
         if (existingVote.isPresent()) {
-            // Update existing vote
             PostVote vote = existingVote.get();
             if (vote.getVoteType() != voteType) {
-                // Switch vote type
                 if (vote.getVoteType() == PostVote.VoteType.UPVOTE) {
                     int upCount = post.getUpvoteCount() != null ? post.getUpvoteCount() : 0;
                     int downCount = post.getDownvoteCount() != null ? post.getDownvoteCount() : 0;
@@ -70,7 +67,6 @@ public class VotingService {
                 System.out.println("Switched vote type to: " + voteType);
             }
         } else {
-            // Create new vote
             PostVote vote = PostVote.builder()
                 .post(post)
                 .user(user)
@@ -83,7 +79,6 @@ public class VotingService {
                 int currentCount = post.getUpvoteCount() != null ? post.getUpvoteCount() : 0;
                 post.setUpvoteCount(currentCount + 1);
                 System.out.println("Incremented upvote count to: " + post.getUpvoteCount());
-                // Notify post author about upvote (but not if they upvoted themselves)
                 if (!post.getAuthor().getId().equals(userId)) {
                     notificationService.createNotification(
                         post.getAuthor().getId(),
@@ -114,7 +109,6 @@ public class VotingService {
         
         Optional<ReplyVote> existingVote = replyVoteRepository.findByReplyIdAndUserId(replyId, userId);
         
-        // Handle NONE - remove vote
         if ("NONE".equals(voteTypeStr)) {
             if (existingVote.isPresent()) {
                 ReplyVote vote = existingVote.get();
@@ -135,10 +129,8 @@ public class VotingService {
         ReplyVote.VoteType voteType = ReplyVote.VoteType.valueOf(voteTypeStr);
         
         if (existingVote.isPresent()) {
-            // Update existing vote
             ReplyVote vote = existingVote.get();
             if (vote.getVoteType() != voteType) {
-                // Switch vote type
                 if (vote.getVoteType() == ReplyVote.VoteType.UPVOTE) {
                     int upCount = reply.getUpvoteCount() != null ? reply.getUpvoteCount() : 0;
                     int downCount = reply.getDownvoteCount() != null ? reply.getDownvoteCount() : 0;
@@ -155,7 +147,6 @@ public class VotingService {
                 System.out.println("Switched reply vote type to: " + voteType);
             }
         } else {
-            // Create new vote
             ReplyVote vote = ReplyVote.builder()
                 .reply(reply)
                 .user(user)
@@ -168,7 +159,6 @@ public class VotingService {
                 int currentCount = reply.getUpvoteCount() != null ? reply.getUpvoteCount() : 0;
                 reply.setUpvoteCount(currentCount + 1);
                 System.out.println("Incremented reply upvote count to: " + reply.getUpvoteCount());
-                // Notify reply author about upvote (but not if they upvoted themselves)
                 if (!reply.getAuthor().getId().equals(userId)) {
                     notificationService.createNotification(
                         reply.getAuthor().getId(),

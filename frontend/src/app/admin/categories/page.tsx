@@ -71,11 +71,8 @@ export default function AdminCategoriesPage() {
 
   const { createLabel, updateLabel, deleteLabel } = useLabelUseCases();
 
-  // State
   const [categories, setCategories] = useState<PostCategoryDto[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalElements, setTotalElements] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -83,7 +80,6 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -91,7 +87,6 @@ export default function AdminCategoriesPage() {
     useState<PostCategoryDto | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Label management states
   const [categoryLabels, setCategoryLabels] = useState<PostLabelDto[]>([]);
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState<PostLabelDto | null>(null);
@@ -102,7 +97,6 @@ export default function AdminCategoriesPage() {
     color: "#3B82F6",
   });
 
-  // Form state
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     description: "",
@@ -110,7 +104,6 @@ export default function AdminCategoriesPage() {
     icon: "",
   });
 
-  // Load categories
   const loadCategories = useCallback(
     async (page: number = 0, search?: string) => {
       try {
@@ -141,7 +134,6 @@ export default function AdminCategoriesPage() {
     loadCategories(0);
   }, [loadCategories]);
 
-  // Generate slug from name
   const generateSlug = (name: string): string => {
     return name
       .toLowerCase()
@@ -153,12 +145,10 @@ export default function AdminCategoriesPage() {
       .trim();
   };
 
-  // Handle form changes
   const handleFormChange = (field: keyof CategoryFormData, value: string) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
 
-      // Auto-generate slug when name changes
       if (field === "name") {
         updated.slug = generateSlug(value);
       }
@@ -167,13 +157,11 @@ export default function AdminCategoriesPage() {
     });
   };
 
-  // Reset form
   const resetForm = () => {
     setFormData({ name: "", description: "", slug: "", icon: "" });
     setSelectedCategory(null);
   };
 
-  // Handle create category
   const handleCreateCategory = async () => {
     if (!formData.name.trim()) {
       setError("Tên danh mục không được để trống");
@@ -202,7 +190,6 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  // Handle edit category
   const handleEditCategory = async () => {
     if (!selectedCategory || !formData.name.trim()) {
       setError("Tên danh mục không được để trống");
@@ -231,7 +218,6 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  // Handle delete category
   const handleDeleteCategory = async () => {
     if (!selectedCategory) return;
 
@@ -250,7 +236,6 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  // Open edit dialog
   const openEditDialog = (category: PostCategoryDto) => {
     setSelectedCategory(category);
     setFormData({
@@ -263,13 +248,11 @@ export default function AdminCategoriesPage() {
     setIsEditDialogOpen(true);
   };
 
-  // Open delete dialog
   const openDeleteDialog = (category: PostCategoryDto) => {
     setSelectedCategory(category);
     setIsDeleteDialogOpen(true);
   };
 
-  // Label management functions
   const generateLabelSlug = (name: string): string => {
     return name
       .toLowerCase()
@@ -314,7 +297,6 @@ export default function AdminCategoriesPage() {
       setSubmitting(true);
 
       if (editingLabel) {
-        // Update existing label
         const updated = await updateLabel(editingLabel.id, {
           name: labelFormData.name,
           slug: labelFormData.slug,
@@ -326,7 +308,6 @@ export default function AdminCategoriesPage() {
           prev.map((l) => (l.id === updated.id ? updated : l))
         );
       } else {
-        // Create new label
         const newLabel = await createLabel({
           name: labelFormData.name,
           slug: labelFormData.slug,
@@ -369,7 +350,6 @@ export default function AdminCategoriesPage() {
     setLabelFormData((prev) => {
       const updated = { ...prev, [field]: value };
 
-      // Auto-generate slug when name changes
       if (field === "name") {
         updated.slug = generateLabelSlug(value);
       }
@@ -378,10 +358,8 @@ export default function AdminCategoriesPage() {
     });
   };
 
-  // Filter categories based on search term
   const filteredCategories = categories;
 
-  // Handle search with debouncing
   const handleSearch = useCallback(
     async (search: string) => {
       setCurrentPage(0);
@@ -390,7 +368,6 @@ export default function AdminCategoriesPage() {
     [loadCategories]
   );
 
-  // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
       handleSearch(searchTerm);

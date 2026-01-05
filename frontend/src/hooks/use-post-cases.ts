@@ -23,7 +23,6 @@ import {
 import { PostCreateDto, AddReplyDto } from "../domain/entities";
 
 export function usePostUseCases() {
-  // Legacy methods
   const createPost = useCallback(
     (data: {
       title: string;
@@ -56,7 +55,6 @@ export function usePostUseCases() {
     return useCase.execute(postId, voteType);
   }, []);
 
-  // New Forum API hooks
   const getAllCategories = useCallback(() => {
     const useCase = container.getUseCase<GetAllCategoriesUseCase>(
       "GetAllCategoriesUseCase"

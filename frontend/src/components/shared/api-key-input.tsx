@@ -34,7 +34,6 @@ export function ApiKeyInput({ onValidKey, featureName = 'tính năng này' }: Ap
       
       if (isValid) {
         setValidationStatus('valid');
-        // Store API key in localStorage
         localStorage.setItem('user_api_key', apiKey);
         onValidKey(apiKey);
       } else {

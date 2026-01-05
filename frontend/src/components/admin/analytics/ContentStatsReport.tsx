@@ -26,7 +26,6 @@ interface ContentStatsData {
   averageRepliesPerPost: number;
 }
 
-// API response format
 interface ApiContentStats {
   totalPosts: number;
   totalReplies: number;
@@ -45,7 +44,6 @@ interface ContentStatsReportProps {
 export function ContentStatsReport({ data }: ContentStatsReportProps) {
   console.log("[ContentStatsReport] Received data:", data);
 
-  // Check if data is API response format (object with totalPosts)
   const isApiFormat = data && !Array.isArray(data) && "totalPosts" in data;
   console.log("[ContentStatsReport] Is API format:", isApiFormat);
 
@@ -58,7 +56,6 @@ export function ContentStatsReport({ data }: ContentStatsReportProps) {
     [];
 
   if (isApiFormat) {
-    // Handle API response format
     const apiData = data as ApiContentStats;
     totalPosts = apiData.totalPosts || 0;
     totalReplies = apiData.totalReplies || 0;
@@ -72,7 +69,6 @@ export function ContentStatsReport({ data }: ContentStatsReportProps) {
       topCategories,
     });
 
-    // Create chart data from categories
     if (topCategories.length > 0) {
       chartData = topCategories.map((cat) => ({
         period: cat.name,
@@ -82,7 +78,6 @@ export function ContentStatsReport({ data }: ContentStatsReportProps) {
         averageRepliesPerPost: parseFloat(avgRepliesPerPost),
       }));
     } else {
-      // If no categories, create a single data point for overall stats
       chartData = [
         {
           period: "Tổng quan",
@@ -94,7 +89,6 @@ export function ContentStatsReport({ data }: ContentStatsReportProps) {
       ];
     }
   } else if (Array.isArray(data) && data.length > 0) {
-    // Handle array format
     chartData = data;
     totalPosts = data.reduce((sum, item) => sum + (item.totalPosts || 0), 0);
     totalReplies = data.reduce(
@@ -108,7 +102,6 @@ export function ContentStatsReport({ data }: ContentStatsReportProps) {
 
   console.log("[ContentStatsReport] Final chartData:", chartData);
 
-  // Show message if no data at all
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return (
       <Card>

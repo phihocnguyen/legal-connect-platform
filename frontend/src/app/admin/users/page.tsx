@@ -46,7 +46,6 @@ export default function UsersPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Local state for filters before applying
   const [localSearch, setLocalSearch] = useState("");
   const [localRoleFilter, setLocalRoleFilter] = useState("ALL");
 
@@ -75,7 +74,6 @@ export default function UsersPage() {
   }, [fetchUsers]);
 
   const handleApplyFilters = () => {
-    // Update actual filter state from local state
     setSearch(localSearch);
     setRoleFilter(localRoleFilter);
     setPage(0); // Reset to first page when filters change

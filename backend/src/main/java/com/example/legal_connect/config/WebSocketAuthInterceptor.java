@@ -60,10 +60,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor, HandshakeIn
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            // Always log all CONNECTs and headers for debug
             log.info("WebSocket CONNECT attempt: session={}, headers={}", accessor.getSessionId(), accessor.toNativeHeaderMap());
 
-            // Always prefer user-name header if present
             String userName = accessor.getFirstNativeHeader("user-name");
             if (userName != null && !userName.isEmpty()) {
                 accessor.setUser(new Principal() {

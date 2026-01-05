@@ -30,7 +30,6 @@ export default function ChatPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   
-  // API Key state
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [showApiLimitModal, setShowApiLimitModal] = useState(false);
   
@@ -40,11 +39,9 @@ export default function ChatPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   
-  // Track if we're currently sending a message to prevent race conditions
   const isSendingMessageRef = useRef(false);
   const previousConversationIdRef = useRef<string | undefined>(undefined);
 
-  // Read URL parameter on mount
   useEffect(() => {
     const id = searchParams.get('id');
     if (id) {
@@ -66,7 +63,6 @@ export default function ChatPage() {
         const convs = await getConversations();
         const qaConversations = convs.filter(c => c.type === 'QA');
         setConversations(prev => {
-          // Preserve messages for conversations that already have them loaded
           return qaConversations.map(newConv => {
             const existingConv = prev.find(c => c.id == newConv.id);
             if (existingConv && existingConv.messages && existingConv.messages.length > 0) {
@@ -76,8 +72,6 @@ export default function ChatPage() {
           });
         });
         
-        // If we have an activeConversationId from URL but it's not in the list, 
-        // the loadMessages effect will handle adding it
       } catch (error) {
         console.error('Error loading conversations:', error);
       } finally {
@@ -92,13 +86,11 @@ export default function ChatPage() {
     const loadMessages = async () => {
       if (!activeConversationId) return;
       
-      // Skip loading if we're currently sending a message to prevent race condition
       if (isSendingMessageRef.current) {
         console.log('⏭️ Skipping message load - currently sending message');
         return;
       }
       
-      // Only load messages if conversation actually changed
       if (previousConversationIdRef.current === activeConversationId) {
         console.log('⏭️ Skipping message load - same conversation');
         return;
@@ -114,7 +106,6 @@ export default function ChatPage() {
         setConversations(prev => {
           const conversationIndex = prev.findIndex(c => c.id == activeConversationId);
           if (conversationIndex === -1) {
-            // If conversation doesn't exist in list, create a placeholder
             return [...prev, {
               id: activeConversationId,
               title: 'Loading...',
@@ -162,17 +153,14 @@ export default function ChatPage() {
   const handleNewChat = async () => {
     try {
       const conversation = await createConversation("New Conversation");
-      // Initialize messages array if not present
       if (!conversation.messages) {
         conversation.messages = [];
       }
       setConversations(prev => [conversation, ...prev]);
       setActiveConversationId(conversation.id);
       
-      // Update ref to prevent loadMessages from triggering
       previousConversationIdRef.current = conversation.id;
       
-      // Push conversation ID to URL
       router.push(`/chat?id=${conversation.id}`);
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -231,13 +219,11 @@ export default function ChatPage() {
   const handleSendMessage = async (content: string) => {
     console.log('🚀 handleSendMessage called with:', content.substring(0, 50));
     
-    // Prevent double submission
     if (isProcessing) {
       console.warn('⚠️ Already processing a message, ignoring duplicate call');
       return;
     }
     
-    // Check API key validity and limit
     if (!isApiKeyValid) {
       toast.error('Vui lòng xác thực API key trước khi gửi tin nhắn');
       return;
@@ -256,7 +242,6 @@ export default function ChatPage() {
       try {
         console.log('🆕 Creating new conversation from welcome screen...');
         
-        // Create conversation with first question as title (truncated)
         const conversationTitle = content.length > 50 
           ? content.substring(0, 50) + '...' 
           : content;
@@ -276,7 +261,6 @@ export default function ChatPage() {
         setActiveConversationId(conversation.id);
         router.push(`/chat?id=${conversation.id}`);
         
-        // Update the ref to prevent loadMessages from triggering
         previousConversationIdRef.current = conversation.id;
         
         console.log('📝 Current conversation ID set to:', currentConvId);
@@ -287,10 +271,8 @@ export default function ChatPage() {
       }
     }
     
-    // Set flag to prevent loadMessages from overwriting our optimistic updates
     isSendingMessageRef.current = true;
     
-    // Add user message to UI immediately (optimistic update)
     const userMessage: Message = {
       id: `temp-user-${Date.now()}`,
       content,
@@ -309,11 +291,9 @@ export default function ChatPage() {
       console.log('✅ isNewConversation:', isNewConversation);
       console.log('✅ newConversation:', newConversation ? { id: newConversation.id, title: newConversation.title } : null);
       
-      // Check if conversation exists in state (use == for type coercion)
       const conversationIndex = prev.findIndex(c => c.id == currentConvId);
       console.log('✅ conversationIndex:', conversationIndex);
       
-      // If this is a new conversation (not in state yet), add it to the list first
       if (conversationIndex === -1 && isNewConversation && newConversation) {
         console.log('✅ Adding new conversation to state with message');
         newConversation.messages = [userMessage];
@@ -322,7 +302,6 @@ export default function ChatPage() {
         return [newConversation, ...prev];
       }
       
-      // If conversation not found, DON'T create fallback - this indicates a bug
       if (conversationIndex === -1) {
         console.error('❌ CRITICAL: Conversation not found in list:', currentConvId);
         console.error('❌ Available conversations:', prev.map(c => ({ id: c.id, title: c.title })));
@@ -332,7 +311,6 @@ export default function ChatPage() {
         return prev;
       }
 
-      // Otherwise, update existing conversation
       console.log('✅ Updating existing conversation at index:', conversationIndex);
       const updatedConversations = [...prev];
       const conversation = { ...updatedConversations[conversationIndex] };
@@ -350,7 +328,6 @@ export default function ChatPage() {
     try {
       console.log('🚀 Sending message to backend...');
       
-      // Get current conversation for chat history
       const currentConversation = conversations.find(c => c.id == currentConvId);
       const chatHistory = currentConversation?.messages.slice(-6).map(msg => ({
         role: msg.role,
@@ -359,7 +336,6 @@ export default function ChatPage() {
       
       console.log('📜 Sending chat history:', chatHistory.length, 'messages');
       
-      // Save user message to backend and get AI response in parallel
       const [savedUserMessage, response] = await Promise.all([
         sendMessage(currentConvId, content, 'USER'),
         askQuestion(content, 5, currentConvId, chatHistory)
@@ -370,7 +346,6 @@ export default function ChatPage() {
 
       const formattedAnswer = `${response.answer}`;
       
-      // Save AI response to backend
       const savedAssistantMessage = await sendMessage(currentConvId, formattedAnswer, 'ASSISTANT');
       console.log('✅ AI message saved:', savedAssistantMessage);
       
@@ -394,14 +369,12 @@ export default function ChatPage() {
         const conversation = { ...updatedConversations[conversationIndex] };
         conversation.messages = conversation.messages || [];
         
-        // Update the user message with the real ID from backend
         const messages = conversation.messages.map(msg => 
           msg.id === userMessage.id && savedUserMessage?.id
             ? { ...msg, id: savedUserMessage.id }
             : msg
         );
         
-        // Add assistant message
         conversation.messages = [...messages, assistantMessage];
         conversation.lastMessage = response.answer.substring(0, 50) + '...';
         conversation.updatedAt = new Date();
@@ -437,7 +410,6 @@ export default function ChatPage() {
       });
     } finally {
       setIsProcessing(false);
-      // Reset flag after a short delay to allow state updates to complete
       setTimeout(() => {
         isSendingMessageRef.current = false;
         console.log('🔓 Message sending complete, unlocking loadMessages');

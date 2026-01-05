@@ -25,16 +25,13 @@ export function parseCSVLine(line: string): string[] {
     
     if (char === '"') {
       if (inQuotes && line[i + 1] === '"') {
-        // Escaped quote inside quoted field
         current += '"';
         i += 2;
       } else {
-        // Toggle quote state
         inQuotes = !inQuotes;
         i++;
       }
     } else if (char === ',' && !inQuotes) {
-      // Field separator
       result.push(current);
       current = '';
       i++;
@@ -44,14 +41,12 @@ export function parseCSVLine(line: string): string[] {
     }
   }
   
-  // Add the last field
   result.push(current);
   
   return result;
 }
 
 export function parseCSV(csvText: string): LegalDocument[] {
-  // Sử dụng regex để tách rows, tôn trọng quotes
   const rows: string[] = [];
   let currentRow = '';
   let inQuotes = false;
@@ -62,17 +57,14 @@ export function parseCSV(csvText: string): LegalDocument[] {
     
     if (char === '"') {
       if (inQuotes && csvText[i + 1] === '"') {
-        // Escaped quote
         currentRow += '""';
         i += 2;
       } else {
-        // Toggle quote state
         inQuotes = !inQuotes;
         currentRow += char;
         i++;
       }
     } else if (char === '\n' && !inQuotes) {
-      // End of row
       if (currentRow.trim()) {
         rows.push(currentRow.trim());
       }
@@ -84,7 +76,6 @@ export function parseCSV(csvText: string): LegalDocument[] {
     }
   }
   
-  // Add last row if exists
   if (currentRow.trim()) {
     rows.push(currentRow.trim());
   }
@@ -100,7 +91,6 @@ export function parseCSV(csvText: string): LegalDocument[] {
     if (values.length >= headers.length) {
       const doc: Record<string, string> = {};
       headers.forEach((header, index) => {
-        // Clean up the value - remove surrounding quotes and unescape
         let value = values[index] || '';
         if (value.startsWith('"') && value.endsWith('"')) {
           value = value.slice(1, -1);

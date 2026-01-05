@@ -31,14 +31,11 @@ public class MessageServiceImpl implements MessageService {
         log.info("Sending message for conversation: {} by user: {}, role: {}", 
                 request.getConversationId(), userId, request.getRole());
         
-        // Verify user has access to the conversation
         Conversation conversation = conversationRepository.findByIdAndUserId(request.getConversationId(), userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
         
-        // Save message with the role from request (USER or ASSISTANT)
         MessageDto message = saveMessage(request.getConversationId(), request.getContent(), request.getRole());
         
-        // Update conversation updated_at timestamp
         conversation.setUpdatedAt(java.time.LocalDateTime.now());
         conversationRepository.save(conversation);
         
@@ -50,7 +47,6 @@ public class MessageServiceImpl implements MessageService {
     public List<MessageDto> getConversationMessages(Long conversationId, Long userId) {
         log.info("Getting messages for conversation: {} by user: {}", conversationId, userId);
         
-        // Verify user has access to the conversation
         conversationRepository.findByIdAndUserId(conversationId, userId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found or access denied"));
         

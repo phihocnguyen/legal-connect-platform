@@ -26,7 +26,6 @@ public class ApiKeyValidationService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Get or create API key
             ApiKeyDto apiKey;
             try {
                 apiKey = apiKeyService.getApiKeyByUser(user);
@@ -35,7 +34,6 @@ public class ApiKeyValidationService {
                 log.info("Auto-created API key for user: {}", user.getEmail());
             }
 
-            // Check if API key is valid and has remaining calls
             if (!apiKey.getIsActive()) {
                 throw new RuntimeException("API key is not active");
             }
@@ -44,7 +42,6 @@ public class ApiKeyValidationService {
                 throw new RuntimeException("API key limit exceeded. Please upgrade or wait for reset.");
             }
 
-            // Deduct usage
             apiKeyService.useApiKey(user, type);
             log.info("Successfully validated and deducted API key for user: {}, type: {}, remaining: {}", 
                     user.getEmail(), type, apiKey.getRemainingCalls() - 1);

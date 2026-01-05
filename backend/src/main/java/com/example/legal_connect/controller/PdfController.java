@@ -39,7 +39,6 @@ public class PdfController {
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
         try {
-            // Validate and deduct API key
             apiKeyValidationService.validateAndUseApiKey(userPrincipal.getId(), "pdf");
             
             PdfUploadResponse response = pdfService.uploadPdfAndCreateConversation(file, title, summary, pythonFileId, userPrincipal.getId());

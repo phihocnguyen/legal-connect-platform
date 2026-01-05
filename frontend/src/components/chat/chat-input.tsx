@@ -27,7 +27,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [placeholder, setPlaceholder] = useState(placeholders[0]);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Rotating placeholder animation
   useEffect(() => {
     if (disabled || message) return;
     
@@ -42,7 +41,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setPlaceholder(placeholders[placeholderIndex]);
   }, [placeholderIndex]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (!textareaRef.current) return;
     
@@ -53,7 +51,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
   }, [message]);
 
-  // Focus on mount
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
@@ -64,12 +61,10 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       onSend(message.trim());
       setMessage("");
       
-      // Reset height after sending
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
       
-      // Refocus after sending
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
@@ -77,11 +72,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit on Enter (without Shift) - let form handle the submit
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Don't call handleSubmit here - it will be called by form onSubmit
-      // This prevents double submission
       const form = e.currentTarget.form;
       if (form) {
         form.requestSubmit();
@@ -89,7 +81,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       return;
     }
     
-    // Clear on Cmd/Ctrl + K
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
       setMessage("");

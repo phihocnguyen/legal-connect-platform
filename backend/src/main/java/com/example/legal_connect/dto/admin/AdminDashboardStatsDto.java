@@ -14,31 +14,25 @@ import java.util.List;
 @AllArgsConstructor
 public class AdminDashboardStatsDto {
 
-    // Basic counts
     private long totalUsers;
     private long totalPosts;
     private long totalLawyers;
     private long totalCategories;
     
-    // Pending/Active items
     private long pendingApplications;
     private long activeUsers; // users active in last 30 days
     private long reportedPosts;
     private long unresolvedReports;
     
-    // Growth metrics (compared to last period)
     private long newUsersThisMonth;
     private long newPostsThisMonth;
     private long newLawyersThisMonth;
     
-    // User engagement
     private long totalMessages;
     private long totalConversations;
     
-    // Recent activity
     private List<RecentActivityDto> recentActivities;
     
-    // System info
     private LocalDateTime lastUpdated;
     
     @Data
@@ -53,7 +47,6 @@ public class AdminDashboardStatsDto {
         private Long entityId;
     }
     
-    // Popular content
     @Data
     @Builder
     @NoArgsConstructor
@@ -69,7 +62,6 @@ public class AdminDashboardStatsDto {
     
     private List<PopularContentDto> popularPosts;
     
-    // User statistics by role
     @Data
     @Builder
     @NoArgsConstructor
@@ -82,7 +74,6 @@ public class AdminDashboardStatsDto {
     
     private List<UserRoleStatsDto> usersByRole;
     
-    // Chart data
     @Data
     @Builder
     @NoArgsConstructor

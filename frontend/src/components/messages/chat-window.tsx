@@ -33,7 +33,6 @@ export function ChatWindow({
   const { connected } = useWebSocketStore();
   const getOnlineUsers = useWebSocketStore((s) => s.getOnlineUsers);
 
-  // Rate-limit / debounce online checks to avoid spamming the API on every render
   const lastOnlineCheckRef = useRef<number>(0);
 
   const doFetchOnlineUsers = useMemo(() => {
@@ -45,7 +44,6 @@ export function ChatWindow({
       const now = Date.now();
       const MIN_INTERVAL = 2000; // ms
       if (now - (lastOnlineCheckRef.current || 0) < MIN_INTERVAL) {
-        // skip if last check was too recent
         return;
       }
       lastOnlineCheckRef.current = now;
@@ -55,12 +53,9 @@ export function ChatWindow({
         console.warn("Error fetching online users (debounced):", e);
       }
     };
-    // Intentionally not including fetchOnlineUsers/getOnlineUsers in deps if they are stable from store
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected]);
 
   useEffect(() => {
-    // run once when connection toggles or component mounts
     doFetchOnlineUsers();
   }, [doFetchOnlineUsers]);
 
@@ -97,7 +92,6 @@ export function ChatWindow({
     });
   };
 
-  // Calculate online status with memoization to avoid unnecessary re-calculations
   const isParticipantOnline = useMemo(() => {
     if (onlineUsersLoading || !onlineUsers || !conversation) {
       console.log("🔍 Online check skipped:", {
@@ -163,7 +157,6 @@ export function ChatWindow({
     return !!findExactUser;
   }, [onlineUsers, onlineUsersLoading, conversation]);
 
-  // Update participant online status
   if (conversation) {
     conversation.participant.online = isParticipantOnline;
   }

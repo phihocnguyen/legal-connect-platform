@@ -22,7 +22,6 @@ export default function MyPostsPage() {
   const [loading, setLoading] = useState(true);
   const { startLoading, stopLoading } = useLoadingState();
 
-  // Load my posts - fetch all posts and filter by current user
   const loadMyPosts = useCallback(async () => {
     try {
       startLoading("Đang tải bài viết của bạn...");
@@ -33,7 +32,6 @@ export default function MyPostsPage() {
           sort: "createdAt,desc",
         },
       });
-      // Filter posts by current user ID
       const userPosts = (response.data.content || []).filter(
         (post: PostDto) => post.author.id === user?.id
       );
@@ -46,7 +44,6 @@ export default function MyPostsPage() {
     }
   }, [user?.id, startLoading, stopLoading]);
 
-  // Load bookmarked posts
   const loadBookmarkedPosts = useCallback(async () => {
     try {
       startLoading("Đang tải bài viết đã lưu...");
@@ -74,7 +71,6 @@ export default function MyPostsPage() {
     });
   }, [isAuthenticated, loadMyPosts, loadBookmarkedPosts]);
 
-  // Remove bookmark
   const handleRemoveBookmark = async (postId: number) => {
     try {
       await axiosInstance.delete(`/forum/posts/${postId}/bookmark`);
@@ -86,7 +82,6 @@ export default function MyPostsPage() {
     }
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();

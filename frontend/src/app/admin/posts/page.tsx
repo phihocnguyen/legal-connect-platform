@@ -65,7 +65,6 @@ export default function AdminPostsPage() {
   const sortBy = searchParams.get("sortBy") || "createdAt";
   const sortDir = (searchParams.get("sortDir") as "asc" | "desc") || "desc";
 
-  // Local state
   const [posts, setPosts] = useState<PostModerationDto[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -74,7 +73,6 @@ export default function AdminPostsPage() {
     null
   );
 
-  // Local filter states (before applying)
   const [localStatusFilter, setLocalStatusFilter] = useState(statusFilter);
   const [localCategoryFilter, setLocalCategoryFilter] =
     useState(categoryFilter);
@@ -84,10 +82,8 @@ export default function AdminPostsPage() {
   const [localAuthorRoleFilter, setLocalAuthorRoleFilter] =
     useState(authorRoleFilter);
 
-  // Filter panel visibility
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filtering loading state
   const [filterLoading, setFilterLoading] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
 
@@ -102,7 +98,6 @@ export default function AdminPostsPage() {
     getPostDetails,
   } = useAdminPosts();
 
-  // Update URL parameters
   const updateUrl = (params: Record<string, string | number>) => {
     const newSearchParams = new URLSearchParams(searchParams);
 
@@ -117,7 +112,6 @@ export default function AdminPostsPage() {
     router.push(`/admin/posts?${newSearchParams.toString()}`);
   };
 
-  // Load posts
   const loadPosts = useCallback(async () => {
     try {
       const params = {
@@ -138,7 +132,6 @@ export default function AdminPostsPage() {
       console.error("Failed to load posts:", err);
       toast.error("Failed to load posts");
     } finally {
-      // Reset loading states after API completes
       setPaginationLoading(false);
       setFilterLoading(false);
     }
@@ -148,7 +141,6 @@ export default function AdminPostsPage() {
     loadPosts();
   }, [loadPosts]);
 
-  // Handlers
   const handleSort = (field: string) => {
     const newSortDir = sortBy === field && sortDir === "desc" ? "asc" : "desc";
     updateUrl({ sortBy: field, sortDir: newSortDir, page: 1 });
@@ -159,7 +151,6 @@ export default function AdminPostsPage() {
     updateUrl({ page });
   };
 
-  // Apply filters function
   const handleApplyFilters = () => {
     setFilterLoading(true);
     updateUrl({
@@ -174,7 +165,6 @@ export default function AdminPostsPage() {
     });
   };
 
-  // Filter handlers - now only update local state
   const handleCategoryFilter = (category: string) => {
     setLocalCategoryFilter(category);
   };
@@ -195,26 +185,20 @@ export default function AdminPostsPage() {
     setLocalAuthorRoleFilter(authorRole);
   };
 
-  // Local filtering function
   const getFilteredPosts = () => {
     return posts.filter((post) => {
-      // Category filter
       if (categoryFilter !== "all" && post.categoryName !== categoryFilter)
         return false;
 
-      // Pin filter
       if (pinFilter === "pinned" && !post.isPinned) return false;
       if (pinFilter === "unpinned" && post.isPinned) return false;
 
-      // Hot filter
       if (hotFilter === "hot" && !post.isHot) return false;
       if (hotFilter === "normal" && post.isHot) return false;
 
-      // Report filter
       if (reportFilter === "reported" && !post.isReported) return false;
       if (reportFilter === "clean" && post.isReported) return false;
 
-      // Author role filter
       if (authorRoleFilter !== "all" && post.author.role !== authorRoleFilter)
         return false;
 
@@ -222,7 +206,6 @@ export default function AdminPostsPage() {
     });
   };
 
-  // Get unique categories for filter dropdown
   const getUniqueCategories = () => {
     const categories = [...new Set(posts.map((post) => post.categoryName))];
     return categories.sort();
@@ -230,7 +213,6 @@ export default function AdminPostsPage() {
 
   const filteredPosts = getFilteredPosts();
 
-  // Get active filter count
   const getActiveFilterCount = () => {
     let count = 0;
     if (statusFilter !== "all") count++;
@@ -379,7 +361,6 @@ export default function AdminPostsPage() {
           onSearchChange={setLocalSearch}
           searchPlaceholder="Tìm kiếm bài viết..."
           filterRows={[
-            // First row: Trạng thái, Danh mục, Ghim, Nổi bật
             {
               fields: [
                 {
@@ -430,7 +411,6 @@ export default function AdminPostsPage() {
                 },
               ],
             },
-            // Second row: Vai trò tác giả (below Trạng thái), Báo cáo vi phạm (below Danh mục)
             {
               fields: [
                 {

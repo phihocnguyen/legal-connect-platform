@@ -55,7 +55,6 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequest request,
             Authentication authentication) {
         try {
-            // Security check: Ensure user can only update their own profile
             Long currentUserId = getUserIdFromAuthentication(authentication);
             if (!userId.equals(currentUserId)) {
                 log.warn("User {} attempted to update profile of user {}", currentUserId, userId);

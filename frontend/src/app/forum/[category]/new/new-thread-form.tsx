@@ -74,11 +74,9 @@ export function NewThreadForm({ category }: NewThreadFormProps) {
         category
       };
       
-      // TODO: Implement API call to create thread
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated API call
       console.log('Creating thread:', threadData);
       
-      // After successful creation, redirect to the thread
       router.push(`/forum/${category}`);
       router.refresh();
     } catch (error) {

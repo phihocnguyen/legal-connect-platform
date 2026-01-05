@@ -24,10 +24,8 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
     return date.toLocaleDateString("vi-VN");
   };
 
-  // Mock posts if empty
   const mockPosts = posts.length === 0 ? [] : posts;
 
-  // Helper function to check if post is UserPost
   const isUserPost = (post: PostDto | UserPost): post is UserPost => {
     return "categoryName" in post;
   };

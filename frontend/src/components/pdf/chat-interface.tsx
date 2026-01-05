@@ -30,7 +30,6 @@ export function ChatInterface() {
     setInput('');
     setIsLoading(true);
 
-    // Simulate AI response
     setTimeout(() => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

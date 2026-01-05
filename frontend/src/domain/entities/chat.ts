@@ -15,7 +15,6 @@ export interface ChatConversation {
   updatedAt: Date;
 }
 
-// Chat Q/A entities for Python backend
 export interface ChatQARequest {
   question: string;
   top_k?: number;

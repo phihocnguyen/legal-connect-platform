@@ -20,8 +20,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Role-based navigation is now handled in middleware.ts
-  // This component only handles the login identity and form submission.
 
   const {
     register,
@@ -49,11 +47,9 @@ export default function LoginPage() {
 
       toast.success("Đăng nhập thành công!");
 
-      // Check for returnUrl or default to home
       const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
       const targetUrl = returnUrl || "/";
 
-      // Immediate redirect - middleware will handle role-based navigation
       window.location.href = targetUrl;
     } catch (error) {
       console.error("Login error:", error);

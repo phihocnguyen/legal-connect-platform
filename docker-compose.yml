@@ -86,6 +86,9 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
 
+      # Python ML service URL (Host machine)
+      APP_ML_URL: http://host.docker.internal:8000
+
     depends_on:
       postgres:
         condition: service_healthy

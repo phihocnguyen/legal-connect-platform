@@ -38,7 +38,6 @@ export const useNotificationUseCases = () => {
   const markAsRead = useCallback(async (notificationId: number) => {
     try {
       await notificationRepository.markAsRead(notificationId);
-      // Update local state
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
       );
@@ -52,7 +51,6 @@ export const useNotificationUseCases = () => {
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationRepository.markAllAsRead();
-      // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -61,7 +59,6 @@ export const useNotificationUseCases = () => {
     }
   }, []);
 
-  // Poll for new notifications every 30 seconds
   useEffect(() => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);

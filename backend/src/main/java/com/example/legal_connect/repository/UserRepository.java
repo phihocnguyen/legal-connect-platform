@@ -20,20 +20,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByProviderIdAndAuthProvider(String providerId, User.AuthProvider authProvider);
     long countByCreatedAtAfter(LocalDateTime since);
     
-    // Admin management methods
     Page<User> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
         String fullName, String email, Pageable pageable);
     Page<User> findByRole(User.Role role, Pageable pageable);
+    List<User> findByRole(User.Role role);
     
-    // Dashboard statistics methods
     long countByRole(User.Role role);
     List<User> findTop5ByOrderByCreatedAtDesc();
     
-    // Chart data methods
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     long countByRoleAndCreatedAtBetween(User.Role role, LocalDateTime start, LocalDateTime end);
     
-    // Analytics methods for user growth
     @Query("SELECT DATE(u.createdAt) as date, COUNT(u) as count " +
            "FROM User u " +
            "WHERE u.createdAt >= :startDate " +
@@ -48,12 +45,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "ORDER BY date, u.role")
     List<Object[]> countUsersByRoleGroupedByDate(@Param("startDate") LocalDateTime startDate);
     
-    // Temporarily disabled lastLogin methods to fix cached plan issue
-    // default long countByLastLoginAfter(LocalDateTime since) {
-    //     return count(); // Return total count for now
-    // }
-    // 
-    // default long countByRoleAndLastLoginAfter(User.Role role, LocalDateTime since) {
-    //     return countByRole(role); // Return role count for now
-    // }
 }

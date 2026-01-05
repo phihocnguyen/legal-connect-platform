@@ -26,10 +26,6 @@ export default function NotificationsPage() {
       await markAsRead(notification.id);
     }
 
-    // For now, just mark as read - can extend later with related entity navigation
-    // if (notification.relatedEntityType === 'POST') {
-    //   router.push(`/forum/post/${notification.relatedEntityId}`);
-    // }
   };
 
   const formatTimeAgo = (dateString: string) => {

@@ -220,7 +220,6 @@ public class ForumController {
         throw new RuntimeException("User not authenticated");
     }
     
-    // Helper method that returns null if user is not authenticated (for optional auth)
     private Long getUserIdFromAuth(Authentication authentication) {
         try {
             if (authentication != null && authentication.isAuthenticated()) {
@@ -266,7 +265,6 @@ public class ForumController {
         return ResponseEntity.ok(tags);
     }
     
-    // ========== VOTING ENDPOINTS ==========
     
     /**
      * Vote on a post
@@ -305,7 +303,6 @@ public class ForumController {
         try {
             userId = getUserIdFromAuthentication(authentication);
         } catch (Exception e) {
-            // User not authenticated, proceed with null userId
         }
         VoteDto voteDto = votingService.getPostVoteStats(postId, userId);
         return ResponseEntity.ok(voteDto);
@@ -322,7 +319,6 @@ public class ForumController {
         try {
             userId = getUserIdFromAuthentication(authentication);
         } catch (Exception e) {
-            // User not authenticated, proceed with null userId
         }
         VoteDto voteDto = votingService.getReplyVoteStats(replyId, userId);
         return ResponseEntity.ok(voteDto);

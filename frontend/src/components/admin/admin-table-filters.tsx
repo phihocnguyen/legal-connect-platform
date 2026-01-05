@@ -29,27 +29,21 @@ export interface FilterRow {
 }
 
 export interface AdminTableFiltersProps {
-  // Search functionality
   searchValue: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
 
-  // Filter rows (each row contains multiple filter fields)
   filterRows: FilterRow[];
 
-  // Apply/Reset functionality
   onApplyFilters: () => void;
   onResetFilters?: () => void;
   isLoading?: boolean;
 
-  // Filter panel state
   showFilters?: boolean;
   onToggleFilters?: () => void;
 
-  // Active filter count (for badge)
   activeFilterCount?: number;
 
-  // Custom actions (optional)
   customActions?: ReactNode;
 }
 

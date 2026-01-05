@@ -60,7 +60,6 @@ public class PostExceptionHandler {
         private String path;
         private Map<String, String> validationErrors;
 
-        // Builder pattern implementation
         public static ErrorResponseBuilder builder() {
             return new ErrorResponseBuilder();
         }
@@ -115,7 +114,6 @@ public class PostExceptionHandler {
             }
         }
 
-        // Getters and Setters
         public LocalDateTime getTimestamp() { return timestamp; }
         public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
         

@@ -74,7 +74,6 @@ function UserPopupContent({ user }: { user: User }) {
   );
 }
 
-// Component cho Lawyer với avatar và card riêng
 function LawyerCard({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);

@@ -36,7 +36,6 @@ public class FileUploadController {
                         .build());
             }
 
-            // Upload files to Cloudinary
             String[] uploadedUrls = cloudinaryService.uploadFiles(files, "lawyer-documents");
             List<String> urlList = Arrays.asList(uploadedUrls);
             
@@ -70,7 +69,6 @@ public class FileUploadController {
                         .build());
             }
             
-            // Upload file to Cloudinary
             String uploadedUrl = cloudinaryService.uploadFile(file, "avatars");
             
             return ResponseEntity.ok(ApiResponse.<String>builder()

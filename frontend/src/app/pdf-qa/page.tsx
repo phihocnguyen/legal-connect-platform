@@ -37,15 +37,12 @@ export default function PdfQAPage() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  // Track if we're programmatically updating the URL to prevent loops
   const isUpdatingUrlRef = useRef(false);
 
-  // API Key state
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [showApiLimitModal, setShowApiLimitModal] = useState(false);
   const { apiKey, getMyApiKey } = useApiKey();
 
-  // Modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<
     number | null
@@ -58,16 +55,13 @@ export default function PdfQAPage() {
     sendMessage,
     deleteConversation,
     getPdfViewUrl,
-    // Python API methods
     uploadPdfToPython,
     getPdfSummary,
   } = usePdfCases();
 
   const { askPdfQuestion } = usePdfQACases();
 
-  // Wrap sendMessage to call Python /pdf/qa when a fileId exists and return an assistant message
   const handleSendMessage = async (conversationId: number, content: string) => {
-    // Persist user message first (if backend conversation exists)
     let userMessageId: number | undefined;
     try {
       if (conversationId) {
@@ -78,7 +72,6 @@ export default function PdfQAPage() {
       console.error("Failed to persist user message:", err);
     }
 
-    // If we have fileId info, ask Python QA endpoint
     try {
       if (pdfFile?.fileId) {
         const qaResult = await askPdfQuestion(pdfFile.fileId, content, 3);
@@ -89,15 +82,12 @@ export default function PdfQAPage() {
           qaResult?.text ||
           JSON.stringify(qaResult);
 
-        // Persist ASSISTANT response to backend
         if (conversationId) {
           try {
             const assistantMsg = await sendMessage( conversationId, answerText, "ASSISTANT" );
-            // Return the persisted assistant message
             return assistantMsg;
           } catch (err) {
             console.error("Failed to persist assistant message:", err);
-            // If persist fails, still return message for UI
             const assistantMessage: PdfMessage = {
               id: Date.now(),
               conversationId: conversationId,
@@ -108,7 +98,6 @@ export default function PdfQAPage() {
             return assistantMessage;
           }
         } else {
-          // No conversationId, return temp message
           const assistantMessage: PdfMessage = {
             id: Date.now(),
             conversationId: -1,
@@ -124,9 +113,7 @@ export default function PdfQAPage() {
       throw err;
     }
 
-    // Fallback: just return the persisted user message (if any)
     if (conversationId && userMessageId) {
-      // Return a dummy assistant message saying no fileId
       const errorMessage: PdfMessage = {
         id: Date.now(),
         conversationId: conversationId,
@@ -160,17 +147,14 @@ export default function PdfQAPage() {
         const conversation = await getConversationWithDetails(conversationId);
         setActiveConversationId(conversationId);
 
-        // Update URL with conversation ID (unless we're already responding to a URL change)
         if (!skipUrlUpdate) {
           isUpdatingUrlRef.current = true;
           router.push(`/pdf-qa?id=${conversationId}`, { scroll: false });
-          // Reset the flag after a short delay
           setTimeout(() => {
             isUpdatingUrlRef.current = false;
           }, 100);
         }
 
-        // Set PDF file from conversation with summary and messages from DB
         if (conversation.pdfDocument) {
           setPdfFile({
             url: getPdfViewUrl(conversationId),
@@ -190,21 +174,17 @@ export default function PdfQAPage() {
     [getConversationWithDetails, getPdfViewUrl, router]
   );
 
-  // Load conversations on component mount ONLY
   useEffect(() => {
     const initializePage = async () => {
-      // Check API key first
       const storedKey = localStorage.getItem("user_api_key");
       if (storedKey) {
         setIsApiKeyValid(true);
       }
 
-      // Load API key info
       await getMyApiKey();
 
       await loadConversations();
 
-      // Try to restore from URL query param first
       const conversationIdFromUrl = searchParams.get("id");
       if (conversationIdFromUrl) {
         const conversationId = parseInt(conversationIdFromUrl, 10);
@@ -214,7 +194,6 @@ export default function PdfQAPage() {
         }
       }
 
-      // Fallback: Try to restore last active conversation from localStorage
       const lastActiveConversation = localStorage.getItem(
         "lastActiveConversationId"
       );
@@ -227,12 +206,9 @@ export default function PdfQAPage() {
     };
 
     initializePage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  // Handle URL changes from browser navigation (back/forward)
   useEffect(() => {
-    // Skip if we're the ones updating the URL
     if (isUpdatingUrlRef.current) {
       return;
     }
@@ -242,13 +218,11 @@ export default function PdfQAPage() {
       ? parseInt(conversationIdFromUrl, 10)
       : undefined;
 
-    // Only load if URL id is different from current active id
     if (urlId && !isNaN(urlId) && urlId !== activeConversationId) {
       handleSelectConversation(urlId, true); // Skip URL update since we're responding to URL change
     }
   }, [searchParams, activeConversationId, handleSelectConversation]);
 
-  // Save active conversation to localStorage
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem(
@@ -261,7 +235,6 @@ export default function PdfQAPage() {
   }, [activeConversationId]);
 
   const handleFileSelect = async (url: string, file: File) => {
-    // Check API key validity and limit
     if (!isApiKeyValid) {
       toast.error("Vui lòng xác thực API key trước khi upload PDF");
       return;
@@ -320,7 +293,6 @@ export default function PdfQAPage() {
       }
     } catch (error) {
       console.error("Upload error:", error);
-      // Keep the local URL for preview
       setPdfFile({
         url,
         name: file.name,
@@ -339,7 +311,6 @@ export default function PdfQAPage() {
   };
 
   const handleNewConversation = useCallback(() => {
-    // Reset to upload state
     setPdfFile(null);
     setActiveConversationId(undefined);
   }, []);
@@ -355,13 +326,10 @@ export default function PdfQAPage() {
     try {
       await deleteConversation(conversationToDelete);
 
-      // Show success toast
       toast.success("Conversation deleted successfully");
 
-      // Refresh conversations list
       await loadConversations();
 
-      // Clear active conversation if it was deleted
       if (activeConversationId === conversationToDelete) {
         setPdfFile(null);
         setActiveConversationId(undefined);
@@ -380,7 +348,6 @@ export default function PdfQAPage() {
     activeConversationId,
   ]);
 
-  // Convert PdfConversation to legacy Conversation interface for sidebar
   const legacyConversations = conversations.map((conv) => ({
     id: conv.id.toString(),
     title: conv.title,

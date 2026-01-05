@@ -72,7 +72,6 @@ export class DeleteConversationUseCase {
   }
 }
 
-// Python API Use Cases
 export class UploadPdfToPythonUseCase {
   constructor(private pdfRepository: PdfRepository) {}
 

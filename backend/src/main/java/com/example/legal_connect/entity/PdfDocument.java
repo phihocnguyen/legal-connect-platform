@@ -38,7 +38,6 @@ public class PdfDocument {
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
-    // Relationship with Conversation
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", insertable = false, updatable = false)
     private Conversation conversation;

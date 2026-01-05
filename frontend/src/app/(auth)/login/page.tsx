@@ -41,7 +41,7 @@ export default function LoginPage() {
           router.push("/admin");
           break;
         default:
-          router.push("/forum");
+          router.push("/");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,7 +85,7 @@ export default function LoginPage() {
       } else {
         // Default redirect based on role
         const role = user.role?.toLowerCase();
-        targetUrl = role === "admin" ? "/admin" : "/forum";
+        targetUrl = role === "admin" ? "/admin" : "/";
       }
 
       // Navigate after showing success message

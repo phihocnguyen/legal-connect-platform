@@ -6,12 +6,14 @@ export class HttpChatQARepository implements ChatQARepository {
     process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
 
   async askQuestion(request: ChatQARequest): Promise<ChatQAResponse> {
-    const { question, top_k = 5 } = request;
+    const { question, top_k = 5, conversation_id, chat_history } = request;
 
     console.log("Sending Chat Q/A request:", {
       url: `${this.pythonApiURL}/rag/ask`,
       question,
       top_k,
+      conversation_id,
+      chat_history_length: chat_history?.length || 0,
     });
 
     const response = await fetch(`${this.pythonApiURL}/rag/ask`, {
@@ -22,6 +24,8 @@ export class HttpChatQARepository implements ChatQARepository {
       body: JSON.stringify({
         question,
         top_k,
+        conversation_id: conversation_id ? String(conversation_id) : undefined,
+        chat_history,
       }),
     });
 

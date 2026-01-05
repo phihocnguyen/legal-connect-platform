@@ -39,6 +39,10 @@ export default function ChatPage() {
   const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  
+  // Track if we're currently sending a message to prevent race conditions
+  const isSendingMessageRef = useRef(false);
+  const previousConversationIdRef = useRef<string | undefined>(undefined);
 
   // Read URL parameter on mount
   useEffect(() => {
@@ -88,6 +92,20 @@ export default function ChatPage() {
     const loadMessages = async () => {
       if (!activeConversationId) return;
       
+      // Skip loading if we're currently sending a message to prevent race condition
+      if (isSendingMessageRef.current) {
+        console.log('⏭️ Skipping message load - currently sending message');
+        return;
+      }
+      
+      // Only load messages if conversation actually changed
+      if (previousConversationIdRef.current === activeConversationId) {
+        console.log('⏭️ Skipping message load - same conversation');
+        return;
+      }
+      
+      previousConversationIdRef.current = activeConversationId;
+      
       try {
         setIsLoadingMessages(true);
         console.log('🔥 Loading messages for conversationId:', activeConversationId);
@@ -124,7 +142,7 @@ export default function ChatPage() {
     };
     
     loadMessages();
-  }, [activeConversationId, getConversationHistory]);
+  }, [activeConversationId]);
 
   const currentMessages = useMemo(() => {
     console.log('Debug - activeConversationId:', activeConversationId);
@@ -150,6 +168,10 @@ export default function ChatPage() {
       }
       setConversations(prev => [conversation, ...prev]);
       setActiveConversationId(conversation.id);
+      
+      // Update ref to prevent loadMessages from triggering
+      previousConversationIdRef.current = conversation.id;
+      
       // Push conversation ID to URL
       router.push(`/chat?id=${conversation.id}`);
     } catch (error) {
@@ -207,6 +229,14 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async (content: string) => {
+    console.log('🚀 handleSendMessage called with:', content.substring(0, 50));
+    
+    // Prevent double submission
+    if (isProcessing) {
+      console.warn('⚠️ Already processing a message, ignoring duplicate call');
+      return;
+    }
+    
     // Check API key validity and limit
     if (!isApiKeyValid) {
       toast.error('Vui lòng xác thực API key trước khi gửi tin nhắn');
@@ -219,104 +249,199 @@ export default function ChatPage() {
     }
 
     let currentConvId = activeConversationId;
+    let isNewConversation = false;
+    let newConversation: ChatConversation | null = null;
+    
     if (!currentConvId) {
       try {
-        const conversation = await createConversation("New Conversation");
-        if (!conversation.messages) {
-          conversation.messages = [];
-        }
-        setConversations(prev => [conversation, ...prev]);
-        setActiveConversationId(conversation.id);
+        console.log('🆕 Creating new conversation from welcome screen...');
+        
+        // Create conversation with first question as title (truncated)
+        const conversationTitle = content.length > 50 
+          ? content.substring(0, 50) + '...' 
+          : content;
+        const conversation = await createConversation(conversationTitle);
+        conversation.messages = [];
+        
+        console.log('✅ Conversation created:', {
+          id: conversation.id,
+          idType: typeof conversation.id,
+          title: conversation.title
+        });
+        
         currentConvId = conversation.id;
+        isNewConversation = true;
+        newConversation = conversation;
+        
+        setActiveConversationId(conversation.id);
         router.push(`/chat?id=${conversation.id}`);
+        
+        // Update the ref to prevent loadMessages from triggering
+        previousConversationIdRef.current = conversation.id;
+        
+        console.log('📝 Current conversation ID set to:', currentConvId);
       } catch (error) {
         console.error('Error creating conversation:', error);
+        toast.error('Không thể tạo cuộc trò chuyện. Vui lòng thử lại.');
         return;
       }
     }
     
-    if (currentConvId) {
-      setIsProcessing(true);
+    // Set flag to prevent loadMessages from overwriting our optimistic updates
+    isSendingMessageRef.current = true;
+    
+    // Add user message to UI immediately (optimistic update)
+    const userMessage: Message = {
+      id: `temp-user-${Date.now()}`,
+      content,
+      role: 'USER',
+      createdAt: new Date(),
+    };
+    
+    console.log('✅ Adding user message optimistically:', userMessage);
+    console.log('✅ Current conversation ID:', currentConvId);
+    console.log('✅ Is new conversation:', isNewConversation);
+    
+    setConversations(prev => {
+      console.log('✅ Current conversations in state:', prev.map(c => c.id));
+      console.log('✅ Current conversation ID type:', typeof currentConvId, currentConvId);
+      console.log('✅ State conversation ID types:', prev.map(c => ({ id: c.id, type: typeof c.id })));
+      console.log('✅ isNewConversation:', isNewConversation);
+      console.log('✅ newConversation:', newConversation ? { id: newConversation.id, title: newConversation.title } : null);
       
-      // Add user message to UI immediately
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        content,
-        role: 'USER',
+      // Check if conversation exists in state (use == for type coercion)
+      const conversationIndex = prev.findIndex(c => c.id == currentConvId);
+      console.log('✅ conversationIndex:', conversationIndex);
+      
+      // If this is a new conversation (not in state yet), add it to the list first
+      if (conversationIndex === -1 && isNewConversation && newConversation) {
+        console.log('✅ Adding new conversation to state with message');
+        newConversation.messages = [userMessage];
+        newConversation.lastMessage = content;
+        newConversation.updatedAt = new Date();
+        return [newConversation, ...prev];
+      }
+      
+      // If conversation not found, DON'T create fallback - this indicates a bug
+      if (conversationIndex === -1) {
+        console.error('❌ CRITICAL: Conversation not found in list:', currentConvId);
+        console.error('❌ Available conversations:', prev.map(c => ({ id: c.id, title: c.title })));
+        console.error('❌ isNewConversation:', isNewConversation);
+        console.error('❌ newConversation:', newConversation);
+        console.error('❌ This should not happen! Returning prev state without changes.');
+        return prev;
+      }
+
+      // Otherwise, update existing conversation
+      console.log('✅ Updating existing conversation at index:', conversationIndex);
+      const updatedConversations = [...prev];
+      const conversation = { ...updatedConversations[conversationIndex] };
+      conversation.messages = conversation.messages || [];
+      conversation.messages = [...conversation.messages, userMessage];
+      conversation.lastMessage = content;
+      conversation.updatedAt = new Date();
+
+      updatedConversations[conversationIndex] = conversation;
+      return updatedConversations;
+    });
+
+    setIsProcessing(true);
+
+    try {
+      console.log('🚀 Sending message to backend...');
+      
+      // Get current conversation for chat history
+      const currentConversation = conversations.find(c => c.id == currentConvId);
+      const chatHistory = currentConversation?.messages.slice(-6).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })) || [];
+      
+      console.log('📜 Sending chat history:', chatHistory.length, 'messages');
+      
+      // Save user message to backend and get AI response in parallel
+      const [savedUserMessage, response] = await Promise.all([
+        sendMessage(currentConvId, content, 'USER'),
+        askQuestion(content, 5, currentConvId, chatHistory)
+      ]);
+
+      console.log('✅ User message saved:', savedUserMessage);
+      console.log('✅ AI response received:', response);
+
+      const formattedAnswer = `${response.answer}`;
+      
+      // Save AI response to backend
+      const savedAssistantMessage = await sendMessage(currentConvId, formattedAnswer, 'ASSISTANT');
+      console.log('✅ AI message saved:', savedAssistantMessage);
+      
+      const assistantMessage: Message = {
+        id: savedAssistantMessage?.id || `temp-assistant-${Date.now()}`,
+        content: formattedAnswer,
+        role: 'ASSISTANT',
         createdAt: new Date(),
       };
       
+      console.log('✅ Adding AI message to UI:', assistantMessage);
+      
       setConversations(prev => {
-        const conversationIndex = prev.findIndex(c => c.id === currentConvId);
-        if (conversationIndex === -1) return prev;
+        const conversationIndex = prev.findIndex(c => c.id == currentConvId);
+        if (conversationIndex === -1) {
+          console.warn('⚠️ Conversation not found when adding AI response');
+          return prev;
+        }
 
         const updatedConversations = [...prev];
         const conversation = { ...updatedConversations[conversationIndex] };
-        // Ensure messages array exists
         conversation.messages = conversation.messages || [];
-        conversation.messages = [...conversation.messages, userMessage];
-        conversation.lastMessage = content;
+        
+        // Update the user message with the real ID from backend
+        const messages = conversation.messages.map(msg => 
+          msg.id === userMessage.id && savedUserMessage?.id
+            ? { ...msg, id: savedUserMessage.id }
+            : msg
+        );
+        
+        // Add assistant message
+        conversation.messages = [...messages, assistantMessage];
+        conversation.lastMessage = response.answer.substring(0, 50) + '...';
         conversation.updatedAt = new Date();
 
         updatedConversations[conversationIndex] = conversation;
         return updatedConversations;
       });
+    } catch (error) {
+      console.error('❌ Error asking question:', error);
+      toast.error('Không thể xử lý câu hỏi. Vui lòng thử lại.');
+      
+      const errorMessage: Message = {
+        id: `temp-error-${Date.now()}`,
+        content: 'Xin lỗi, đã có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại sau.',
+        role: 'ASSISTANT',
+        createdAt: new Date(),
+      };
+      
+      setConversations(prev => {
+        const conversationIndex = prev.findIndex(c => c.id == currentConvId);
+        if (conversationIndex === -1) {
+          console.warn('⚠️ Conversation not found when adding error message');
+          return prev;
+        }
 
-      try {
-        await sendMessage(currentConvId, content, 'USER');
-
-        const response = await askQuestion(content, 3);
-
-        const formattedAnswer = `${response.answer}`;
+        const updatedConversations = [...prev];
+        const conversation = { ...updatedConversations[conversationIndex] };
+        conversation.messages = conversation.messages || [];
+        conversation.messages = [...conversation.messages, errorMessage];
         
-        await sendMessage(currentConvId, formattedAnswer, 'ASSISTANT');
-        
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: formattedAnswer,
-          role: 'ASSISTANT',
-          createdAt: new Date(),
-        };
-        
-        setConversations(prev => {
-          const conversationIndex = prev.findIndex(c => c.id === currentConvId);
-          if (conversationIndex === -1) return prev;
-
-          const updatedConversations = [...prev];
-          const conversation = { ...updatedConversations[conversationIndex] };
-          conversation.messages = conversation.messages || [];
-          conversation.messages = [...conversation.messages, assistantMessage];
-          conversation.lastMessage = response.answer.substring(0, 50) + '...';
-          conversation.updatedAt = new Date();
-
-          updatedConversations[conversationIndex] = conversation;
-          return updatedConversations;
-        });
-      } catch (error) {
-        console.error('Error asking question:', error);
-        
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: 'Xin lỗi, đã có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại.',
-          role: 'ASSISTANT',
-          createdAt: new Date(),
-        };
-        
-        setConversations(prev => {
-          const conversationIndex = prev.findIndex(c => c.id === currentConvId);
-          if (conversationIndex === -1) return prev;
-
-          const updatedConversations = [...prev];
-          const conversation = { ...updatedConversations[conversationIndex] };
-          conversation.messages = conversation.messages || [];
-          conversation.messages = [...conversation.messages, errorMessage];
-          
-          updatedConversations[conversationIndex] = conversation;
-          return updatedConversations;
-        });
-      } finally {
-        setIsProcessing(false);
-      }
+        updatedConversations[conversationIndex] = conversation;
+        return updatedConversations;
+      });
+    } finally {
+      setIsProcessing(false);
+      // Reset flag after a short delay to allow state updates to complete
+      setTimeout(() => {
+        isSendingMessageRef.current = false;
+        console.log('🔓 Message sending complete, unlocking loadMessages');
+      }, 500);
     }
   };
 
@@ -344,7 +469,7 @@ export default function ChatPage() {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      <main className="flex-1 flex flex-col bg-stone-50 min-w-0">
+      <main className="flex-1 flex flex-col bg-gradient-to-b from-gray-50 to-white min-w-0">
         {!isApiKeyValid ? (
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
@@ -357,19 +482,27 @@ export default function ChatPage() {
               />
             </div>
           </div>
+        ) : !activeConversationId || (currentMessages.length === 0 && !isProcessing) ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-2xl space-y-8">
+              <WelcomeScreen onPromptClick={handleSendMessage} disabled={isProcessing} />
+              <ChatInput 
+                onSend={handleSendMessage} 
+                disabled={isProcessing} 
+              />
+              <p className="text-xs text-gray-400 text-center">
+                AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
+              </p>
+            </div>
+          </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto">
-              <div className="mx-auto px-4 py-6">
+            <div className="flex-1 overflow-y-auto chat-smooth-scroll chat-custom-scrollbar">
+              <div className="max-w-4xl mx-auto px-6 py-8">
                 {isLoadingMessages ? (
                   <div className="flex justify-center items-center h-[calc(100vh-300px)]">
-                    <div className="text-center space-y-4">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-                      <p className="text-gray-500 text-sm">Đang tải tin nhắn...</p>
-                    </div>
+                    <LoadingSpinner size="lg" />
                   </div>
-                ) : !activeConversationId || currentMessages.length === 0 ? (
-                  <WelcomeScreen onPromptClick={handleSendMessage} />
                 ) : (
                   <div className="space-y-6">
                     {currentMessages.map((message: Message) => (
@@ -379,21 +512,21 @@ export default function ChatPage() {
                         content={message.content}
                       />
                     ))}
+                    {isProcessing && <LoadingMessage />}
                   </div>
                 )}
                 
-                {isProcessing && <LoadingMessage />}
                 <div ref={bottomRef} />
               </div>
             </div>
 
-            <div className="flex-shrink-0 border-t bg-white shadow-sm">
-              <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex-shrink-0 border-t bg-white/80 backdrop-blur-sm shadow-lg">
+              <div className="max-w-4xl mx-auto px-6 py-6">
                 <ChatInput 
                   onSend={handleSendMessage} 
                   disabled={isProcessing} 
                 />
-                <p className="text-xs text-gray-400 text-center mt-2">
+                <p className="text-xs text-gray-400 text-center mt-3">
                   AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.
                 </p>
               </div>

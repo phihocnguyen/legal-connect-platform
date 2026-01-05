@@ -147,7 +147,7 @@ export interface PdfRepository {
   getConversations(): Promise<PdfConversation[]>;
   getConversation(id: number): Promise<PdfConversation>;
   getConversationWithDetails(id: number): Promise<PdfConversation>;
-  sendMessage(conversationId: number, content: string): Promise<PdfMessage>;
+  sendMessage(conversationId: number, content: string, role?: "USER" | "ASSISTANT"): Promise<PdfMessage>;
   getMessages(conversationId: number): Promise<PdfMessage[]>;
   updateConversationTitle(id: number, title: string): Promise<PdfConversation>;
   deleteConversation(id: number): Promise<void>;

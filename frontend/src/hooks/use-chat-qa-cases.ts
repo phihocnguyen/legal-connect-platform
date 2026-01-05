@@ -7,8 +7,13 @@ export const useChatQAUseCases = () => {
   const askQuestionUseCase = container.getUseCase<AskQuestionUseCase>('AskQuestionUseCase');
 
   const askQuestion = useCallback(
-    async (question: string, topK?: number): Promise<ChatQAResponse> => {
-      return askQuestionUseCase.execute(question, topK);
+    async (
+      question: string, 
+      topK?: number,
+      conversationId?: string,
+      chatHistory?: Array<{ role: string; content: string }>
+    ): Promise<ChatQAResponse> => {
+      return askQuestionUseCase.execute(question, topK, conversationId, chatHistory);
     },
     [askQuestionUseCase]
   );

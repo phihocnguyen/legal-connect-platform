@@ -10,10 +10,18 @@ router = APIRouter()
 
 
 # Request/Response models
+class ChatMessage(BaseModel):
+    """Single chat message"""
+    role: str = Field(..., description="Message role: 'user' or 'assistant'")
+    content: str = Field(..., description="Message content")
+
+
 class AskQuestionRequest(BaseModel):
     """Request model for asking a question"""
     question: str = Field(..., min_length=3, description="User's question")
     top_k: Optional[int] = Field(5, ge=1, le=10, description="Number of documents to retrieve")
+    conversation_id: Optional[str] = Field(None, description="Conversation ID for context")
+    chat_history: Optional[List[ChatMessage]] = Field(None, description="Previous chat messages for context")
 
 
 class AskQuestionResponse(BaseModel):
@@ -70,11 +78,23 @@ async def ask_question(request: AskQuestionRequest):
     """
     try:
         logger.info(f"Received question: {request.question[:100]}...")
+        if request.chat_history:
+            logger.info(f"With chat history: {len(request.chat_history)} messages")
         
         rag_service = get_rag_service()
+        
+        # Convert chat_history to dict format
+        chat_history_dict = None
+        if request.chat_history:
+            chat_history_dict = [
+                {"role": msg.role, "content": msg.content}
+                for msg in request.chat_history
+            ]
+        
         result = await rag_service.ask_question(
             question=request.question,
-            top_k=request.top_k
+            top_k=request.top_k,
+            chat_history=chat_history_dict
         )
         
         if not result.get("success", False):
@@ -169,6 +189,25 @@ async def get_status():
         )
 
 
+@router.get("/documents")
+async def get_documents(limit: int = 20):
+    """
+    Get sample documents to see what topics are available in the database
+    
+    This helps users know what questions they can ask
+    """
+    try:
+        rag_service = get_rag_service()
+        result = await rag_service.get_sample_documents(limit=limit)
+        return result
+    except Exception as e:
+        logger.error(f"Error in get_documents endpoint: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @router.get("/health")
 async def health_check():
     """Simple health check for the RAG router"""
@@ -178,6 +217,7 @@ async def health_check():
         "endpoints": {
             "ask": "/rag/ask",
             "index": "/rag/index",
-            "status": "/rag/status"
+            "status": "/rag/status",
+            "documents": "/rag/documents"
         }
     }

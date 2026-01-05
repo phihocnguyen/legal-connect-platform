@@ -89,57 +89,65 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   console.log("[MIDDLEWARE] Processing:", pathname);
 
-  // Cho phép truy cập tất cả public paths
-  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
-    console.log("[MIDDLEWARE] Public path, allowing access");
-    return NextResponse.next();
-  }
-
   // Static files and API routes - allow directly
-  if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
+  if (pathname.startsWith("/api") || pathname.startsWith("/_next") || pathname.includes(".")) {
     return NextResponse.next();
   }
 
-  // Homepage - allow access for all authenticated users (no auto-redirect)
+  const sessionId = request.cookies.get("SESSIONID")?.value;
+  let userRole: string | null = null;
+
+  // Helper to get role once per middleware call
+  const getRole = async () => {
+    if (!sessionId) return null;
+    if (userRole) return userRole;
+    userRole = await getUserRole(sessionId);
+    return userRole;
+  };
+
+  // 1. Role-based redirection for public paths (Login/Register)
+  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    if (sessionId) {
+      console.log("[MIDDLEWARE] Authenticated user on public path, checking role");
+      const role = await getRole();
+      if (role) {
+        const targetUrl = role === "admin" ? "/admin" : "/";
+        console.log("[MIDDLEWARE] Redirecting to:", targetUrl);
+        return NextResponse.redirect(new URL(targetUrl, request.url));
+      }
+    }
+    return NextResponse.next();
+  }
+
+  // 2. Homepage handling
   if (pathname === "/") {
-    console.log("[MIDDLEWARE] Homepage access - allowing all users");
+    if (sessionId) {
+      const role = await getRole();
+      if (role === "admin") {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
+    }
     return NextResponse.next();
   }
 
-  // Kiểm tra protected paths
-  const isProtectedPath = PROTECTED_PATHS.some((path) =>
-    pathname.startsWith(path)
-  );
+  // 3. Protected paths and Role restrictions
+  const isProtectedPath = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
+  const restrictedRoles = ROLE_RESTRICTED_PATHS[`/${pathname.split("/")[1]}`];
 
-  if (isProtectedPath) {
-    // Check SESSIONID cookie from backend (Spring sets this automatically)
-    // Note: SESSIONID is HttpOnly so it's not accessible from JavaScript,
-    // but middleware runs on server so it can check it
-    const sessionId = request.cookies.get("SESSIONID")?.value;
-
+  if (isProtectedPath || restrictedRoles) {
     if (!sessionId) {
-      // No session - redirect to login
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      console.log(
-        "[MIDDLEWARE] No SESSIONID for protected path:",
-        pathname,
-        "- redirecting to login"
-      );
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("returnUrl", pathname);
+      console.log("[MIDDLEWARE] Redirecting to login from:", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    console.log("[MIDDLEWARE] SESSIONID found for protected path:", pathname);
 
-    // Check role-based access - temporarily disabled due to middleware limitations
-    // Role checks will be handled in page components
-    const restrictedRoles = ROLE_RESTRICTED_PATHS[pathname.split("/")[1]];
     if (restrictedRoles) {
-      console.log(
-        "[MIDDLEWARE] Role check disabled for",
-        pathname,
-        "- will be handled in component"
-      );
-      // For now, allow access and let components handle authentication
+      const role = await getRole();
+      if (!role || !restrictedRoles.includes(role)) {
+        console.log("[MIDDLEWARE] Role mismatch for", pathname, "expected:", restrictedRoles, "got:", role);
+        return NextResponse.redirect(new URL("/", request.url));
+      }
     }
   }
 

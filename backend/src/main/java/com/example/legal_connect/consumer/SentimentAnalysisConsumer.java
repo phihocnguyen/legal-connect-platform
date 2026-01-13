@@ -78,9 +78,8 @@ public class SentimentAnalysisConsumer {
     }
 
     private void notifyAuthor(Long userId, String entityName, Long entityId, String entityType) {
-        String alertMessage = String.format("Thông báo: %s của bạn (ID: %s) đã bị tạm ẩn do chứa nội dung không phù hợp theo đánh giá của AI. Bạn vẫn có thể xem nội dung này, nhưng người dùng khác sẽ không thấy.", 
-            entityName.substring(0, 1).toUpperCase() + entityName.substring(1), 
-            entityId);
+        String alertMessage = String.format("%s của bạn đã bị ẩn", 
+            entityName.substring(0, 1).toUpperCase() + entityName.substring(1));
 
         notificationService.createNotification(
             userId,
@@ -98,10 +97,9 @@ public class SentimentAnalysisConsumer {
         List<User> admins = userRepository.findByRole(User.Role.ADMIN);
         
         String cleanContent = stripHtml(message.getContent());
-        String alertMessage = String.format("Cảnh báo nội dung tiêu cực detected bởi AI trong %s (ID: %s). Nội dung: \"%s...\"", 
+        String alertMessage = String.format("AI phát hiện nội dung tiêu cực trong %s (ID: %s)", 
             message.getEntityType().toLowerCase(),
-            message.getEntityId(),
-            cleanContent.substring(0, Math.min(cleanContent.length(), 50)));
+            message.getEntityId());
 
         for (User admin : admins) {
             notificationService.createNotification(

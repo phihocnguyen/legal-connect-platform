@@ -83,7 +83,7 @@ public class VotingService {
                     notificationService.createNotification(
                         post.getAuthor().getId(),
                         Notification.NotificationType.UPVOTE,
-                        user.getFullName() + " đã upvote bài viết của bạn: " + post.getTitle(),
+                        user.getFullName() + " đã thích bài viết của bạn",
                         postId,
                         "POST"
                     );
@@ -163,7 +163,7 @@ public class VotingService {
                     notificationService.createNotification(
                         reply.getAuthor().getId(),
                         Notification.NotificationType.UPVOTE,
-                        user.getFullName() + " đã upvote câu trả lời của bạn",
+                        user.getFullName() + " đã thích câu trả lời của bạn",
                         replyId,
                         "REPLY"
                     );

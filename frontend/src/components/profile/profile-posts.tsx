@@ -99,7 +99,7 @@ export function ProfilePosts({ posts, user }: ProfilePostsProps) {
                         )}
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>{formatDate(post.createdAt)}</span>
+                          <span>{formatRelativeTime(post.createdAt)}</span>
                         </div>
                       </div>
 

@@ -187,10 +187,7 @@ export function ChatMessage({ role, content, isStreaming = false }: ChatMessageP
             isUser && "text-right"
           )}
         >
-          {new Date().toLocaleTimeString('vi-VN', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
+          {formatMessageTime(new Date().toISOString())}
         </motion.div>
       </div>
     </motion.div>

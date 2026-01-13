@@ -41,26 +41,26 @@ resource "aws_ecs_task_definition" "backend" {
           name  = "SPRING_PROFILES_ACTIVE"
           value = var.environment
         },
-        # Database Configuration
+        # Neon PostgreSQL Configuration
         {
           name  = "DB_HOST"
-          value = split(":", var.db_endpoint)[0]
+          value = var.neon_db_host
         },
         {
           name  = "DB_PORT"
-          value = length(split(":", var.db_endpoint)) > 1 ? split(":", var.db_endpoint)[1] : "5432"
+          value = var.neon_db_port
         },
         {
           name  = "DB_NAME"
-          value = var.db_name
+          value = var.neon_db_name
         },
         {
           name  = "DB_USERNAME"
-          value = var.db_username
+          value = var.neon_db_username
         },
         {
           name  = "DB_PASSWORD"
-          value = var.db_password
+          value = var.neon_db_password
         },
         # JWT Configuration
         {
@@ -95,21 +95,30 @@ resource "aws_ecs_task_definition" "backend" {
         },
         {
           name  = "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI"
-          value = "${var.backend_url}/login/oauth2/code/google"
+          value = var.backend_url != "" ? "${var.backend_url}/login/oauth2/code/google" : "http://${var.alb_dns_name}/login/oauth2/code/google"
         },
         # OAuth2 Redirect URIs
         {
           name  = "APP_OAUTH_REDIRECT_URI_WEB"
-          value = "${var.frontend_url}/auth/callback"
+          value = var.frontend_url != "" ? "${var.frontend_url}/auth/callback" : "http://${var.alb_dns_name}/auth/callback"
         },
         {
           name  = "APP_OAUTH_REDIRECT_URI_MOBILE"
           value = "com.legalconnect://oauth2/callback"
         },
+        # Backend URL (for OAuth and other features)
+        {
+          name  = "APP_BACKEND_URL"
+          value = var.backend_url != "" ? var.backend_url : "http://${var.alb_dns_name}"
+        },
+        {
+          name  = "APP_FRONTEND_URL"
+          value = var.frontend_url != "" ? var.frontend_url : "http://${var.alb_dns_name}"
+        },
         # CORS Configuration
         {
           name  = "APP_CORS_ALLOWED_ORIGINS"
-          value = var.cors_allowed_origins != "" ? var.cors_allowed_origins : var.frontend_url
+          value = var.cors_allowed_origins != "" ? var.cors_allowed_origins : (var.frontend_url != "" ? var.frontend_url : "http://${var.alb_dns_name}")
         },
         # Cloudinary Configuration (Optional)
         {
@@ -281,11 +290,11 @@ resource "aws_ecs_task_definition" "frontend" {
         },
         {
           name  = "NEXT_PUBLIC_API_URL"
-          value = "${var.backend_url}/api"
+          value = var.backend_url != "" ? "${var.backend_url}/api" : "http://${var.alb_dns_name}/api"
         },
         {
           name  = "NEXT_PUBLIC_WS_URL"
-          value = "${var.backend_url}/ws"
+          value = var.backend_url != "" ? "${var.backend_url}/ws" : "ws://${var.alb_dns_name}/ws"
         },
         {
           name  = "PORT"

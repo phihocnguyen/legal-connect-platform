@@ -2,6 +2,7 @@
 
 import { PlusCircle, MessageSquare, Trash2, Edit3, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import {
   Tooltip,
   TooltipContent,
@@ -45,7 +46,9 @@ export function ConversationSidebar({
   const getDisplayDate = (conversation: Conversation) => {
     const date = conversation.updatedAt || conversation.timestamp;
     if (!date) return '';
-    return new Date(date).toLocaleDateString('vi-VN');
+    // Handle both Date objects and string timestamps
+    const dateString = typeof date === 'string' ? date : date.toISOString();
+    return formatDate(dateString);
   };
 
   return (

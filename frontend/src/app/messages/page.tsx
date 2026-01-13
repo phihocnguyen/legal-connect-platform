@@ -18,11 +18,11 @@ import { StompSubscription } from '@stomp/stompjs';
 type ViewMode = 'conversations' | 'newConversation';
 
 export default function MessagesPage() {
-
   const [conversations, setConversations] = useState<UserConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<UserConversation | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('conversations');
   
   const router = useRouter();
@@ -41,83 +41,55 @@ export default function MessagesPage() {
     [selectedConversation, conversationParam, conversations]
   );
 
-  useEffect(() => {
-    console.log('🔌 WebSocket props setup:', {
-      activeConversationId,
-      hasActiveConversation: !!activeConversation,
-      otherUserId: activeConversation?.participant?.email,
-      conversationParam,
-      selectedConversationId: selectedConversation?.id,
-      conversationsLoaded: conversations.length > 0
-    });
-  }, [activeConversationId, activeConversation, conversationParam, selectedConversation?.id, conversations.length]);
+  // Track processed message IDs to prevent duplicates
+  const processedMessageIds = useRef<Set<number>>(new Set());
 
   const onMessageReceived = useCallback((message: UserMessage) => {
     console.log('🔔 Message received via WebSocket:', {
-      message,
+      messageId: message.id,
+      conversationId: message.conversationId,
       activeConversationId,
-      currentUserId: currentUser?.id,
-      messageConversationId: message.conversationId,
-      shouldAddToMessages: parseInt(activeConversationId || '0') === message.conversationId,
-      activeConversationIdType: typeof activeConversationId,
-      messageConversationIdType: typeof message.conversationId
+      alreadyProcessed: processedMessageIds.current.has(message.id)
     });
 
+    // Skip if already processed
+    if (processedMessageIds.current.has(message.id)) {
+      console.log('⏭️ Skipping duplicate message:', message.id);
+      return;
+    }
+
+    // Mark as processed
+    processedMessageIds.current.add(message.id);
+
+    // Update conversation list
     setConversations(prev => {
-      let changed = false;
       const next = prev.map(conv => {
         if (conv.id !== message.conversationId) return conv;
-        const newLast = {
-          content: message.content,
-          timestamp: message.createdAt,
-          senderId: message.senderId
-        };
-        const sameLast = conv.lastMessage &&
-          conv.lastMessage.content === newLast.content &&
-          conv.lastMessage.timestamp === newLast.timestamp &&
-          conv.lastMessage.senderId === newLast.senderId;
-        if (sameLast) return conv;
-        changed = true;
         return {
           ...conv,
-          lastMessage: newLast,
+          lastMessage: {
+            content: message.content,
+            timestamp: message.createdAt,
+            senderId: message.senderId
+          },
           unreadCount: message.senderId !== currentUser?.id ? conv.unreadCount + 1 : conv.unreadCount
         };
       });
-      return changed ? next : prev;
+      return next;
     });
 
+    // Add to messages if it's for the active conversation
     if (parseInt(activeConversationId || '0') === message.conversationId) {
-      console.log('✅ Adding/reconciling message to current conversation');
+      console.log('✅ Adding message to current conversation');
       setMessages(prev => {
-        console.log('📝 Current messages before reconciling:', prev.length);
-
-        const messageTime = new Date(message.createdAt).getTime();
-        const MATCH_WINDOW_MS = 5000;
-
-        const tempIndex = prev.findIndex(m =>
-          m.conversationId === message.conversationId &&
-          m.senderId === message.senderId &&
-          m.content === message.content &&
-          Math.abs(new Date(m.createdAt).getTime() - messageTime) <= MATCH_WINDOW_MS
-        );
-
-        let newArr: UserMessage[];
-        if (tempIndex !== -1) {
-          newArr = [...prev];
-          newArr[tempIndex] = message;
-          console.log('🔁 Replaced optimistic message at index', tempIndex, 'with server message', message.id);
-        } else {
-          newArr = [...prev, message];
-          console.log('➕ Appended server message', message.id);
+        // Check if message already exists
+        const exists = prev.some(m => m.id === message.id);
+        if (exists) {
+          console.log('⏭️ Message already in list, skipping');
+          return prev;
         }
-
-        const deduplicated = newArr.filter((msg, idx, arr) => arr.findIndex(m => m.id === msg.id) === idx);
-        console.log('📝 Messages after reconcile and dedup:', deduplicated.length);
-        return deduplicated;
+        return [...prev, message];
       });
-    } else {
-      console.log('❌ Message not for current conversation, skipping');
     }
   }, [activeConversationId, currentUser?.id]);
 
@@ -136,23 +108,13 @@ export default function MessagesPage() {
     onMessageReceivedRef.current = onMessageReceived;
   }, [onMessageReceived]);
 
-
+  // WebSocket subscription
   useEffect(() => {
     const convId = activeConversation?.id;
     if (!wsConnected || !convId) return;
 
     const dest = `/topic/conversation/${convId}`;
-    if (lastSubscribedRef.current == convId) return;
-    try {
-      const w = (window as unknown) as Record<string, unknown> & { __stompSubscriptions?: Array<Record<string, unknown>> };
-      const subs = w.__stompSubscriptions || [];
-      if (subs.find(s => (s as Record<string, unknown>)['destination'] == dest)) {
-        console.log('ℹ️ Found existing global subscription for', dest, '- skipping subscribe');
-        lastSubscribedRef.current = convId;
-        return;
-      }
-    } catch {
-    }
+    if (lastSubscribedRef.current === convId) return;
 
     console.log('🔔 Subscribing to conversation topic:', dest);
 
@@ -171,23 +133,18 @@ export default function MessagesPage() {
         };
         onMessageReceivedRef.current?.(userMessage);
       } catch (error) {
-        const rawBody = (msg as unknown as Record<string, unknown>)['body'];
-        console.error('Error handling conversation topic message:', error, { raw: rawBody });
+        console.error('Error handling conversation topic message:', error);
       }
     });
 
-    try {
-      console.log('🔔 Conversation subscription created', { id: sub ? (sub as any).id : null });
-    } catch {}
-
-  currentSubRef.current = sub;
-    lastSubscribedRef.current = activeConversation.id;
+    currentSubRef.current = sub;
+    lastSubscribedRef.current = convId;
 
     return () => {
       try {
         const s = currentSubRef.current as StompSubscription | null;
         if (s && 'unsubscribe' in s && typeof (s as unknown as { unsubscribe: () => void }).unsubscribe === 'function') {
-          try { (s as unknown as { unsubscribe: () => void }).unsubscribe(); } catch (err) { console.warn('Error during unsubscribe', err); }
+          (s as unknown as { unsubscribe: () => void }).unsubscribe();
         }
       } catch (e) {
         console.warn('Error unsubscribing conversation topic', e);
@@ -197,6 +154,7 @@ export default function MessagesPage() {
     };
   }, [wsConnected, activeConversation?.id, wsSubscribe]);
 
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -219,6 +177,7 @@ export default function MessagesPage() {
     loadData();
   }, [getCurrentUser, getConversations]);
 
+  // Auto-select conversation from URL
   useEffect(() => {
     if (conversations.length > 0 && conversationParam) {
       const conv = conversations.find(c => c.id.toString() === conversationParam);
@@ -249,26 +208,51 @@ export default function MessagesPage() {
     }
   }, [conversations, conversationParam, currentUser, markMessagesAsRead]);
 
+  // Load messages when conversation changes
   useEffect(() => {
-    if (selectedConversation) {
-      getConversationMessages(selectedConversation.id.toString()).then(setMessages);
-    } else if (conversationParam && conversations.length > 0) {
-      const conv = conversations.find(c => c.id.toString() === conversationParam);
-      if (conv) {
-        getConversationMessages(conversationParam).then(setMessages);
+    const loadMessages = async () => {
+      if (!selectedConversation && !conversationParam) {
+        setMessages([]);
+        setMessagesLoading(false);
+        return;
       }
-    } else {
-      setMessages([]);
-    }
-  }, [selectedConversation, conversationParam, conversations, getConversationMessages]);
+
+      const convId = selectedConversation?.id.toString() || conversationParam;
+      if (!convId) return;
+
+      try {
+        // CLEAR OLD MESSAGES IMMEDIATELY to prevent flash of old content
+        setMessages([]);
+        setMessagesLoading(true);
+        
+        // Clear processed IDs when switching conversations
+        processedMessageIds.current.clear();
+        
+        const conversationMessages = await getConversationMessages(convId);
+        
+        // Mark all loaded messages as processed
+        conversationMessages.forEach(msg => {
+          processedMessageIds.current.add(msg.id);
+        });
+        
+        setMessages(conversationMessages);
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        setMessages([]);
+      } finally {
+        setMessagesLoading(false);
+      }
+    };
+
+    loadMessages();
+  }, [selectedConversation?.id, conversationParam, getConversationMessages]);
 
   const handleSelectConversation = async (conversation: UserConversation) => {
     setSelectedConversation(conversation);
     router.push(`/messages?conversation=${conversation.id}`);
-    try {
-      const conversationMessages = await getConversationMessages(conversation.id.toString());
-      setMessages(conversationMessages);
-      if (currentUser && conversation.unreadCount > 0) {
+    
+    if (currentUser && conversation.unreadCount > 0) {
+      try {
         await markMessagesAsRead(conversation.id.toString(), currentUser.id);
         setConversations(prev => 
           prev.map(c => 
@@ -277,10 +261,9 @@ export default function MessagesPage() {
               : c
           )
         );
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
       }
-    } catch (error) {
-      console.error('Error loading conversation messages:', error);
-      setMessages([]);
     }
   };
 
@@ -290,16 +273,41 @@ export default function MessagesPage() {
     console.log('💬 Sending message:', {
       content,
       conversationId: selectedConversation.id,
-      currentUserId: currentUser.id,
-      otherUserId: activeConversation?.participant?.email
+      currentUserId: currentUser.id
+    });
+
+    // Create optimistic message
+    const optimisticMessage: UserMessage = {
+      id: -Date.now(), // Temporary negative ID
+      conversationId: selectedConversation.id,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      content,
+      isRead: true,
+      createdAt: new Date().toISOString()
+    };
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    // Update conversation list
+    setConversations(prev => {
+      const now = new Date().toISOString();
+      return prev.map(c => {
+        if (c.id !== selectedConversation.id) return c;
+        return { 
+          ...c, 
+          lastMessage: { 
+            content, 
+            timestamp: now, 
+            senderId: currentUser.id 
+          } 
+        };
+      });
     });
 
     try {
-      console.log('📡 Sending message via API:', {
-        conversationId: selectedConversation.id.toString(),
-        content,
-        senderId: currentUser.id
-      });
+      // Send via API
       await sendMessageAPI(
         selectedConversation.id.toString(),
         content,
@@ -307,62 +315,26 @@ export default function MessagesPage() {
       );
       console.log('✅ Message saved via API successfully');
 
-      const sentMessage: UserMessage = {
-        id: -Date.now(), // Temporary negative ID
-        conversationId: selectedConversation.id,
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        content,
-        isRead: true, // Người gửi đã đọc message của mình
-        createdAt: new Date().toISOString()
-      };
-
-      console.log('📝 Adding sent message to UI immediately:', sentMessage);
-      setMessages(prev => {
-        const newArr = [...prev, sentMessage];
-        return newArr.filter((msg, idx, arr) => arr.findIndex(m => m.id === msg.id) === idx);
-      });
-
-      setConversations(prev => {
-        let changed = false;
-        const now = new Date().toISOString();
-        const next = prev.map(c => {
-          if (c.id !== selectedConversation.id) return c;
-          const newLast = { content, timestamp: now, senderId: currentUser.id };
-          const sameLast = c.lastMessage &&
-            c.lastMessage.content === newLast.content &&
-            c.lastMessage.timestamp === newLast.timestamp &&
-            c.lastMessage.senderId === newLast.senderId;
-          if (sameLast) return c;
-          changed = true;
-          return { ...c, lastMessage: newLast };
-        });
-        return changed ? next : prev;
-      });
-
+      // Send via WebSocket for real-time delivery
       try {
-        try {
-          const receiverId = activeConversation?.participant?.email;
-          if (!receiverId) {
-            console.warn('Cannot send WebSocket private message: receiver id not available');
-          } else {
-            const wsPayload = {
-              content,
-              receiverId,
-              conversationId: selectedConversation.id,
-              type: 'CHAT'
-            };
-            send('/app/chat.private', JSON.stringify(wsPayload));
-            console.log('📤 Sending WebSocket message:', { content, receiverId, conversationId: selectedConversation.id });
-          }
-        } catch (wsError) {
-          console.warn('WebSocket message send failed, but message was saved via API:', wsError);
+        const receiverId = activeConversation?.participant?.email;
+        if (receiverId) {
+          const wsPayload = {
+            content,
+            receiverId,
+            conversationId: selectedConversation.id,
+            type: 'CHAT'
+          };
+          send('/app/chat.private', JSON.stringify(wsPayload));
+          console.log('📤 Sent WebSocket message');
         }
       } catch (wsError) {
-        console.warn('WebSocket message send failed, but message was saved via API:', wsError);
+        console.warn('WebSocket send failed, but message was saved:', wsError);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
     }
   };
 
@@ -375,61 +347,47 @@ export default function MessagesPage() {
   }
 
   return (
-        <div className="container mx-auto py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tin nhắn</h1>
-          <p className="text-gray-600 mt-2">
-            Trao đổi trực tiếp với các thành viên và luật sư
-          </p>
-        </div>
-        {/* Toggle between conversations and new conversation */}
-        <div className="flex gap-2">
-          {viewMode === 'newConversation' ? (
-            <Button 
-              variant="outline" 
-              onClick={() => setViewMode('conversations')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Messages
-            </Button>
-          ) : (
-            <Button 
-              onClick={() => setViewMode('newConversation')}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Conversation
-            </Button>
-          )}
-        </div>
-      </div>
-
+    <div className="h-[calc(100vh-64px)] bg-white overflow-hidden fixed inset-x-0 top-[64px]">
       {viewMode === 'newConversation' ? (
-        <div className="max-w-4xl mx-auto">
-          <UserListForMessaging currentUserId={currentUser?.id || 1} />
+        <div className="p-8 h-full overflow-auto">
+          <Button 
+            variant="outline" 
+            onClick={() => setViewMode('conversations')}
+            className="flex items-center gap-2 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Messages
+          </Button>
+          <div className="max-w-4xl mx-auto">
+            <UserListForMessaging currentUserId={currentUser?.id || 1} />
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px]">
-          <Card className="lg:col-span-1">
-            <ConversationList
-              conversations={conversations}
-              selectedConversation={selectedConversation}
-              onSelectConversation={handleSelectConversation}
-              currentUserId={currentUser?.id}
-            />
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] h-full">
+          {/* Left Sidebar - Conversation List */}
+          <div className="border-r border-gray-200 bg-white overflow-hidden">
+            <Card className="h-full rounded-none border-0 shadow-none">
+              <ConversationList
+                conversations={conversations}
+                selectedConversation={selectedConversation}
+                onSelectConversation={handleSelectConversation}
+                currentUserId={currentUser?.id}
+              />
+            </Card>
+          </div>
 
-          {/* Chat Window */}
-          <Card className="lg:col-span-2">
-            <ChatWindow
-              conversation={selectedConversation}
-              messages={selectedConversation ? messages : []}
-              currentUserId={currentUser?.id}
-              onSendMessage={handleSendMessage}
-            />
-          </Card>
+          {/* Right Side - Chat Window */}
+          <div className="bg-white overflow-hidden">
+            <Card className="h-full rounded-none border-0 shadow-none">
+              <ChatWindow
+                conversation={selectedConversation}
+                messages={messages}
+                currentUserId={currentUser?.id}
+                onSendMessage={handleSendMessage}
+                isLoading={messagesLoading}
+              />
+            </Card>
+          </div>
         </div>
       )}
     </div>

@@ -77,25 +77,6 @@ module "alb" {
   certificate_arn       = var.ssl_certificate_arn
 }
 
-# RDS Database
-module "rds" {
-  source = "./modules/rds"
-
-  project_name           = var.project_name
-  environment            = var.environment
-  vpc_id                 = module.vpc.vpc_id
-  private_subnet_ids     = module.vpc.private_subnet_ids_data
-  rds_security_group_id  = module.security_groups.rds_security_group_id
-  db_engine              = var.db_engine
-  db_engine_version      = var.db_engine_version
-  db_instance_class      = var.db_instance_class
-  db_name                = var.db_name
-  db_username            = var.db_username
-  db_password            = var.db_password
-  db_allocated_storage   = var.db_allocated_storage
-  db_backup_retention    = var.db_backup_retention
-}
-
 # Redis EC2 Instance
 module "redis" {
   source = "./modules/ec2-redis"
@@ -140,11 +121,12 @@ module "ecs" {
   frontend_desired_count   = var.frontend_desired_count
   frontend_container_port  = var.frontend_container_port
   
-  # Database configuration
-  db_endpoint              = module.rds.db_endpoint
-  db_name                  = var.db_name
-  db_username              = var.db_username
-  db_password              = var.db_password
+  # Neon PostgreSQL configuration (external)
+  neon_db_host             = var.neon_db_host
+  neon_db_port             = var.neon_db_port
+  neon_db_name             = var.neon_db_name
+  neon_db_username         = var.neon_db_username
+  neon_db_password         = var.neon_db_password
   
   # Application configuration
   jwt_secret               = var.jwt_secret
@@ -171,6 +153,9 @@ module "ecs" {
 
   # CloudWatch log group
   cloudwatch_log_group_name = module.cloudwatch.ecs_log_group_name
+  
+  # ALB DNS for automatic URL generation
+  alb_dns_name = module.alb.alb_dns_name
 }
 
 # S3 Buckets
@@ -207,6 +192,5 @@ module "cloudwatch" {
   alb_target_group_arn = module.alb.target_group_arn
   ecs_cluster_name     = module.ecs.cluster_name
   ecs_service_name     = module.ecs.service_name
-  rds_instance_id      = module.rds.db_instance_id
   alarm_email          = var.alarm_email
 }

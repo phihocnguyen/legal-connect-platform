@@ -60,53 +60,34 @@ variable "cloudfront_certificate_arn" {
   default     = ""
 }
 
-# RDS Configuration
-variable "db_engine" {
-  description = "Database engine (mysql or postgres)"
+# Neon PostgreSQL Configuration (External Database)
+variable "neon_db_host" {
+  description = "Neon PostgreSQL host endpoint (e.g., ep-xxx-xxx.neon.tech)"
   type        = string
-  default     = "mysql"
 }
 
-variable "db_engine_version" {
-  description = "Database engine version"
+variable "neon_db_port" {
+  description = "Neon PostgreSQL port"
   type        = string
-  default     = "8.0"
+  default     = "5432"
 }
 
-variable "db_instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t3.micro"
-}
-
-variable "db_name" {
-  description = "Database name"
+variable "neon_db_name" {
+  description = "Neon database name"
   type        = string
   default     = "legalconnect"
 }
 
-variable "db_username" {
-  description = "Database master username"
+variable "neon_db_username" {
+  description = "Neon database username"
   type        = string
   sensitive   = true
 }
 
-variable "db_password" {
-  description = "Database master password"
+variable "neon_db_password" {
+  description = "Neon database password"
   type        = string
   sensitive   = true
-}
-
-variable "db_allocated_storage" {
-  description = "Allocated storage in GB"
-  type        = number
-  default     = 20
-}
-
-variable "db_backup_retention" {
-  description = "Backup retention period in days"
-  type        = number
-  default     = 7
 }
 
 # ECS Configuration

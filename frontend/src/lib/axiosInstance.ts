@@ -46,7 +46,10 @@ axiosInstance.interceptors.response.use(
       console.log("[AXIOS] 401 Unauthorized");
       const url = error.config?.url || "";
       const isAuthCheckEndpoint =
-        url.includes("/auth/me") || url.includes("/auth/status");
+        url.includes("/auth/me") || 
+        url.includes("/auth/status") || 
+        url.includes("/auth/login") ||
+        url.includes("/auth/register");
 
       if (!isAuthCheckEndpoint) {
         console.log("[AXIOS] 401 on non-auth endpoint - redirecting to /login");

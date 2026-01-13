@@ -295,7 +295,7 @@ public interface ForumRepository extends JpaRepository<Post, Long> {
     @Query(value = "SELECT DISTINCT ON (p.category_id) p.id, p.title, p.slug, p.content, p.category_id, " +
            "p.author_id, p.views, p.reply_count, p.upvote_count, p.downvote_count, " +
            "p.is_pinned, p.is_solved, p.is_hot, p.is_active, p.report_count, p.is_reported, " +
-           "p.violation_reason, p.tags, p.created_at, p.updated_at, p.last_reply_at " +
+           "p.violation_reason, p.tags, p.sentiment_label, p.sentiment_score, p.created_at, p.updated_at, p.last_reply_at " +
            "FROM posts p " +
            "WHERE p.is_active = true " +
            "ORDER BY p.category_id, p.created_at DESC",

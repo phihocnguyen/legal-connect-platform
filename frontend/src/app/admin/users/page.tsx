@@ -34,6 +34,7 @@ import { useAdminCases } from "@/hooks/use-admin-cases";
 import { AdminUser } from "@/domain/entities";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AdminTableFilters } from "@/components/admin/admin-table-filters";
+import { formatDate } from "@/lib/date-utils";
 
 const PAGE_SIZE = 10;
 
@@ -273,7 +274,7 @@ export default function UsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                        {formatDate(user.createdAt)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

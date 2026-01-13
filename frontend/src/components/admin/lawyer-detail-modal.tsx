@@ -259,7 +259,7 @@ export function LawyerDetailModal({
               <Clock className="h-5 w-5 text-gray-500" />
               <div>
                 <p className="text-sm text-gray-500">Ngày nộp đơn</p>
-                <p className="font-medium">{formatDate(application.createdAt)}</p>
+                <p className="font-medium">{formatFullDateTime(application.createdAt)}</p>
               </div>
             </div>
             {application.reviewedAt && (
@@ -267,7 +267,7 @@ export function LawyerDetailModal({
                 <Clock className="h-5 w-5 text-gray-500" />
                 <div>
                   <p className="text-sm text-gray-500">Ngày duyệt/từ chối</p>
-                  <p className="font-medium">{formatDate(application.reviewedAt)}</p>
+                  <p className="font-medium">{formatFullDateTime(application.reviewedAt)}</p>
                 </div>
               </div>
             )}

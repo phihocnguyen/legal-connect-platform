@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePostUseCases } from "@/hooks/use-post-cases";
 import { useLoadingState } from "@/hooks/use-loading-state";
 import { PostDto, PostCategoryDto } from "@/domain/entities";
+import { formatDate } from "@/lib/date-utils";
 
 export default function CategoryPage() {
   const params = useParams();
@@ -136,7 +137,7 @@ export default function CategoryPage() {
                         </span>
                         <span>•</span>
                         <span>
-                          {new Date(post.createdAt).toLocaleDateString("vi-VN")}
+                          {formatDate(post.createdAt)}
                         </span>
                       </div>
                     </div>

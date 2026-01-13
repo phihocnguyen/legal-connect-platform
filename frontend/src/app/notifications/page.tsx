@@ -6,6 +6,7 @@ import { NotificationDto } from "@/domain/entities";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Check, CheckCheck } from "lucide-react";
+import { getTimeAgo } from "@/lib/date-utils";
 
 export default function NotificationsPage() {
   const {
@@ -26,19 +27,6 @@ export default function NotificationsPage() {
       await markAsRead(notification.id);
     }
 
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / 60000);
-
-    if (diffInMinutes < 1) return "Vừa xong";
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-    if (diffInMinutes < 1440)
-      return `${Math.floor(diffInMinutes / 60)} giờ trước`;
-    return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
   };
 
   const getNotificationIcon = (type: string) => {
@@ -86,12 +74,24 @@ export default function NotificationsPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-500">Đang tải...</p>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="p-4 rounded-lg border border-gray-200 bg-white animate-pulse"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : notifications.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
@@ -118,7 +118,7 @@ export default function NotificationsPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-gray-500">
-                        {formatTimeAgo(notification.createdAt)}
+                        {getTimeAgo(notification.createdAt)}
                       </span>
                       {!notification.isRead && (
                         <Badge variant="secondary" className="text-xs">

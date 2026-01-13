@@ -87,7 +87,7 @@ Would you like me to elaborate on any of these points?`,
               <div className={`text-xs mt-1 ${
                 message.role === 'user' ? 'text-teal-100' : 'text-gray-500'
               }`}>
-                {message.timestamp.toLocaleTimeString()}
+                {formatMessageTime(message.timestamp.toISOString())}
               </div>
             </div>
           </div>

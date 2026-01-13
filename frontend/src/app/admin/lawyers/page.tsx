@@ -42,6 +42,7 @@ import { useAdminCases } from "@/hooks/use-admin-cases";
 import { LawyerApplication } from "@/domain/entities";
 import { LawyerDetailModal } from "@/components/admin/lawyer-detail-modal";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { formatDate } from "@/lib/date-utils";
 
 export default function LawyerApplicationsPage() {
   const [applications, setApplications] = useState<LawyerApplication[]>([]);
@@ -366,8 +367,8 @@ export default function LawyerApplicationsPage() {
                         {getStatusBadge(application.status)}
                       </TableCell>
                       <TableCell>
-                        {new Date(application.createdAt).toLocaleDateString(
-                          "vi-VN"
+                        {formatDate(
+                          application.createdAt
                         )}
                       </TableCell>
                       <TableCell>

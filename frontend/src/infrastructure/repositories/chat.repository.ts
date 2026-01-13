@@ -21,7 +21,7 @@ export class HttpChatRepository implements ChatRepository {
     } catch (error) {
       console.error('Failed to fetch conversation:', error);
       throw new Error('Failed to fetch conversation');
-    }
+    } 
   }
 
   async getMessages(conversationId: string): Promise<Message[]> {

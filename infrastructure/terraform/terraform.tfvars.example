@@ -1,53 +1,125 @@
+# ============================================
 # AWS Configuration
-aws_region  = "ap-southeast-1"
+# ============================================
+aws_region   = "ap-southeast-1"
 project_name = "legal-connect"
 environment  = "prod"
 
+# ============================================
 # VPC Configuration
+# ============================================
 vpc_cidr                     = "10.0.0.0/16"
 availability_zones           = ["ap-southeast-1a", "ap-southeast-1b"]
 public_subnet_cidrs          = ["10.0.1.0/24", "10.0.2.0/24"]
 private_subnet_cidrs_app     = ["10.0.10.0/24", "10.0.11.0/24"]
 private_subnet_cidrs_data    = ["10.0.20.0/24", "10.0.21.0/24"]
 
-# SSL Certificates
-ssl_certificate_arn        = "arn:aws:acm:ap-southeast-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
-cloudfront_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+# ============================================
+# SSL Certificates (OPTIONAL - để trống nếu chưa có domain)
+# ============================================
+# Nếu dùng HTTP (dev/test): để trống ""
+# Nếu dùng HTTPS + custom domain:
+#   - Tạo certificate tại AWS Certificate Manager (ACM)
+#   - ALB cert: Tạo ở region ap-southeast-1
+#   - CloudFront cert: Tạo ở us-east-1 (nếu dùng CloudFront)
+ssl_certificate_arn        = ""  # Optional: ARN of ACM certificate for ALB
+cloudfront_certificate_arn = ""  # Optional: ARN of ACM certificate for CloudFront
 
-# RDS Configuration
-db_engine            = "mysql"
-db_engine_version    = "8.0"
-db_instance_class    = "db.t3.micro"
-db_name              = "legalconnect"
-db_username          = "admin"
-db_password          = "CHANGE_ME_STRONG_PASSWORD"
-db_allocated_storage = 20
-db_backup_retention  = 7
+# ============================================
+# Neon PostgreSQL Configuration (External Database)
+# ============================================
+# Get from Neon Console: https://console.neon.tech/
+neon_db_host     = "ep-xxx-xxx.neon.tech"        # THAY ĐỔI - Neon endpoint
+neon_db_port     = "5432"
+neon_db_name     = "legalconnect"
+neon_db_username = "your-neon-username"          # THAY ĐỔI - Neon username
+neon_db_password = "your-neon-password"          # THAY ĐỔI - Neon password
 
-# ECS Configuration
-backend_image           = "ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/legal-connect-backend:latest"
-backend_cpu             = 512
-backend_memory          = 1024
-backend_desired_count   = 2
+# ============================================
+# ECS Backend Configuration
+# ============================================
+# Replace with your AWS Account ID
+backend_image           = "123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/legal-connect-backend:latest"
+backend_cpu             = 512      # 0.5 vCPU
+backend_memory          = 1024     # 1 GB
+backend_desired_count   = 2        # Number of backend tasks
 backend_container_port  = 8080
 
+# ============================================
+# ECS Frontend Configuration
+# ============================================
+# Replace with your AWS Account ID
+frontend_image          = "123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/legal-connect-frontend:latest"
+frontend_cpu            = 256      # 0.25 vCPU
+frontend_memory         = 512      # 512 MB
+frontend_desired_count  = 2        # Number of frontend tasks
+frontend_container_port = 3000
+
+# ============================================
 # Application Configuration
-jwt_secret = "CHANGE_ME_JWT_SECRET_KEY"
+# ============================================
+# Generate strong secret: openssl rand -base64 32
+jwt_secret = "CHANGE-THIS-TO-STRONG-SECRET-KEY-MIN-32-CHARS-ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # THAY ĐỔI
 
-# CloudWatch Configuration
-log_retention_days = 30
-alarm_email        = "admin@legalconnect.com"
-
+# ============================================
 # OAuth2 Configuration
-# Get from Google Cloud Console: https://console.cloud.google.com/apis/credentials
-google_client_id     = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-google_client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
-google_oauth_scope   = "openid,profile,email"
+# ============================================
+# Lấy từ Google Cloud Console: https://console.cloud.google.com/apis/credentials
+google_client_id     = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"  # THAY ĐỔI
+google_client_secret = "YOUR_GOOGLE_CLIENT_SECRET"                         # THAY ĐỔI
+google_oauth_scope   = "profile,email"
 
+# ============================================
 # URLs Configuration
-# Update after getting ALB DNS or Custom Domain
-backend_url  = "https://api.yourdomain.com"  # Or ALB DNS
-frontend_url = "https://yourdomain.com"      # Or CloudFront URL
+# ============================================
+# ĐỂ TRỐNG "" - Terraform sẽ TỰ ĐỘNG dùng ALB DNS
+#
+# Sau khi deploy xong:
+# 1. Lấy ALB DNS: terraform output alb_dns_name
+#    → Frontend: http://legal-connect-prod-alb-xxx.ap-southeast-1.elb.amazonaws.com
+#    → Backend API: http://legal-connect-prod-alb-xxx.ap-southeast-1.elb.amazonaws.com/api
+#    → WebSocket: ws://legal-connect-prod-alb-xxx.ap-southeast-1.elb.amazonaws.com/ws
+#
+# 2. (Optional) Nếu có custom domain + SSL:
+#    - Tạo ACM certificates (xem phần SSL ở trên)
+#    - Tạo DNS record: yourdomain.com → CNAME → ALB DNS
+#    - Uncomment và điền:
+#      backend_url  = "https://yourdomain.com"
+#      frontend_url = "https://yourdomain.com"
+#
+# Chú ý: 
+# - Backend API tự động route qua /api/* 
+# - Frontend serve tại root path /
+# - Không cần subdomain api.yourdomain.com riêng
+backend_url  = ""  # Để trống = dùng ALB DNS tự động
+frontend_url = ""  # Để trống = dùng ALB DNS tự động
+
+# ============================================
+# Cloudinary Configuration (Optional)
+# ============================================
+cloudinary_cloud_name = ""
+cloudinary_api_key    = ""
+cloudinary_api_secret = ""
+
+# ============================================
+# CORS Configuration
+# ============================================
+cors_allowed_origins = ""  # Comma-separated origins, e.g., "https://yourdomain.com,https://www.yourdomain.com"
+
+# ============================================
+# Redis Configuration (EC2)
+# ============================================
+redis_instance_type = "t3.micro"  # FREE TIER eligible
+# Generate strong password: openssl rand -base64 24
+redis_password      = "CHANGE-THIS-REDIS-PASSWORD-MIN-20-CHARS"  # THAY ĐỔI
+redis_key_name      = ""  # SSH key pair name (optional - use SSM Session Manager instead)
+
+# ============================================
+# CloudWatch Configuration
+# ============================================
+log_retention_days = 30
+alarm_email        = "your-email@example.com"  # THAY ĐỔI - Email for CloudWatch alarms
+
 
 # Cloudinary Configuration (Optional)
 cloudinary_cloud_name = "your_cloudinary_cloud_name"

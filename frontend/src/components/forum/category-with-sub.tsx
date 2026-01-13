@@ -164,7 +164,7 @@ export function CategoryWithSub({
                           <>
                             <span className="text-gray-400">•</span>
                             <span className="text-gray-500 whitespace-nowrap">
-                              {formatDate(lastPost.createdAt)}
+                              {formatFullDateTime(lastPost.createdAt)}
                             </span>
                           </>
                         )}

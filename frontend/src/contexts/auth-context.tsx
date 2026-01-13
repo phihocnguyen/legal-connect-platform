@@ -31,10 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string
   ): Promise<User | null> => {
     console.log("[AUTH CONTEXT] Login started");
-    await loginUseCase(email, password);
-    console.log("[AUTH CONTEXT] Login use case completed");
-
+    
     try {
+      await loginUseCase(email, password);
+      console.log("[AUTH CONTEXT] Login use case completed");
+
       const currentUser = await getCurrentUser();
       console.log("[AUTH CONTEXT] getCurrentUser returned:", currentUser);
       if (currentUser) {
@@ -46,7 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
     } catch (error) {
-      console.log("Failed to get user after login:", error);
+      console.log("[AUTH CONTEXT] Login failed:", error);
+      // Return null but don't set user, let the calling component handle the error
       return null;
     }
   };

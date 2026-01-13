@@ -29,11 +29,6 @@ variable "ecs_service_name" {
   type        = string
 }
 
-variable "rds_instance_id" {
-  description = "RDS instance ID for alarms"
-  type        = string
-}
-
 variable "alarm_email" {
   description = "Email address for alarm notifications"
   type        = string

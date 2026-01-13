@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,13 +13,13 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SocialLogin } from "@/components/auth/social-login";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/domain/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
-
+  const [loginError, setLoginError] = useState<string>("");
 
   const {
     register,
@@ -37,11 +37,18 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log("[LOGIN PAGE] Submit started");
+    setLoginError(""); // Clear previous error
+    
     try {
       const user = await login(data.email, data.password);
+      console.log("[LOGIN PAGE] Login returned:", user);
 
       if (!user) {
-        toast.error("Đăng nhập thất bại. Vui lòng thử lại!");
+        const errorMsg = "Email hoặc mật khẩu không đúng";
+        console.log("[LOGIN PAGE] Setting error:", errorMsg);
+        setLoginError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
@@ -49,22 +56,27 @@ export default function LoginPage() {
 
       const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
       const targetUrl = returnUrl || "/";
+      console.log("[LOGIN PAGE] Navigating to:", targetUrl);
 
-      window.location.href = targetUrl;
+      router.push(targetUrl);
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("[LOGIN PAGE] Login error:", error);
 
       const axiosError = error as {
         response?: { status: number; data?: unknown };
       };
 
-      if (axiosError.response?.status === 401) {
-        toast.error("Email hoặc mật khẩu không đúng");
-      } else if (axiosError.response?.status === 400) {
-        toast.error("Thông tin đăng nhập không hợp lệ");
-      } else {
-        toast.error("Có lỗi xảy ra. Vui lòng thử lại!");
+      let errorMsg = "Email hoặc mật khẩu không đúng";
+      
+      if (axiosError.response?.status === 400) {
+        errorMsg = "Thông tin đăng nhập không hợp lệ";
+      } else if (axiosError.response?.status >= 500) {
+        errorMsg = "Có lỗi xảy ra. Vui lòng thử lại!";
       }
+      
+      console.log("[LOGIN PAGE] Setting error from catch:", errorMsg);
+      setLoginError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -120,10 +132,19 @@ export default function LoginPage() {
                 id="login-form"
                 onSubmit={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleSubmit(onSubmit)(e);
                 }}
                 className="space-y-5"
               >
+                {/* Global error message */}
+                {loginError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 animate-fade-in">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{loginError}</p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"
@@ -207,7 +228,6 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  form="login-form"
                   className="w-full h-12 bg-gradient-to-r from-[#004646] to-[#006666] hover:from-[#005555] hover:to-[#007777] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group disabled:opacity-60"
                   disabled={isSubmitting}
                 >

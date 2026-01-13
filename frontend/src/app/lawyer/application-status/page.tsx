@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/date-utils';
 import { 
   Scale, 
   CheckCircle, 
@@ -241,7 +242,7 @@ export default function LawyerApplicationStatusPage() {
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <span className="text-gray-600">Ngày nộp đơn:</span>
                 <span className="font-medium">
-                  {new Date(application.createdAt).toLocaleDateString('vi-VN')}
+                  {formatDate(application.createdAt)}
                 </span>
               </div>
               
@@ -250,7 +251,7 @@ export default function LawyerApplicationStatusPage() {
                   <Calendar className="h-4 w-4 text-gray-400" />
                   <span className="text-gray-600">Ngày xem xét:</span>
                   <span className="font-medium">
-                    {new Date(application.reviewedAt).toLocaleDateString('vi-VN')}
+                    {formatDate(application.reviewedAt)}
                   </span>
                 </div>
               )}

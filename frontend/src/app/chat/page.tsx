@@ -454,7 +454,7 @@ export default function ChatPage() {
               />
             </div>
           </div>
-        ) : !activeConversationId || (currentMessages.length === 0 && !isProcessing) ? (
+        ) : !activeConversationId ? (
           <div className="flex-1 flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-2xl space-y-8">
               <WelcomeScreen onPromptClick={handleSendMessage} disabled={isProcessing} />

@@ -122,70 +122,6 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   }
 }
 
-# CloudWatch Alarms - RDS
-resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
-  alarm_name          = "${var.project_name}-${var.environment}-rds-cpu-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/RDS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 80
-  alarm_description   = "This metric monitors RDS CPU utilization"
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-
-  dimensions = {
-    DBInstanceIdentifier = var.rds_instance_id
-  }
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-rds-cpu-high"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
-  alarm_name          = "${var.project_name}-${var.environment}-rds-storage-low"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "FreeStorageSpace"
-  namespace           = "AWS/RDS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 5000000000 # 5GB in bytes
-  alarm_description   = "This metric monitors RDS free storage space"
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-
-  dimensions = {
-    DBInstanceIdentifier = var.rds_instance_id
-  }
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-rds-storage-low"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
-  alarm_name          = "${var.project_name}-${var.environment}-rds-connections-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "DatabaseConnections"
-  namespace           = "AWS/RDS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 150
-  alarm_description   = "This metric monitors RDS database connections"
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-
-  dimensions = {
-    DBInstanceIdentifier = var.rds_instance_id
-  }
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-rds-connections-high"
-  }
-}
-
 # CloudWatch Dashboard
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.project_name}-${var.environment}-dashboard"
@@ -203,20 +139,6 @@ resource "aws_cloudwatch_dashboard" "main" {
           stat   = "Average"
           region = data.aws_region.current.name
           title  = "ECS Metrics"
-        }
-      },
-      {
-        type = "metric"
-        properties = {
-          metrics = [
-            ["AWS/RDS", "CPUUtilization", { stat = "Average" }],
-            [".", "DatabaseConnections", { stat = "Average" }],
-            [".", "FreeStorageSpace", { stat = "Average" }]
-          ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "RDS Metrics"
         }
       },
       {

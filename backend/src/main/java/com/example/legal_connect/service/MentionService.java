@@ -110,8 +110,7 @@ public class MentionService {
                 
                 mentionRepository.save(mention);
                 
-                String message = author.getFullName() + " đã nhắc đến bạn trong " + 
-                    (post != null ? "bài viết" : "câu trả lời");
+                String message = author.getFullName() + " nhắc đến bạn";
                 Long entityId = post != null ? post.getId() : reply.getId();
                 String entityType = post != null ? "POST" : "REPLY";
                 

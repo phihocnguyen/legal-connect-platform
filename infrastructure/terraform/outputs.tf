@@ -18,9 +18,14 @@ output "cloudfront_distribution_id" {
   value       = module.cloudfront.cloudfront_distribution_id
 }
 
-output "rds_endpoint" {
-  description = "RDS endpoint"
-  value       = module.rds.db_endpoint
+output "neon_db_host" {
+  description = "Neon PostgreSQL host (external database)"
+  value       = var.neon_db_host
+}
+
+output "redis_endpoint" {
+  description = "Redis EC2 endpoint"
+  value       = "${module.redis.redis_host}:${module.redis.redis_port}"
   sensitive   = true
 }
 

@@ -67,24 +67,31 @@ variable "backend_container_port" {
   default     = 8080
 }
 
-variable "db_endpoint" {
-  description = "Database endpoint"
+# Neon PostgreSQL Configuration (External Database)
+variable "neon_db_host" {
+  description = "Neon PostgreSQL host endpoint"
   type        = string
 }
 
-variable "db_name" {
-  description = "Database name"
+variable "neon_db_port" {
+  description = "Neon PostgreSQL port"
+  type        = string
+  default     = "5432"
+}
+
+variable "neon_db_name" {
+  description = "Neon database name"
   type        = string
 }
 
-variable "db_username" {
-  description = "Database username"
+variable "neon_db_username" {
+  description = "Neon database username"
   type        = string
   sensitive   = true
 }
 
-variable "db_password" {
-  description = "Database password"
+variable "neon_db_password" {
+  description = "Neon database password"
   type        = string
   sensitive   = true
 }
@@ -223,5 +230,10 @@ variable "alb_frontend_target_group_arn" {
 
 variable "alb_listener_dependency" {
   description = "ALB listener ARN to ensure proper dependency ordering"
+  type        = string
+}
+
+variable "alb_dns_name" {
+  description = "ALB DNS name for generating URLs"
   type        = string
 }

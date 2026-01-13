@@ -15,13 +15,19 @@ import { useLoadingState } from "@/hooks/use-loading-state";
 import { useUserProfile } from "@/hooks/use-user-cases";
 import { useAuth } from "@/contexts/auth-context";
 import { usePostUseCases } from "@/hooks/use-post-cases";
+import { useStartConversation } from "@/hooks/use-start-conversation";
 import { UserProfile, PostDto } from "@/domain/entities";
 import { Mail, Heart, MessageSquare, Eye, Calendar, Edit2, Save, X, MessageCircle, Camera } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
+import { formatRelativeTime } from "@/lib/date-utils";
 
 export default function ProfilePage() {
+  // TODO: Implement slug-based URLs (/profile/bui-khanh-dang instead of /profile/36)
+  // This requires either:
+  // 1. Backend support for getUserProfile by slug
+  // 2. Or hybrid URL format /profile/36/bui-khanh-dang
   const params = useParams();
   const userId = params.userId as string;
   const { user: currentUser } = useAuth();
@@ -44,6 +50,7 @@ export default function ProfilePage() {
   const { getAllPosts } = usePostUseCases();
   const [backUrl, setBackUrl] = useState<string | null>(null);
   const [backLabel, setBackLabel] = useState<string>("Trang chủ");
+  const { startConversation } = useStartConversation();
 
   const isSelfView = currentUser?.id === profile?.id;
 
@@ -169,19 +176,6 @@ export default function ProfilePage() {
       console.error("Error updating profile:", error);
       toast.error("Không thể cập nhật profile. Vui lòng thử lại!");
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    );
-
-    if (diffInHours < 1) return "Vừa xong";
-    if (diffInHours < 24) return `${diffInHours} giờ trước`;
-    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} ngày trước`;
-    return date.toLocaleDateString("vi-VN");
   };
 
   const getRoleDisplayName = (role: string | undefined): string => {
@@ -368,7 +362,10 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     <>
-                      <Button className="bg-[#004646] hover:bg-[#005555] text-white">
+                      <Button 
+                        className="bg-[#004646] hover:bg-[#005555] text-white"
+                        onClick={() => startConversation(profile.id, profile.fullName)}
+                      >
                         <MessageCircle className="w-4 h-4 mr-2" />
                         Nhắn tin
                       </Button>
@@ -517,7 +514,7 @@ export default function ProfilePage() {
                                 {post.category.name}
                               </Badge>
                               <span className="text-gray-500">
-                                {formatDate(post.createdAt)}
+                                {formatRelativeTime(post.createdAt)}
                               </span>
                             </div>
                           </div>

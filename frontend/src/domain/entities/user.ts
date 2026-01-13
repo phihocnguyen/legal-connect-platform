@@ -14,6 +14,7 @@ export interface UserProfile {
   id: number;
   email: string;
   fullName: string;
+  slug?: string; // URL-friendly slug (e.g., "bui-khanh-dang")
   avatar: string | null;
   role: string;
   phoneNumber: string | null;

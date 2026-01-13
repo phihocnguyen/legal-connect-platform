@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { TableSkeleton } from '@/components/admin/table-skeleton';
+import { formatDate } from '@/lib/date-utils';
 import { 
   Search, 
   Eye,
@@ -422,7 +423,7 @@ export default function ViolationsPage() {
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <span className="text-sm">
-                          {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+                          {formatDate(post.createdAt)}
                         </span>
                       </div>
                     </TableCell>

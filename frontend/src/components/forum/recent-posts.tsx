@@ -11,6 +11,7 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import { PostDto, PostCategoryDto } from "@/domain/entities";
 import { PostsSkeleton } from "./posts-skeleton";
+import { formatRelativeTime } from "@/lib/date-utils";
 import Image from "next/image";
 
 interface RecentPostsProps {
@@ -193,7 +194,7 @@ export function RecentPosts({
                     </Badge>
                     <span className="text-gray-600">{post.author.name}</span>
                     <span className="text-gray-500">
-                      {formatDate(post.createdAt)}
+                      {formatRelativeTime(post.createdAt)}
                     </span>
                   </div>
                 </div>

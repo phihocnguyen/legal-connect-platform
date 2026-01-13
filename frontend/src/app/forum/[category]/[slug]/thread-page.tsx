@@ -14,6 +14,7 @@ import { Flag, Reply, X, Bookmark, BookmarkX } from "lucide-react";
 import { ReportPostDialog } from "@/components/forum/report-post-dialog";
 import { apiClient } from "@/lib/axiosInstance";
 import { toast } from "sonner";
+import { formatFullDateTime, formatDate as formatDateOnly } from "@/lib/date-utils";
 
 interface ThreadPageProps {
   category: string;
@@ -147,10 +148,6 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
     setReplyContent("");
   }, []);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("vi-VN");
-  };
-
   const sortedRelatedPosts = useMemo(() => {
     if (!post || relatedPosts.length === 0) return [];
 
@@ -251,7 +248,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
           <span>{post.views} lượt xem</span>
           <span>•</span>
-          <span>{formatDate(post.createdAt)}</span>
+          <span>{formatFullDateTime(post.createdAt)}</span>
           <span>•</span>
           <span>{post.replyCount} trả lời</span>
           {post.tags && post.tags.length > 0 && (
@@ -303,7 +300,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-start mb-4">
                 <span className="text-sm text-gray-500">
-                  {formatDate(post.createdAt)}
+                  {formatFullDateTime(post.createdAt)}
                 </span>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Tác giả bài viết</Badge>
@@ -402,7 +399,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-4">
                       <span className="text-sm text-gray-500">
-                        {formatDate(reply.createdAt)}
+                        {formatFullDateTime(reply.createdAt)}
                       </span>
                       <Button
                         variant="ghost"
@@ -528,7 +525,7 @@ export function ThreadPageContent({ category, slug }: ThreadPageProps) {
                       </span>
                       <span>•</span>
                       <span>
-                        {new Date(p.createdAt).toLocaleDateString("vi-VN")}
+                        {formatDateOnly(p.createdAt)}
                       </span>
                       {p.labels && p.labels.length > 0 && (
                         <>

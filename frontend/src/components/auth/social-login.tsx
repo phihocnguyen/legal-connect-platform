@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    window.location.href = `http://localhost:8080/oauth2/authorization/google`;
+    // Sử dụng API URL từ env, fallback về relative path (sẽ dùng ALB DNS)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+    window.location.href = `${apiUrl}/oauth2/authorization/google`;
   };
 
   return (

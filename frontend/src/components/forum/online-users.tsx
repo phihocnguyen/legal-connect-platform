@@ -149,7 +149,10 @@ function UserPopover({ user }: { user: User }) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setOpen(true);
+    // Delay 3 giây trước khi hiển thị popover
+    timeoutRef.current = setTimeout(() => {
+      setOpen(true);
+    }, 3000);
   };
 
   const handleMouseLeave = () => {
@@ -217,9 +220,9 @@ export function OnlineUserList({ userList }: OnlineUserListProps) {
       {regularUsers.length > 0 && (
         <div className="mb-4 border-t pt-4">
           <h4 className="text-sm font-medium text-gray-600 mb-3">Thành viên</h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-2">
             {regularUsers.map((user, index) => (
-              <span key={user.userId} className="inline-flex items-center">
+              <span key={user.userId} className="inline-flex items-center truncate">
                 <UserPopover user={user} />
                 {index < regularUsers.length - 1 && (
                   <span className="text-gray-400 ml-1">,</span>

@@ -12,7 +12,7 @@ export default function WebSocketProvider({
   const { user } = useAuth();
 
   useSyncWebSocket(
-    process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8080/ws"
+    process.env.NEXT_PUBLIC_WS_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/ws"
   );
 
   const connected = useWebSocketStore((s) => s.connected);

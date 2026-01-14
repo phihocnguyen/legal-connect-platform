@@ -3,7 +3,7 @@ import { ChatQARequest, ChatQAResponse } from "../../domain/entities";
 
 export class HttpChatQARepository implements ChatQARepository {
   private pythonApiURL =
-    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com";
 
   async askQuestion(request: ChatQARequest): Promise<ChatQAResponse> {
     const { question, top_k = 5, conversation_id, chat_history } = request;

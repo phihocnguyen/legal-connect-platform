@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = {"http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com"})
 public class NotificationController {
     
     private final NotificationService notificationService;

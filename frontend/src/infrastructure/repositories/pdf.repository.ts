@@ -79,9 +79,9 @@ interface ApiPdfUploadResult {
 
 export class HttpPdfRepository implements PdfRepository {
   private baseURL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+    process.env.NEXT_PUBLIC_API_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/api";
   private pythonApiURL =
-    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com";
 
   async uploadPdf(
     file: File,
@@ -247,13 +247,11 @@ export class HttpPdfRepository implements PdfRepository {
   }
 
   getPdfViewUrl(conversationId: number): string {
-    const url = this.baseURL.replace("http://backend:8080", "http://localhost:8080");
-    return `${url}/pdf/view/${conversationId}`;
+    return `http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/api/pdf/view/${conversationId}`;
   }
 
   getPdfDownloadUrl(conversationId: number): string {
-    const url = this.baseURL.replace("http://backend:8080", "http://localhost:8080");
-    return `${url}/pdf/download/${conversationId}`;
+    return `http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/api/pdf/download/${conversationId}`;
   }
 
   async uploadPdfToPython(file: File): Promise<PythonPdfUploadResult> {

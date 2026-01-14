@@ -24,7 +24,7 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = {"http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com"})
 @Tag(name = "Post Report", description = "API quản lý báo cáo bài viết")
 public class PostReportController {
     

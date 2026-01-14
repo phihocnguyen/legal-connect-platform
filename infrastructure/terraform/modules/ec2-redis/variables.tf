@@ -31,7 +31,7 @@ variable "ecs_security_group_id" {
 variable "instance_type" {
   description = "EC2 instance type for Redis"
   type        = string
-  default     = "t3.micro"  # FREE TIER eligible
+  default     = "t3.medium"
 }
 
 variable "redis_password" {

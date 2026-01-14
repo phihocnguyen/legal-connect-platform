@@ -200,7 +200,7 @@ variable "cors_allowed_origins" {
 variable "redis_instance_type" {
   description = "EC2 instance type for Redis"
   type        = string
-  default     = "t3.micro"  # FREE TIER eligible, perfect for Redis
+  default     = "t3.medium"
 }
 
 variable "redis_password" {

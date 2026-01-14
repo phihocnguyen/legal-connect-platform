@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SendHorizontal } from 'lucide-react';
+import { formatMessageTime } from '@/lib/date-utils';
 
 interface Message {
   id: string;

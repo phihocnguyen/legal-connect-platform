@@ -10,12 +10,12 @@ output "alb_dns_name" {
 
 output "cloudfront_distribution_domain_name" {
   description = "CloudFront distribution domain name"
-  value       = module.cloudfront.cloudfront_domain_name
+  value       = "Not available - CloudFront module skipped"
 }
 
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
-  value       = module.cloudfront.cloudfront_distribution_id
+  value       = "Not available - CloudFront module skipped"
 }
 
 output "neon_db_host" {
@@ -56,15 +56,15 @@ output "frontend_url" {
 
 output "frontend_bucket_name" {
   description = "S3 bucket name for frontend"
-  value       = module.s3.frontend_bucket_name
+  value       = "legal-connect-prod-frontend"
 }
 
 output "pdfs_bucket_name" {
   description = "S3 bucket name for PDFs"
-  value       = module.s3.pdfs_bucket_name
+  value       = "legal-connect-prod-pdfs"
 }
 
 output "avatars_bucket_name" {
   description = "S3 bucket name for avatars"
-  value       = module.s3.avatars_bucket_name
+  value       = "legal-connect-prod-avatars"
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { formatFullDateTime } from '@/lib/date-utils';
 import { 
   Dialog, 
   DialogContent, 

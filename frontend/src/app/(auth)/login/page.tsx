@@ -63,14 +63,15 @@ export default function LoginPage() {
       console.error("[LOGIN PAGE] Login error:", error);
 
       const axiosError = error as {
-        response?: { status: number; data?: unknown };
+        response?: { status?: number; data?: unknown };
       };
 
+      const status = axiosError.response?.status;
       let errorMsg = "Email hoặc mật khẩu không đúng";
-      
-      if (axiosError.response?.status === 400) {
+
+      if (status === 400) {
         errorMsg = "Thông tin đăng nhập không hợp lệ";
-      } else if (axiosError.response?.status >= 500) {
+      } else if (typeof status === "number" && status >= 500) {
         errorMsg = "Có lỗi xảy ra. Vui lòng thử lại!";
       }
       

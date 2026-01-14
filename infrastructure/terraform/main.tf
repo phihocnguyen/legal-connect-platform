@@ -8,13 +8,13 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "legal-connect-terraform-state"
-    key            = "terraform.tfstate"
-    region         = "ap-southeast-2"
-    encrypt        = true
-    use_lockfile   = true
-  }
+  # backend "s3" {
+  #   bucket         = "legal-connect-terraform-state"
+  #   key            = "terraform.tfstate"
+  #   region         = "ap-southeast-1"
+  #   encrypt        = true
+  #   use_lockfile   = true
+  # }
 }
 
 provider "aws" {
@@ -45,14 +45,9 @@ module "vpc" {
 # IAM Roles and Policies
 module "iam" {
   source = "./modules/iam"
-
   project_name = var.project_name
   environment  = var.environment
-  s3_bucket_arns = [
-    module.s3.frontend_bucket_arn,
-    module.s3.pdfs_bucket_arn,
-    module.s3.avatars_bucket_arn
-  ]
+  s3_bucket_arns = []
 }
 
 # Security Groups
@@ -130,8 +125,8 @@ module "ecs" {
   
   # Application configuration
   jwt_secret               = var.jwt_secret
-  s3_bucket_pdfs           = module.s3.pdfs_bucket_name
-  s3_bucket_avatars        = module.s3.avatars_bucket_name
+  s3_bucket_pdfs           = "legal-connect-prod-pdfs"
+  s3_bucket_avatars        = "legal-connect-prod-avatars"
   
   # OAuth2 configuration
   google_client_id         = var.google_client_id
@@ -150,47 +145,11 @@ module "ecs" {
   redis_host               = module.redis.redis_host
   redis_port               = module.redis.redis_port
   redis_password           = var.redis_password
-
-  # CloudWatch log group
-  cloudwatch_log_group_name = module.cloudwatch.ecs_log_group_name
   
   # ALB DNS for automatic URL generation
   alb_dns_name = module.alb.alb_dns_name
 }
 
-# S3 Buckets
-module "s3" {
-  source = "./modules/s3"
-
-  project_name         = var.project_name
-  environment          = var.environment
-  cloudfront_oai_iam_arn = module.cloudfront.cloudfront_oai_iam_arn
-}
-
-# CloudFront
-module "cloudfront" {
-  source = "./modules/cloudfront"
-
-  project_name        = var.project_name
-  environment         = var.environment
-  frontend_bucket_id  = module.s3.frontend_bucket_id
-  frontend_bucket_arn = module.s3.frontend_bucket_arn
-  frontend_bucket_regional_domain_name = module.s3.frontend_bucket_regional_domain_name
-  alb_dns_name        = module.alb.alb_dns_name
-  certificate_arn     = var.cloudfront_certificate_arn
-}
-
-# CloudWatch
-module "cloudwatch" {
-  source = "./modules/cloudwatch"
-
-  project_name = var.project_name
-  environment  = var.environment
-  log_retention_days = var.log_retention_days
-  
-  # Alarms configuration
-  alb_target_group_arn = module.alb.target_group_arn
-  ecs_cluster_name     = module.ecs.cluster_name
-  ecs_service_name     = module.ecs.service_name
-  alarm_email          = var.alarm_email
-}
+# S3 Buckets - Skipped (created manually via AWS CLI)
+# CloudFront - Skipped (not currently needed)
+# CloudWatch - Skipped (simplified deployment)

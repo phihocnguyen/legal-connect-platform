@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { PostDto } from "@/domain/entities";
 import { MessageSquare, Eye, BookmarkX } from "lucide-react";
 import axiosInstance from "@/lib/axiosInstance";
+import { formatRelativeTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export default function MyPostsPage() {

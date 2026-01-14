@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { useAuth } from "@/contexts/auth-context";
+import { formatMessageTime } from "@/lib/date-utils";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { motion } from "framer-motion";
 import { useState } from "react";

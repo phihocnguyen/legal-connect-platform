@@ -148,14 +148,14 @@ resource "aws_ecs_task_definition" "backend" {
         }
       ]
 
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.cloudwatch_log_group_name
-          "awslogs-region"        = data.aws_region.current.name
-          "awslogs-stream-prefix" = "backend"
-        }
-      }
+      # logConfiguration = {
+      #   logDriver = "awslogs"
+      #   options = {
+      #     "awslogs-group"         = var.cloudwatch_log_group_name
+      #     "awslogs-region"        = data.aws_region.current.name
+      #     "awslogs-stream-prefix" = "backend"
+      #   }
+      # }
 
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:${var.backend_container_port}/actuator/health || exit 1"]
@@ -302,14 +302,14 @@ resource "aws_ecs_task_definition" "frontend" {
         }
       ]
 
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.cloudwatch_log_group_name
-          "awslogs-region"        = data.aws_region.current.name
-          "awslogs-stream-prefix" = "frontend"
-        }
-      }
+      # logConfiguration = {
+      #   logDriver = "awslogs"
+      #   options = {
+      #     "awslogs-group"         = var.cloudwatch_log_group_name
+      #     "awslogs-region"        = data.aws_region.current.name
+      #     "awslogs-stream-prefix" = "frontend"
+      #   }
+      # }
 
       healthCheck = {
         command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${var.frontend_container_port} || exit 1"]

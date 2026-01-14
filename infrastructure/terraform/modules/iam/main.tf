@@ -86,6 +86,7 @@ resource "aws_iam_role" "ecs_task" {
 
 # S3 Access Policy for ECS Tasks
 resource "aws_iam_role_policy" "ecs_task_s3" {
+  count = length(var.s3_bucket_arns) > 0 ? 1 : 0
   name = "${var.project_name}-${var.environment}-ecs-task-s3-policy"
   role = aws_iam_role.ecs_task.id
 

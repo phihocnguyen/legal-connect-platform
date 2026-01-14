@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Eye, Calendar } from "lucide-react";
 import { UserProfile, PostDto, UserPost } from "@/domain/entities";
+import { formatRelativeTime } from "@/lib/date-utils";
 
 interface ProfilePostsProps {
   posts: PostDto[] | UserPost[];

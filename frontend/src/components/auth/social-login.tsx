@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    // Sử dụng API URL từ env, fallback về relative path (sẽ dùng ALB DNS)
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
-    window.location.href = `${apiUrl}/oauth2/authorization/google`;
+    window.location.href = `http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/oauth2/authorization/google`;
   };
 
   return (

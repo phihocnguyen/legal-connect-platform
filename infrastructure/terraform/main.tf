@@ -80,7 +80,7 @@ module "redis" {
   environment           = var.environment
   vpc_id                = module.vpc.vpc_id
   vpc_cidr              = var.vpc_cidr
-  subnet_id             = module.vpc.private_subnet_ids_data[0]  # Use first private data subnet
+  subnet_id             = module.vpc.public_subnet_ids[0]  # Use first public subnet for public IP
   ecs_security_group_id = module.security_groups.ecs_security_group_id
   instance_type         = var.redis_instance_type
   redis_password        = var.redis_password

@@ -24,7 +24,7 @@ resource "aws_instance" "redis" {
   
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [aws_security_group.redis.id]
-  associate_public_ip_address = false
+  associate_public_ip_address = true
   
   # IAM instance profile for CloudWatch logs and SSM
   iam_instance_profile = aws_iam_instance_profile.redis.name
@@ -69,14 +69,22 @@ resource "aws_security_group" "redis" {
     security_groups = [var.ecs_security_group_id]
   }
 
-  # Allow SSH from VPC ONLY (for emergency maintenance)
-  # For normal access, use AWS Systems Manager Session Manager (no SSH key needed)
+  # Allow SSH from anywhere (public access)
   ingress {
-    description = "SSH from within VPC only"
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  # Allow Redis from anywhere (if needed for testing)
+  ingress {
+    description = "Redis from anywhere"
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Allow all outbound

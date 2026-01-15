@@ -31,7 +31,7 @@ async function getUserRole(sessionId: string): Promise<string | null> {
     };
     console.log("[MIDDLEWARE] Request headers:", requestHeaders);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://backend:8080/api";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
     const response = await fetch(`${apiUrl}/auth/me`, {
       method: "GET",
       headers: requestHeaders,

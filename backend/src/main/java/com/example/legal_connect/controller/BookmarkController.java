@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class BookmarkController {
 
     private final BookmarkService bookmarkService;

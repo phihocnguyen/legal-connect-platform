@@ -32,7 +32,7 @@ import java.util.Map;
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
 @Validated
-@CrossOrigin(origins = {"http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class ForumController {
 
     private final ForumService postService;

@@ -20,7 +20,7 @@ export interface BatchSentimentAnalysisResponse {
 
 export class SentimentRepository {
   private pythonApiURL =
-    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com";
+    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
 
   async analyzeSentiment(text: string): Promise<SentimentAnalysisResponse> {
     const response = await fetch(`${this.pythonApiURL}/sentiment/analyze`, {

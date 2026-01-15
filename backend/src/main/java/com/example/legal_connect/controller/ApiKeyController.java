@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "API Key", description = "API Key management APIs")
-@CrossOrigin(origins = {"http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class ApiKeyController {
 
     private final ApiKeyService apiKeyService;

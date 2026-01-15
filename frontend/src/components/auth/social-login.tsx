@@ -4,10 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function SocialLogin() {
   const handleGoogleLogin = () => {
-    // Sử dụng NEXT_PUBLIC_API_URL để xây dựng OAuth URL động
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/api";
-    const baseUrl = apiUrl.replace(/\/api$/, ""); // Remove /api suffix
-    window.location.href = `${baseUrl}/oauth2/authorization/google`;
+    window.location.href = `http://localhost:8080/oauth2/authorization/google`;
   };
 
   return (

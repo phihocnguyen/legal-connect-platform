@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       rawBackendUrl !== "placeholder" &&
       /^https?:\/\//.test(rawBackendUrl)
         ? rawBackendUrl
-        : "http://legal-connect-prod-alb-790910672.ap-southeast-1.elb.amazonaws.com/api";
+        : "http://localhost:8080/api";
 
     const apiBaseUrl = backendUrl.endsWith("/api")
       ? backendUrl.slice(0, -4)
